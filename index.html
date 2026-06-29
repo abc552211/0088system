@@ -1488,7 +1488,9 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
 
         // 🚀 自動發送日曆
         if (isAppointChecked && formattedTime) {
-          autoSyncCalendar('consultations', data[0].id, `[諮詢] ${payload.name}`, formattedTime);
+          // 格式：[姓名]內容-電話-處理人
+          const title = `[${payload.name}]${finalEvent || '無'}-${payload.phone || '無'}-${payload.staff}`;
+          autoSyncCalendar('consultations', data[0].id, title, formattedTime);
         }
         document.getElementById('loadingOverlay').style.display = 'none'; 
         if (error) throw error;
@@ -1951,7 +1953,9 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         // 🚀 自動發送日曆
         if (t.includes('指定')) {
           const calTime = payload.target_date.replace(/\//g, '-');
-          autoSyncCalendar('handovers', data[0].id, `[交接-${toStaff}] ${hContentValue.substring(0,10)}`, calTime);
+          // 格式：[指定時間]內容-接交人
+          const title = `[${t}]${hContentValue}-${toStaff}`;
+          autoSyncCalendar('handovers', data[0].id, title, calTime);
         }
         document.getElementById('loadingOverlay').style.display = 'none'; 
         if (error) throw error;
@@ -2033,11 +2037,15 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         const { error } = await _supabase.from('lost_care').update(payload).eq('row_index', row);
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
-        // 🚀 自動發送日曆 (失聯後產生新預約)
-        if (isAppoint && appTime) {
-          const calTime = appTime.replace(/\//g, '-');
-          autoSyncCalendar('lost_care', row, `[失聯預約] ${document.getElementById('lostTargetName').value}`, calTime);
-        }
+        // 🚀 自動發送日曆 (關懷後產生新預約)
+         if (isAppoint && formattedTime) {
+           // 從暫存檔抓取該客戶的電話與服務人
+           const record = allSearchData.find(r => r.rowIndex == idx) || {};
+           const name = record.name || document.getElementById('careTargetName').innerText;
+           // 格式：[姓名]關懷內容-電話-處理人
+           const title = `[${name}]${note}-${record.phone || '無'}-${record.staff || '無'}`;
+           autoSyncCalendar('consultations', idx, title, formattedTime);
+         }
         alert("🎉 失聯客群關懷同步成功！");
         loadLostData();
       } catch(e) {
@@ -2167,7 +2175,10 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         // 🚀 自動發送日曆 (客戶要改期)
         if (isChangeTime && newTime) {
           const tableName = (currentAppTab === 1) ? 'consultations' : 'lost_care';
-          autoSyncCalendar(tableName, it.rowIndex, `[改期] ${it.name}`, newTime);
+          const noteStr = document.getElementById('appNote').value || '改期';
+          // 格式：[姓名]改期備註-電話-處理人
+          const title = `[${it.name}]${noteStr}-${it.phone || '無'}-${it.staff || '無'}`;
+          autoSyncCalendar(tableName, it.rowIndex, title, newTime);
         }
         finishVisit("🎉 預約狀態完美同步更新！");
       } catch(e) {
