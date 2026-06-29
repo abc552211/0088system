@@ -1913,41 +1913,46 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       if (!fromStaff || !toStaff) { alert("⚠️ 請確實選擇交接人與接交人！"); return; }
 
       const isDelay = document.getElementById('hDelaySwitch').checked;
-      const isNoNotify = document.getElementById('hNoNotify').checked; 
-      let delayTimeStr = null;
+      const isNoNotify = document.getElementById('hNoNotify').checked;
       
+      let delayTimeStr = null;
       if (isDelay) {
         const rawTime = document.getElementById('hDelayTime').value;
         if (!rawTime) { alert("請設定延遲推播時間"); return; }
-        delayTimeStr = new Date(rawTime).toISOString(); 
+        // 🛑 修正 1：不再使用 ISOString，直接儲存當地時間字串 (如 2026-06-30 08:00)
+        // 避免 Make 或後台產生 8 小時時差誤判而立刻觸發
+        delayTimeStr = rawTime.replace('T', ' '); 
       }
 
-      const t = document.getElementById('hType').value; 
-      const hContentValue = document.getElementById('hContent').value; 
-      const hPhoneValue = document.getElementById('hPhone').value;     
+      const t = document.getElementById('hType').value;
+      const hContentValue = document.getElementById('hContent').value;
+      const hPhoneValue = document.getElementById('hPhone').value;
 
-      const pad = (n) => n < 10 ? '0' + n : n; 
-      const timeStr = `${pad(document.getElementById('hHour').value)}:${pad(document.getElementById('hMin').value)}`; 
+      const pad = (n) => n < 10 ? '0' + n : n;
+      const timeStr = `${pad(document.getElementById('hHour').value)}:${pad(document.getElementById('hMin').value)}`;
       let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
-      if (t.includes('指定')) finalContent += ` ${timeStr}`; 
+      if (t.includes('指定')) finalContent += ` ${timeStr}`;
 
-      document.getElementById('loadingOverlay').style.display = 'flex'; 
-      
-      const payload = { 
-        type: t, 
-        target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無', 
-        content: finalContent, 
-        from_staff: fromStaff, 
-        to_staff: toStaff, 
+      // 🛑 修正 2：如果不推播，把狀態直接改成 'None'，後台腳本就不會抓走它了
+      let finalPushStatus = isNoNotify ? 'None' : 'Pending';
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      const payload = {
+        type: t,
+        target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無',
+        content: finalContent,
+        from_staff: fromStaff,
+        to_staff: toStaff,
         is_delay: isDelay,
         delay_time: delayTimeStr,
         is_no_notify: isNoNotify,
-        push_status: 'Pending'
-      }; 
+        push_status: finalPushStatus // 替換為修正後的狀態
+      };
 
       try {
         const { data, error } = await _supabase.from('handovers').insert([payload]).select();
-        document.getElementById('loadingOverlay').style.display = 'none'; 
+        document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
         // 🚀 自動發送日曆
@@ -1957,12 +1962,11 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           const title = `[${t}]${hContentValue}-${toStaff}`;
           autoSyncCalendar('handovers', data[0].id, title, calTime);
         }
-        document.getElementById('loadingOverlay').style.display = 'none'; 
-        if (error) throw error;
+
         alert("🎉 工作交接登記成功！");
-        loadData(); 
-        clearAllInputs(); 
-        showPage('home'); 
+        loadData();
+        clearAllInputs();
+        showPage('home');
       } catch(e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("登記交接失敗: " + e.message);
@@ -2233,18 +2237,24 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
                                            let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
                                            if (isOverdue) cardClass += " handover-overdue"; 
                                            
-                                           // 🚀 【核心修正：推播狀態精準辨識器】 - 僅保留待推播狀態
+                                           // 🚀 【核心修正：推播狀態精準辨識器】 - 時間一過自動消失
 let pushBadge = '';
 const pStatus = String(it.pushStatus || '').trim();
 const pTime = String(it.pushTime || '').trim();
 
-// 只有「Pending」且確實有時間時，才顯示等待推播的小黃條
 if (pStatus === 'Pending' && pTime && pTime !== '無') {
-  pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
-                 <span class="spinner-grow spinner-grow-sm me-2"></span>
-                 <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
-               </div>`;
-                                           } 
+  // 將字串轉換為安全的時間格式 (把 - 換成 /，確保蘋果裝置也能正常解析)
+  const targetTime = new Date(pTime.replace(/-/g, '/'));
+  const now = new Date();
+  
+  // 💡 只有當「預計推播時間」大於「現在時間」(也就是還沒到)，才顯示小黃條
+  if (targetTime > now) {
+    pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
+                   <span class="spinner-grow spinner-grow-sm me-2"></span>
+                   <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
+                 </div>`;
+  }
+}
 
                                            h += `
                                            <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
