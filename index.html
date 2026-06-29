@@ -195,22 +195,33 @@
       border: 1px solid rgba(91, 42, 48, 0.2) !important;
     }
 
-    /* 🚀 絕對浮在最上層、不移動的固定紅線 */
-    .laser-line {
-      position: absolute !important;
-      top: 50% !important;
-      left: 10% !important;
-      width: 80% !important;
-      height: 2px !important;
-      background-color: #ff3b30 !important;
-      z-index: 20000 !important; /* 超高層級，絕對不會被蓋住 */
-      pointer-events: none !important;
-      box-shadow: 0 0 6px #ff3b30 !important;
-    }
-    @keyframes laser-blink {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
-    }
+    /* 假設你的相機掃描視窗容器叫 #interactive */
+#interactive {
+  position: relative;
+  height: 160px; /* 💡 直接把高度縮小壓扁 (例如 120px ~ 160px) */
+  overflow: hidden;
+}
+
+/* 🎯 強制在畫面正中央畫出一條「雷射紅線」 */
+#interactive::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  width: 90%;
+  height: 2px;
+  background-color: #ff0000; /* 🔴 鮮明紅色 */
+  box-shadow: 0 0 8px #ff0000; /* 帶有雷射發光特效 */
+  transform: translateY(-50%);
+  z-index: 10;
+  /* 讓紅線微微呼吸閃爍，更有高科技感 */
+  animation: laser-blink 1.5s infinite alternate;
+}
+
+@keyframes laser-blink {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
   </style>
 </head>
 
