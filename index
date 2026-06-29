@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>桃園南崁綜合工作管理系統 (Supabase 極速版)</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/zxing-js-library@0.18.6/executable/zxing.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <link rel="icon" href="https://drive.google.com/uc?export=view&id=1mrHpfJjvpuwHPDHF41lFlnaygvMwv53Q" type="image/png">
+  <link rel="apple-touch-icon" href="https://drive.google.com/uc?export=view&id=1mrHpfJjvpuwHPDHF41lFlnaygvMwv53Q">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { corePlugins: { preflight: false } }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --main-bg-start: #e7eaf6; --main-bg-end: #a2a8d3;
+      --btn-consult: #84a59d; --btn-appoint: #a3b18a;
+      --btn-handover: #9a8c98; --btn-search: #4a4e69;
+      --btn-children: #e5989b; --btn-settings: #b5838d;
+      --btn-system: #d8e2dc; --card-shadow: 0 8px 32px rgba(91, 42, 48, 0.05);
+      --dark-color: #4a4e69;
+      --handover-timed-bg: rgba(252, 250, 242, 0.85); --handover-timed-accent: #FFBF00;
+      --handover-track-bg: rgba(247, 255, 240, 0.85); --handover-track-accent: #87A96B;
+      --handover-logistics-bg: rgba(244, 246, 249, 0.85); --handover-logistics-accent: #0a5ecc;
+    }
+    
+    body { margin: 0; padding: 0; min-height: 100vh; background: #F5F0E8 !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .page { display: none; padding: 20px; max-width: 500px; margin: auto; background: transparent !important; min-height: 100vh; }
+    .active { display: block; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+    
+    .card { 
+      border-radius: 20px; 
+      box-shadow: var(--card-shadow) !important; 
+      border: 1px solid rgba(91, 42, 48, 0.15) !important; 
+      margin-bottom: 20px; 
+      overflow: hidden; 
+      background: rgba(255, 250, 240, 0.85) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .card h4, .card h5 {
+      color: #5b2a30;
+      font-family: 'Noto Serif TC', serif;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    .text-muted { color: rgba(91, 42, 48, 0.6) !important; }
+    .form-control, .form-select {
+      background-color: rgba(255, 255, 255, 0.6) !important;
+      border: 1px solid rgba(91, 42, 48, 0.2) !important;
+      color: #3e2723 !important;
+      border-radius: 12px !important;
+      transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+      box-shadow: 0 0 0 0.25rem rgba(91, 42, 48, 0.1) !important;
+      border-color: rgba(91, 42, 48, 0.5) !important;
+      background-color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .btn { border-radius: 12px; font-weight: 600; padding: 12px; transition: all 0.2s ease; border: none; }
+    .btn-primary { background-color: var(--btn-consult) !important; }
+    .btn-success { background-color: var(--btn-appoint) !important; }
+    .btn-info { background-color: var(--btn-handover) !important; }
+    .btn-dark { background-color: var(--btn-search) !important; }
+    .btn-warning { background-color: var(--btn-children) !important; }
+    
+    #hContent::placeholder, #hPhone::placeholder { color: #c0c4cc; opacity: 1; font-size: 0.9rem; }
+    .status-indicator { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 255, 255, 0.9); padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); display: flex; align-items: center; font-size: 12px; font-weight: bold; pointer-events: none; }
+    .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 6px; }
+    .dot-online { background-color: #28a745; box-shadow: 0 0 8px #28a745; animation: pulse-green 2s infinite; }
+    .dot-offline { background-color: #d9534f; box-shadow: 0 0 8px #d9534f; }
+    @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
+    
+    .clear-wrapper { position: relative; width: 100%; }
+    .input-group>.clear-wrapper { flex: 1 1 auto; width: 1%; display: flex; align-items: center; }
+    .clear-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #bbb; font-size: 18px; line-height: 1; cursor: pointer; z-index: 5; padding: 5px; transition: color 0.2s; }
+    .clear-btn:hover { color: #888; }
+    textarea+.clear-btn { top: 25px; transform: none; }
+    .input-group>.clear-wrapper+.btn { width: 48px; height: 48px; border-radius: 50% !important; margin-left: 20px !important; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex: 0 0 auto; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); z-index: 10; }
+    
+    #consultation .input-group>.clear-wrapper+.btn { background-color: var(--btn-consult) !important; color: white; }
+    #searchPage .input-group>.clear-wrapper+.btn { background-color: var(--btn-search) !important; color: white; }
+    #sectionChildrenSearch .input-group>.clear-wrapper+.btn { background-color: var(--btn-children) !important; color: var(--dark-color); }
+    .form-switch .form-check-input { width: 3.5rem !important; height: 1.75rem !important; cursor: pointer; }
+    .form-check-input:checked { background-color: #28a745 !important; border-color: #218838 !important; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important; }
+    .form-check-input:focus { border-color: #28a745 !important; box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important; }
+    .form-check-label { padding-left: 10px; font-size: 1.1rem; line-height: 1.75rem; }
+    .date-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+    #reader, #readerSearch, #readerChildren { width: 100%; display: none; border-radius: 15px; overflow: hidden; margin-bottom: 15px; border: 2px solid #4a90e2; }
+    #photoPreview { width: 100%; max-height: 250px; object-fit: contain; display: none; margin-top: 15px; border-radius: 10px; }
+    
+    .result-card { border-left: 6px solid #4a90e2; margin-bottom: 15px; padding: 15px; border-radius: 15px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(5px); box-shadow: 0 4px 12px rgba(91, 42, 48, 0.05); }
+    .badge { padding: 6px 12px; border-radius: 8px; }
+    .handover-card-timed { background-color: var(--handover-timed-bg) !important; border-left: 6px solid var(--handover-timed-accent) !important; }
+    .handover-card-timed .badge { background-color: var(--handover-timed-accent) !important; }
+    .handover-card-track { background-color: var(--handover-track-bg) !important; border-left: 6px solid var(--handover-track-accent) !important; }
+    .handover-card-track .badge { background-color: var(--handover-track-accent) !important; }
+    .handover-card-logistics { background-color: var(--handover-logistics-bg) !important; border-left: 6px solid var(--handover-logistics-accent) !important; }
+    .handover-card-logistics .badge { background-color: var(--handover-logistics-accent) !important; }
+    .children-card { border-left: 6px solid var(--btn-children) !important; background: rgba(255, 253, 249, 0.85); }
+    .handover-overdue { background-color: #fff1f0 !important; border-left: 6px solid #f5222d !important; border-right: 2px solid #ffa39e !important; }
+    
+    .sub-filter-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 5px 0 15px 0; scrollbar-width: none; }
+    .sub-filter-scroll::-webkit-scrollbar { display: none; }
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
+    
+    .nav-tabs-custom { display: flex; background: rgba(91, 42, 48, 0.08); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .nav-tabs-custom div { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; color: #5b2a30; opacity: 0.6; }
+    .nav-tabs-custom .active-tab { background: rgba(255, 255, 255, 0.9); color: #5b2a30; box-shadow: 0 2px 8px rgba(91, 42, 48, 0.1); opacity: 1; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 9999 !important; display: flex; align-items: center; justify-content: center; }
+    .modal-body { background: #F5F0E8; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+    .btn-circle { width: 45px; height: 45px; border-radius: 50% !important; display: flex; align-items: center; justify-content: center; padding: 0; }
+    #lostYearTabs { display: flex !important; overflow-x: scroll !important; -webkit-overflow-scrolling: touch; gap: 12px; padding: 10px 5px 20px 5px; white-space: nowrap; border-bottom: 2px solid rgba(91, 42, 48, 0.1); }
+    #lostYearTabs::-webkit-scrollbar { height: 12px !important; display: block !important; }
+    #lostYearTabs::-webkit-scrollbar-track { background: rgba(91, 42, 48, 0.05) !important; border-radius: 10px; }
+    #lostYearTabs::-webkit-scrollbar-thumb { background: rgba(91, 42, 48, 0.2) !important; border-radius: 10px; border: 2px solid #F5F0E8; }
+    
+    #customScrollTrack { position: fixed; right: 5px; top: 10%; height: 80%; width: 20px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    #customScrollTrack.visible { opacity: 1; pointer-events: auto; }
+    #customScrollTrack::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(91, 42, 48, 0.2); transform: translateX(-50%); border-radius: 2px; }
+    #customScrollThumb { position: absolute; top: 0; left: 0; width: 100%; height: 40px; cursor: pointer; }
+    #customScrollThumb::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #5b2a30; border: 3px solid #F5F0E8; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+    
+    html, body { -ms-overflow-style: none; scrollbar-width: none; overflow-y: scroll; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    @media (hover: hover) { .btn:hover { filter: brightness(0.9); } }
+    .btn:active { transform: scale(0.95); transition: 0.1s; }
+    .btn:focus, .btn:active { outline: none !important; box-shadow: none !important; background-color: inherit; }
+    #filterTabGroup { justify-content: center; padding: 10px 0; border-bottom: 2px solid rgba(91, 42, 48, 0.1); scrollbar-width: none; }
+    #filterTabGroup::-webkit-scrollbar { display: none; }
+    .card-pending { border-left: 6px solid #6c757d !important; }
+    .card-cared { border-left: 6px solid #17a2b8 !important; }
+    .card-closed { border-left: 6px solid #28a745 !important; }
+    .result-card { transition: transform 0.2s; }
+
+    .font-serif-tc { font-family: 'Noto Serif TC', serif; }
+    .font-playfair { font-family: 'Playfair Display', serif; }
+    
+    .noise-overlay {
+      position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: 0.25; mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    #home.page { max-width: 100% !important; padding: 0 !important; }
+    
+    .glass-vintage-card {
+      background: rgba(255, 250, 240, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(91, 42, 48, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+    }
+    .glass-vintage-card:active {
+      transform: scale(0.96);
+      background: rgba(255, 250, 240, 0.9);
+    }
+    @media (hover: hover) {
+      .glass-vintage-card:hover {
+        background: rgba(255, 250, 240, 0.85);
+        border: 1px solid rgba(91, 42, 48, 0.3);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(91, 42, 48, 0.08);
+      }
+    }
+    
+    .btn-return-home {
+      background: rgba(255, 250, 240, 0.8) !important;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(91, 42, 48, 0.2) !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="noise-overlay"></div>
+
+  <div class="d-inline-block px-3 py-1 rounded-pill" style="position:fixed; top:10px; left:10px; z-index:9999; background: rgba(217, 202, 35, 0.85); color: #5b2a30; font-size: 0.6rem; letter-spacing: 1.5px; backdrop-filter: blur(4px); box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); font-family: 'Noto Serif TC', serif;">
+    💰八方來財💰 📿阿彌陀佛📿
+  </div>
+  <div class="status-indicator" style="background: rgba(245, 240, 232, 0.9); border: 1px solid rgba(91, 42, 48, 0.1); font-family: 'Noto Serif TC', serif; color: #5b2a30;">
+    <div id="sysDot" class="dot"></div>
+    <span id="sysStatusText">檢查中...</span>
+  </div>
+
+  <div id="loadingOverlay">
+    <div class="spinner-border text-light mb-2"></div>
+    <div id="loadingText" class="font-serif-tc text-xl tracking-widest">處理中，請稍候...</div>
+  </div>
+
+  <div id="home" class="page active relative">
+    <header class="relative min-h-[40vh] md:min-h-[50vh] flex flex-col justify-center items-center overflow-hidden pb-8">
+      <div class="absolute inset-0 z-0 bg-gradient-to-br from-[#e8e2d5] to-[#d8cca8]">
+        <img src="https://images.unsplash.com/photo-1558022026-6215321f5ea4?q=80&w=2070&auto=format&fit=crop" 
+             onerror="this.style.display='none'"
+             class="w-full h-full object-cover opacity-[0.35] mix-blend-multiply" alt="">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#F5F0E8] via-[#F5F0E8]/50 to-transparent z-0"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-[#F5F0E8] via-transparent to-transparent z-0"></div>
+      </div>
+
+      <div class="relative z-10 text-center px-4 max-w-4xl mx-auto pt-16">
+        <div class="hero-item inline-block px-3 py-1 border border-[#5b2a30]/30 rounded-full mb-4 md:mb-6">
+          <span class="font-serif-tc tracking-[0.3em] text-[#5b2a30] text-[10px] md:text-xs font-bold uppercase">極致品味・精準管理</span>
+        </div>
+        <h1 class="hero-item font-serif-tc text-4xl md:text-7xl font-black text-[#3e2723] mb-4 md:mb-6 tracking-wider leading-tight" style="text-shadow: 0 4px 20px rgba(245, 240, 232, 0.8);">
+          桃園南崁<br><span class="font-playfair italic font-normal text-[#5b2a30] text-3xl md:text-6xl mt-1 md:mt-2 block">Management System</span>
+        </h1>
+        <p class="hero-item hidden md:block font-serif-tc text-[#5b2a30]/80 text-lg md:text-xl max-w-2xl mx-auto leading-loose tracking-wide">
+          融合古典人文美學與現代科技效率。<br>為您打造沉浸式的工作流程，讓每一筆資料皆成為雋永的印記。
+        </p>
+      </div>
+    </header>
+
+    <section id="sys-grid" class="relative z-10 px-3 md:px-8 max-w-6xl mx-auto -mt-6 md:-mt-8 pb-20">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8 overflow-hidden pt-2 px-1">
+        <div onclick="showPage('consultation')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(132, 165, 157, 0.4); border-color: rgba(132, 165, 157, 0.4);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:notebook-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢 / 預約登記</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">建立全新客群檔案，精準紀錄來訪需求與預約時程，開啟優雅服務的第一步。</p>
+        </div>
+
+        <div onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">今日預約更新</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">追蹤今日赴約名單，迅速更新結果狀態與改期，掌握每日營運節奏。</p>
+        </div>
+
+        <div onclick="showPage('handover')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group" style="background-color: rgba(154, 140, 152, 0.4); border-color: rgba(154, 140, 152, 0.4);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:arrows-left-right-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作交接清單</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">無縫傳遞內部資訊，確保每項任務皆被妥善處理，提供指定時間提醒與物流追蹤。</p>
+        </div>
+
+        <div onclick="showPage('searchPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(74, 78, 105, 0.3); border-color: rgba(74, 78, 105, 0.3);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:magnifying-glass-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢查詢與關懷</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">全方位檢索歷史紀錄，執行深度關懷與互動，維繫長遠深刻的客戶關係。</p>
+        </div>
+
+        <div onclick="showPage('sectionChildrenSearch')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(229, 152, 155, 0.4); border-color: rgba(229, 152, 155, 0.4);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:baby-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">兒控大檔查詢</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">專屬兒控配鏡資料檢索，快速掌握鏡片使用週期，守護清晰視界。</p>
+        </div>
+
+        <div onclick="showLostCarePage()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">喚回沉睡的緣分，針對流失客群進行溫度追蹤，重新串接服務橋樑。</p>
+        </div>
+        
+        <div onclick="openSpecialAuth()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 lg:col-span-1 group border-[1.5px] hover:border-[#d9534f]/60" style="background-color: rgba(217, 83, 79, 0.15); border-color: rgba(217, 83, 79, 0.3);">
+          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#d9534f]/10 flex justify-center items-center mb-2 md:mb-6 text-[#d9534f] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:siren-duotone"></iconify-icon>
+          </div>
+          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">特殊處理</h3>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">針對多次未接客群進行專案處理與簡訊批量操作。</p>
+        </div>
+      </div>
+
+      <div class="my-8 md:my-10 text-center relative">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-[#5b2a30]/20"></div></div>
+        <span class="relative bg-[#F5F0E8] px-4 font-serif-tc text-[#5b2a30]/60 tracking-widest text-xs md:text-sm">外部系統連結</span>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 md:gap-4">
+        <div onclick="window.open('https://script.google.com/macros/s/AKfycbzebcgBVBa66BXdrf9TRNlqEuO1oDua-9MO7Whq36KUw9YOMvdpssfdNOPNroFW7UAVrQ/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group" style="background-color: rgba(132, 165, 157, 0.25);">
+          <div class="text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:package-duotone"></iconify-icon></div>
+          <h3 class="font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">拋棄式</h3>
+        </div>
+        <div onclick="window.open('https://script.google.com/macros/s/AKfycbwQukzFIXRcCWYj19176al4oCqPJyuxoRYY4xXLL8R2b3T50c6CM6ihALLCrwP-GNoy/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group" style="background-color: rgba(154, 140, 152, 0.25);">
+          <div class="text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:gear-duotone"></iconify-icon></div>
+          <h3 class="font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">管理</h3>
+        </div>
+        <div onclick="window.open('https://script.google.com/macros/s/AKfycbwMC63ej7Qbu2L8LbSXVFH4Gz2AjdptBTWYTtATW-VmaUzc4rXowBrKf985N1KQXdq0WA/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group" style="background-color: rgba(74, 78, 105, 0.2);">
+          <div class="text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:eyeglasses-duotone"></iconify-icon></div>
+          <h3 class="font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">RGP配</h3>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center pb-8 pt-4 opacity-60">
+      <p class="font-serif-tc text-[#5b2a30] text-xs md:text-sm tracking-widest">© 2026 桃園南崁管理系統. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <div id="consultation" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="card p-4">
+      <h4 class="mb-4">🆕新增諮詢/預約紀錄</h4>
+      <label class="fw-bold small text-muted">客戶病歷序號</label>
+      <div class="input-group mb-3">
+        <div class="clear-wrapper">
+          <input type="text" id="cBarcode" class="form-control" placeholder="輸入或掃碼"><button class="clear-btn" onclick="clearInput('cBarcode')">×</button>
+        </div>
+        <button class="btn btn-warning" onclick="startScan('cBarcode','reader')">📷</button>
+      </div>
+      <div id="reader"></div>
+      <div class="row">
+        <div class="col-6"><label class="fw-bold small text-muted">客戶姓名</label>
+          <div class="clear-wrapper">
+            <input type="text" id="cName" class="form-control" placeholder="必填"><button class="clear-btn" onclick="clearInput('cName')">×</button>
+          </div>
+        </div>
+        <div class="col-6"><label class="fw-bold small text-muted">連絡電話</label>
+          <div class="clear-wrapper">
+            <input type="tel" id="cPhone" class="form-control" placeholder="輸入手機"><button class="clear-btn" onclick="clearInput('cPhone')">×</button>
+          </div>
+        </div>
+      </div>
+      <label class="fw-bold small text-muted mt-3">出生日期 (連打7碼: 0800101)</label>
+      <div class="clear-wrapper">
+        <input type="text" id="cBirth" class="form-control" placeholder="例:0870115"><button class="clear-btn" onclick="clearInput('cBirth')">×</button>
+      </div>
+      <label class="fw-bold small text-muted mt-3">拍照存檔</label><input type="file" id="cFile" class="form-control" accept="image/*" capture="camera" onchange="previewImg(this)"><img id="photoPreview">
+      <label class="fw-bold small text-muted mt-3">諮詢內容</label>
+      <div class="clear-wrapper">
+        <textarea id="cEvent" class="form-control" rows="3"></textarea><button class="clear-btn" onclick="clearInput('cEvent')">×</button>
+      </div>
+      <label class="fw-bold small text-muted mt-2">內容標籤 (可複選)</label>
+      <div id="cTagContainer" class="d-flex flex-wrap gap-2 mt-1"></div>
+      <div class="row mt-2">
+        <div class="col-6"><label class="small text-muted fw-bold">服務人</label><select id="cStaff" class="form-select"></select></div>
+        <div class="col-6"><label class="small text-muted fw-bold">看診醫師</label><select id="cDoctor" class="form-select"></select></div>
+      </div>
+      <div class="form-check form-switch mt-4 d-flex align-items-center">
+        <input class="form-check-input" type="checkbox" id="isAppoint" onchange="document.getElementById('cAppSet').style.display=this.checked?'block':'none'">
+        <label class="form-check-label fw-bold text-[#5b2a30]" for="isAppoint">是否預約</label>
+      </div>
+      <div id="cAppSet" style="display:none;" class="mt-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
+        <div class="date-row">
+          <select id="cAppY" class="form-select"></select><span class="text-muted fw-bold">年</span>
+          <select id="cAppM" class="form-select"></select><span class="text-muted fw-bold">月</span>
+          <select id="cAppD" class="form-select"></select><span class="text-muted fw-bold">日</span>
+        </div>
+        <div class="date-row">
+          <select id="cAppH" class="form-select"></select><span class="text-muted fw-bold">點</span>
+          <select id="cAppMin" class="form-select"></select><span class="text-muted fw-bold">分</span>
+        </div>
+      </div>
+      <button class="btn btn-primary w-100 mt-4 shadow" id="btnC" onclick="submitConsult()">確認並送出存檔</button>
+    </div>
+  </div>
+
+  <div id="appointment" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="card p-4" style="background: rgba(255, 250, 240, 0.98) !important;">
+      <h4 class="mb-4">📝 客戶預約處理</h4>
+      <div class="nav-tabs-custom mb-3">
+        <div id="tabApp1" class="active-tab" onclick="switchAppTab(1)">諮詢預約</div>
+        <div id="tabApp2" onclick="switchAppTab(2)">失聯關懷</div>
+      </div>
+      <label class="fw-bold small text-muted">選擇處理名單</label>
+      <select id="appSelect" class="form-select mb-3" onchange="showAppDetail()"></select>
+
+      <div id="appDetail" style="display:none;">
+        <div class="alert alert-info border-0 shadow-sm" style="background-color: rgba(132, 165, 157, 0.15); color: #3e2723;" id="appInfo"></div>
+        <div class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
+          <div class="d-flex align-items-center">
+            <div class="form-check form-switch m-0 p-0">
+              <input class="form-check-input m-0" type="checkbox" id="appChangeTimeSwitch" onchange="toggleAppChangeMode(this.checked)">
+            </div>
+            <label class="fw-bold text-[#5b2a30] ms-3 mb-0" for="appChangeTimeSwitch" style="font-size: 1.1rem; cursor: pointer;">
+              🔄 客戶要改期
+            </label>
+          </div>
+          <div id="appChangeTimeDiv" style="display:none;" class="mt-3 pt-3 border-top border-secondary border-opacity-25">
+            <div class="date-row">
+              <select id="appCY" class="form-select form-select-sm"></select><span class="text-muted">年</span>
+              <select id="appCM" class="form-select form-select-sm"></select><span class="text-muted">月</span>
+              <select id="appCD" class="form-select form-select-sm"></select><span class="text-muted">日</span>
+            </div>
+            <div class="date-row mt-2">
+              <select id="appCH" class="form-select form-select-sm"></select><span class="text-muted">點</span>
+              <select id="appCMin" class="form-select form-select-sm"></select><span class="text-muted">分</span>
+            </div>
+          </div>
+        </div>
+
+        <label id="appStatusLabel" class="small fw-bold text-muted">處理結果 (赴約狀態)</label>
+        <select id="appStatus" class="form-select mb-3" onchange="handleAppStatusChange(this.value)"></select>
+
+        <div id="appDealDiv" style="display:none;" class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
+          <label class="small text-muted mb-2 fw-bold">💰 締結詳細資訊</label>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="clear-wrapper">
+                <input type="text" id="appOrderNo" class="form-control form-control-sm" placeholder="三聯單號">
+                <button class="clear-btn" onclick="clearInput('appOrderNo')">×</button>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="clear-wrapper">
+                <input type="number" id="appAmount" class="form-control form-control-sm" placeholder="總金額">
+                <button class="clear-btn" onclick="clearInput('appAmount')">×</button>
+              </div>
+            </div>
+            <div class="col-12">
+              <select id="appLutein" class="form-select form-select-sm" style="color: #6c757d;" onchange="this.style.color = this.value ? '#3e2723' : '#6c757d'">
+                <option value="">-- 是否加購葉黃素 --</option>
+                <option value="是">是</option>
+                <option value="否">否</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="appNoteArea">
+          <label class="small fw-bold text-muted">備註</label>
+          <div class="clear-wrapper">
+            <input type="text" id="appNote" class="form-control mb-4" placeholder="可輸入備註">
+            <button class="clear-btn" onclick="clearInput('appNote')">×</button>
+          </div>
+        </div>
+        <button class="btn btn-success w-100 shadow" id="btnApp" onclick="submitVisit()">更新紀錄</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="handover" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="nav-tabs-custom">
+      <div id="tabH1" class="active-tab" onclick="switchHandTab(1)">瀏覽交接清單</div>
+      <div id="tabH2" onclick="switchHandTab(2)">交接維護</div>
+    </div>
+    <div id="handTab1">
+      <div id="handoverListView"></div>
+    </div>
+    <div id="handTab2" style="display:none;">
+      <div class="card p-4">
+        <h4 class="mb-4">✒️工作交接登記</h4>
+        <div class="text-center mb-4 mt-n2" style="cursor: pointer;" onclick="showPage('consultation')">
+          <span class="px-3 py-1 rounded-pill shadow-sm" style="background-color: rgba(255,255,255,0.7); color: #84a59d; font-size: 0.85rem; border: 1px solid rgba(91,42,48,0.2); letter-spacing: 1px;">
+            ✨<span style="text-decoration: underline;">新客請至預約區登記留紀錄</span>
+          </span>
+        </div>
+        <select id="hType" class="form-select mb-3" onchange="changeHandoverType(this.value)">
+          <option value="指定時間">1. 指定時間</option>
+          <option value="追蹤工作">2. 追蹤工作</option>
+          <option value="物流">3. 物流</option>
+        </select>
+        <div id="hDateArea">
+          <label class="small text-muted fw-bold">預計執行日期與時間</label>
+          <div class="date-row">
+            <select id="hYear" class="form-select"></select><span class="text-muted">年</span>
+            <select id="hMonth" class="form-select"></select><span class="text-muted">月</span>
+            <select id="hDay" class="form-select"></select><span class="text-muted">日</span>
+          </div>
+          <div class="date-row mt-1">
+            <select id="hHour" class="form-select"></select><span class="text-muted">點</span>
+            <select id="hMin" class="form-select"></select><span class="text-muted">分</span>
+          </div>
+        </div>
+        <label class="small fw-bold text-muted">交接具體內容</label>
+        <div class="clear-wrapper">
+          <textarea id="hContent" class="form-control my-2" placeholder="請詳述待辦事項..." rows="3"></textarea><button class="clear-btn" onclick="clearInput('hContent')">×</button>
+        </div>
+        <label id="hPhoneLabel" class="small fw-bold text-muted">電話備註</label>
+        <div class="clear-wrapper">
+          <input type="tel" id="hPhone" class="form-control my-2" placeholder="輸入電話(非必要)">
+          <button class="clear-btn" onclick="clearInput('hPhone')">×</button>
+        </div>
+        <div class="row">
+          <div class="col-6"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
+          <div class="col-6"><label class="small text-muted fw-bold">接交人</label><select id="hTo" class="form-select"></select></div>
+        </div>
+        <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="hNoNotify">
+            <label class="form-check-label fw-bold text-secondary" for="hNoNotify">🔕 僅登記不通知LINE</label>
+          </div>
+        </div>
+        <div class="mt-3 p-3 rounded border" style="background-color: rgba(255, 248, 225, 0.7); border-color: rgba(255, 193, 7, 0.3);">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="hDelaySwitch" onchange="toggleDelayInput()">
+            <label class="form-check-label fw-bold" for="hDelaySwitch" style="color:#b45309">🌙 啟用延遲推播</label>
+          </div>
+          <div id="hDelayArea" style="display:none;" class="mt-2">
+            <label class="small text-muted mb-1 fw-bold">預計發送時間</label>
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm text-dark bg-white border" onclick="setDelayTime(8)">明天 08:00</button>
+              <button class="btn btn-sm text-dark bg-white border" onclick="setDelayTime(9)">明天 09:00</button>
+              <button class="btn btn-sm text-dark bg-white border" onclick="setDelayTime(12)">明天 12:00</button>
+            </div>
+            <input type="datetime-local" id="hDelayTime" class="form-control">
+          </div>
+        </div>
+        <button class="btn btn-info text-white w-100 mt-4 shadow" onclick="submitHand()">送出交接清單</button>
+      </div>
+      <div class="card p-4 border-start border-danger border-4">
+        <h5 class="text-danger mb-3">移除已完成交接</h5>
+        <select id="hDelSelect" class="form-select mb-3"></select><button class="btn btn-outline-danger w-100 bg-white" onclick="delHand()">確認刪除此項工作</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="searchPage" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="card p-4">
+      <h4 class="mb-4">🔍諮詢預約查詢與關懷</h4>
+      <label class="small fw-bold text-muted">依病歷序號</label>
+      <div class="input-group mb-3">
+        <div class="clear-wrapper">
+          <input type="text" id="sBarcode" class="form-control" placeholder="輸入或掃碼">
+          <button class="clear-btn" onclick="clearInput('sBarcode')">×</button>
+        </div>
+        <button class="btn btn-warning" onclick="startScan('sBarcode','readerSearch')">📷</button>
+      </div>
+      <div id="readerSearch"></div>
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="small fw-bold text-muted">依姓名</label>
+          <div class="clear-wrapper">
+            <input type="text" id="sName" class="form-control">
+            <button class="clear-btn" onclick="clearInput('sName')">×</button>
+          </div>
+        </div>
+        <div class="col-6">
+          <label class="small fw-bold text-muted">依電話</label>
+          <div class="clear-wrapper">
+            <input type="tel" id="sPhone" class="form-control">
+            <button class="clear-btn" onclick="clearInput('sPhone')">×</button>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="small fw-bold text-muted">依生日 (連打 7 碼)</label>
+          <div class="clear-wrapper">
+            <input type="text" id="sBirth" class="form-control" placeholder="例: 0800101">
+            <button class="clear-btn" onclick="clearInput('sBirth')">×</button>
+          </div>
+        </div>
+        <div class="col-12 mt-2">
+          <label class="small fw-bold text-muted">依照標籤 (可複選)</label>
+          <div id="sTagContainer" class="d-flex flex-wrap gap-2 mt-1 mb-2"></div>
+        </div>
+        <div class="col-12 mt-2">
+          <label class="small fw-bold text-muted">依服務人員</label>
+          <select id="sStaff" class="form-select" style="color: #aaa;" onchange="this.style.color = this.value ? '#3e2723' : '#aaa'"></select>
+        </div>
+      </div>
+      <button class="btn btn-dark w-100 mt-4 shadow" onclick="doSearch()">開始搜尋</button>
+    </div>
+    <div id="searchResults" class="mt-2"></div>
+  </div>
+
+  <div id="sectionChildrenSearch" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="card p-4">
+      <h4 class="mb-4">❇️兒控大檔查詢</h4>
+      <label class="small fw-bold text-muted">依編號(條碼A00000)</label>
+      <div class="input-group mb-3">
+        <div class="clear-wrapper">
+          <input type="text" id="cControlID" class="form-control" placeholder="輸入或掃碼"><button class="clear-btn" onclick="clearInput('cControlID')">×</button>
+        </div>
+        <button class="btn btn-warning" onclick="startScan('cControlID','readerChildren')">📷</button>
+      </div>
+      <div id="readerChildren"></div>
+      <div class="row g-2">
+        <div class="col-6"><label class="small fw-bold text-muted">依姓名</label>
+          <div class="clear-wrapper">
+            <input type="text" id="cControlName" class="form-control"><button class="clear-btn" onclick="clearInput('cControlName')">×</button>
+          </div>
+        </div>
+        <div class="col-6"><label class="small fw-bold text-muted">依電話</label>
+          <div class="clear-wrapper">
+            <input type="tel" id="cControlPhone" class="form-control"><button class="clear-btn" onclick="clearInput('cControlPhone')">×</button>
+          </div>
+        </div>
+        <div class="col-12"><label class="small fw-bold text-muted">依生日 (連打 7 碼)</label>
+          <div class="clear-wrapper">
+            <input type="text" id="cControlBirth" class="form-control" placeholder="例: 0870119"><button class="clear-btn" onclick="clearInput('cControlBirth')">×</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-warning w-100 mt-4 shadow fw-bold text-dark" onclick="doChildrenSearch()">開始搜尋兒控資料</button>
+    </div>
+    <div id="childrenSearchResults" class="mt-2"></div>
+  </div>
+  
+  <div id="lostCarePage" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="card search-box mb-3 p-3 bg-white border rounded shadow-sm">
+      <div class="row g-2">
+        <div class="col-6 position-relative">
+          <input type="text" id="searchLostName" class="form-control form-control-sm pe-4" placeholder="🔍 搜姓名">
+          <span class="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="cursor:pointer; z-index:10;" onclick="clearLostSearch('searchLostName')">×</span>
+        </div>
+        <div class="col-6 position-relative">
+          <input type="tel" id="searchLostPhone" class="form-control form-control-sm pe-4" placeholder="🔍 搜電話">
+          <span class="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="cursor:pointer; z-index:10;" onclick="clearLostSearch('searchLostPhone')">×</span>
+        </div>
+        <div class="col-12 my-2">
+          <label class="small fw-bold mb-1 text-muted">💰 金額區間: <span id="priceVal" class="text-[#5b2a30]">0</span> 以上</label>
+          <input type="range" id="searchLostPrice" class="form-range" min="0" max="50000" step="500" value="0" oninput="document.getElementById('priceVal').innerText = this.value">
+        </div>
+        <div class="col-12 my-2">
+          <label class="small fw-bold mb-1 text-muted">🎂 年齡區間篩選</label>
+          <div class="d-flex align-items-center gap-2">
+            <select id="searchLostAgeMin" class="form-select form-select-sm" onchange="renderLostTabs()">
+              <option value="0">0歲</option><option value="10">10歲</option><option value="20">20歲</option>
+              <option value="30">30歲</option><option value="40">40歲</option><option value="50">50歲</option>
+              <option value="60">60歲</option>
+            </select>
+            <span class="text-muted fw-bold">至</span>
+            <select id="searchLostAgeMax" class="form-select form-select-sm" onchange="renderLostTabs()">
+              <option value="10">10歲</option><option value="20">20歲</option><option value="40">40歲</option>
+              <option value="60">60歲</option><option value="80">80歲</option><option value="100" selected>100歲</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-12">
+          <select id="searchLostStaff" class="form-select form-select-sm">
+            <option value="">👤 所有服務人員</option>
+          </select>
+        </div>
+        <div class="col-12 mt-2">
+          <button class="btn btn-primary btn-sm w-100 fw-bold" onclick="renderLostTabs()">開始搜尋</button>
+        </div>
+      </div>
+    </div>
+    <div class="card p-3">
+      <h4 class="mb-3 fw-bold" style="color: #e76f51;">🧡 失聯客群關懷</h4>
+      <div class="sub-filter-scroll mb-2">
+        <button class="btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill" onclick="filterLost('未關懷', this)">未關懷</button>
+        <button class="btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill" onclick="filterLost('已關懷', this)">已關懷</button>
+      </div>
+      <div id="lostXFilterRow" class="flex-wrap gap-2 mb-3" style="display:none; padding-bottom: 5px;">
+        <button class="btn btn-sm btn-primary lost-x-btn active px-3 rounded-pill" onclick="filterLostX('全部', this)">全部 <span id="cntXAll" class="badge bg-white text-dark ms-1">0</span></button>
+        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('今日未接通', this)">📅 今日未接 <span id="cntXToday" class="badge bg-secondary text-white ms-1">0</span></button>
+        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('未接通', this)">🔕 未接通 <span id="cntXNoAns" class="badge bg-secondary text-white ms-1">0</span></button>
+        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('待處理', this)">🖋️ 待處理 <span id="cntXPending" class="badge bg-secondary text-white ms-1">0</span></button>
+        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('結案', this)">☑️ 結案 <span id="cntXClosed" class="badge bg-secondary text-white ms-1">0</span></button>
+      </div>
+      <div id="lostYearTabs" class="d-flex overflow-auto gap-2 mb-3 pb-2" style="scrollbar-width: none;"></div>
+      <div id="lostCareResults"></div>
+    </div>
+  </div>
+
+  <div id="specialProcessPage" class="page">
+    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    <div class="card p-4">
+      <h4 class="mb-2" style="color: #d9534f;">🚨 特殊處理 - 未接通客群</h4>
+      <div class="text-muted small fw-bold mb-4">總計人數: <span id="specialTotalCount" class="text-danger text-lg">0</span> 人</div>
+      <div class="d-flex gap-2 mb-4">
+        <button class="btn btn-outline-dark flex-grow-1 fw-bold" onclick="exportSpecialPhones()">📄 匯出電話.txt</button>
+        <button class="btn text-white flex-grow-1 fw-bold shadow-sm" style="background-color: #d9534f;" onclick="openSpecialBatchModal()">⚡ 批量修改狀態</button>
+      </div>
+      <div id="specialListContainer"></div>
+    </div>
+  </div>
+
+  <div id="customScrollTrack">
+    <div id="customScrollThumb"></div>
+  </div>
+
+  <div id="specialAuthModal" class="modal-overlay" style="display:none;">
+    <div class="modal-body">
+      <h5 class="mb-3 font-serif-tc fw-bold text-[#d9534f]">🔒 系統安全驗證</h5>
+      <p class="small text-muted mb-3">請輸入授權專屬密碼以進入特殊處理區。</p>
+      <input type="password" id="specialPwdInput" class="form-control mb-4" placeholder="請輸入密碼">
+      <div class="d-grid gap-2">
+        <button class="btn text-white shadow-sm" style="background-color: #d9534f;" onclick="submitSpecialAuth()">確認解鎖</button>
+        <button class="btn btn-light" onclick="document.getElementById('specialAuthModal').style.display='none'">取消返回</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="specialBatchModal" class="modal-overlay" style="display:none;">
+    <div class="modal-body">
+      <h5 class="mb-3 font-serif-tc fw-bold text-[#d9534f]">⚡ 批量操作確認</h5>
+      <p class="small text-danger fw-bold mb-3">⚠️ 請問是否「簡訊已發送完成」？</p>
+      <p class="small text-muted mb-3">按下確認後，將把目前清單所有人的狀態變更為「結案」，內容標註為「多次未接後簡訊關懷」。</p>
+      <label class="small fw-bold text-muted">請選擇執行人員</label>
+      <select id="specialBatchStaff" class="form-select mb-4"></select>
+      <div class="d-grid gap-2">
+        <button class="btn text-white shadow-sm" style="background-color: #d9534f;" onclick="submitSpecialBatch()">確認執行批量修改</button>
+        <button class="btn btn-light" onclick="document.getElementById('specialBatchModal').style.display='none'">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="updateIdModal" class="modal-overlay" style="display:none;">
+    <div class="modal-body">
+      <h5 class="mb-3" id="modalTitle" style="color: #d33; font-weight: bold;">補登條碼</h5>
+      <input type="hidden" id="modalRowIndex">
+      <div class="input-group mb-3 d-flex align-items-center">
+        <input type="text" id="modalNewBarcode" class="form-control" placeholder="手輸或掃碼">
+        <button class="btn btn-primary btn-circle ms-2" onclick="startModalScan()">📷</button>
+      </div>
+      <div id="modalReader" style="display:none; width:100%; margin-bottom:15px; border: 1px solid #ccc;"></div>
+      <div class="d-grid gap-2">
+        <button class="btn btn-success" onclick="submitNewBarcode()">確認更新</button>
+        <button class="btn btn-light" onclick="closeUpdateModal()">取消關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="careModal" class="modal-overlay" style="display:none;">
+    <div class="modal-body">
+      <h5 class="mb-3 fw-bold" style="color: #84a59d;">❤️ 關懷紀錄輸入</h5>
+      <input type="hidden" id="careRowIndex">
+      <div class="mb-2 small"><b>關懷對象：</b><span id="careTargetName"></span></div>
+      <div class="p-3 mb-3 rounded shadow-sm bg-white bg-opacity-70 border border-secondary border-opacity-10">
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="careIsAppoint" onchange="handleCareSwitches('appoint')">
+            <label class="form-check-label fw-bold" for="careIsAppoint" style="color: #6b705c; font-size: 0.9rem;">關懷後預約</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="careIsRefuse" onchange="handleCareSwitches('refuse')">
+            <label class="form-check-label fw-bold" for="careIsRefuse" style="color: #d9534f; font-size: 0.9rem;">其他(結案)</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="careIsDeal" onchange="handleCareSwitches('deal')">
+            <label class="form-check-label fw-bold" for="careIsDeal" style="color: #28a745; font-size: 0.9rem;">締結</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="careIsSpecial" onchange="handleCareSwitches('special')">
+            <label class="form-check-label fw-bold" for="careIsSpecial" style="color: #6f42c1; font-size: 0.9rem;">特殊(結案)</label>
+          </div>
+        </div>
+        <div id="careTimeDiv" style="display:none;" class="mt-2 pt-2 border-top border-secondary border-opacity-25">
+          <label class="small text-muted mb-1 fw-bold">📅 預約時間</label>
+          <div class="d-flex gap-1">
+            <select id="careYear" class="form-select form-select-sm"></select>
+            <select id="careMonth" class="form-select form-select-sm"></select>
+            <select id="careDay" class="form-select form-select-sm"></select>
+          </div>
+          <div class="d-flex gap-1 mt-1">
+            <select id="careHour" class="form-select form-select-sm"></select>
+            <span class="align-self-center text-muted fw-bold">:</span>
+            <select id="careMin" class="form-select form-select-sm"></select>
+          </div>
+        </div>
+        <div id="careDealDiv" style="display:none;" class="mt-2 pt-2 border-top border-secondary border-opacity-25">
+          <label class="small text-muted mb-1 fw-bold">💰 締結詳細資訊</label>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="clear-wrapper">
+                <input type="text" id="careOrderNo" class="form-control form-control-sm" placeholder="三聯單號">
+                <button class="clear-btn" onclick="clearInput('careOrderNo')">×</button>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="clear-wrapper">
+                <input type="number" id="careAmount" class="form-control form-control-sm" placeholder="總金額">
+                <button class="clear-btn" onclick="clearInput('careAmount')">×</button>
+              </div>
+            </div>
+            <div class="col-12">
+              <select id="careLutein" class="form-select form-select-sm" style="color: #6c757d;" onchange="this.style.color = this.value ? '#3e2723' : '#6c757d'">
+                <option value="">-- 是否加購葉黃素 --</option>
+                <option value="是">是</option>
+                <option value="否">否</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <textarea id="careNoteInput" class="form-control mb-3" rows="4" placeholder="請輸入關懷對話內容(其他請詳述)"></textarea>
+      <div class="d-grid gap-2">
+        <button class="btn btn-info text-white" onclick="submitCareNote()">確認並儲存紀錄</button>
+        <button class="btn btn-light" onclick="closeCareModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editCustomerModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background-color: #F5F0E8; width: 90%; max-width: 400px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: fadeIn 0.3s;">
+      <div style="background-color: #5b2a30; color: #F5F0E8; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h5 style="margin: 0; font-size: 1.1rem; font-weight: bold; font-family: 'Noto Serif TC', serif;">✏️ 編輯客戶資料</h5>
+        <button onclick="closeEditCustomerModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0;">&times;</button>
+      </div>
+      <div style="padding: 20px; overflow-y: auto;">
+        <input type="hidden" id="editRowIndex">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold; color: rgba(91, 42, 48, 0.8);">姓名</label>
+          <input type="text" id="editName" class="form-control" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold; color: rgba(91, 42, 48, 0.8);">生日 (連7碼)</label>
+          <input type="text" id="editBirth" class="form-control" placeholder="例如：0870119" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 5px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold; color: rgba(91, 42, 48, 0.8);">電話</label>
+          <input type="text" id="editPhone" class="form-control" placeholder="09xxxxxxxx" style="width: 100%;">
+        </div>
+      </div>
+      <div style="padding: 15px 20px; background-color: rgba(91, 42, 48, 0.05); border-top: 1px solid rgba(91, 42, 48, 0.1); display: flex; justify-content: flex-end; gap: 10px;">
+        <button onclick="closeEditCustomerModal()" class="btn btn-secondary btn-sm bg-white text-dark border" style="min-width: 80px;">取消</button>
+        <button onclick="submitEditCustomer()" class="btn btn-primary btn-sm" style="min-width: 100px;">💾 儲存變更</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lostModal" class="modal-overlay" style="display:none;">
+    <div class="modal-body">
+      <h5 class="fw-bold mb-3" style="color: #f4a261; font-family: 'Noto Serif TC', serif;">🧡 客戶關懷紀錄</h5>
+      <input type="hidden" id="lostRowIndex"><input type="hidden" id="lostTargetName">
+      <div class="mb-3 p-2 bg-white bg-opacity-70 rounded border border-secondary border-opacity-25 shadow-sm">
+        <div class="row g-1">
+          <div class="col-6">
+            <div class="bg-white border rounded px-2 py-1 d-flex align-items-center" style="min-height: 38px;">
+              <div class="form-check form-switch m-0 d-flex align-items-center" style="font-size: 0.85rem;">
+                <input class="form-check-input me-1" type="checkbox" id="lostIsApp" onchange="handleLostSwitches('appoint')" style="transform: scale(0.8); margin-top: 0;">
+                <label class="form-check-label fw-bold text-dark" for="lostIsApp">下次預約</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-white border rounded px-2 py-1 d-flex align-items-center" style="min-height: 38px;">
+              <div class="form-check form-switch m-0 d-flex align-items-center" style="font-size: 0.85rem;">
+                <input class="form-check-input me-1" type="checkbox" id="lostIsRefuse" onchange="handleLostSwitches('refuse')" style="transform: scale(0.8); margin-top: 0;">
+                <label class="form-check-label fw-bold text-danger" for="lostIsRefuse">其他結案</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 mt-1">
+            <div class="bg-white border rounded px-2 py-1 d-flex align-items-center" style="min-height: 38px;">
+              <div class="form-check form-switch m-0 d-flex align-items-center" style="font-size: 0.85rem;">
+                <input class="form-check-input me-1" type="checkbox" id="lostIsNoAnswer" onchange="handleLostSwitches('noAnswer')" style="transform: scale(0.8); margin-top: 0;">
+                <label class="form-check-label fw-bold text-secondary" for="lostIsNoAnswer">未接通 (未結案)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="lostTimeDiv" style="display:none;" class="mt-2 pt-2 border-top border-secondary border-opacity-25">
+          <div class="d-flex gap-1 mb-1">
+            <select id="lostY" class="form-select form-select-sm"></select>
+            <select id="lostM" class="form-select form-select-sm"></select>
+            <select id="lostD" class="form-select form-select-sm"></select>
+          </div>
+          <div class="d-flex gap-1">
+            <select id="lostH" class="form-select form-select-sm"></select>
+            <select id="lostMin" class="form-select form-select-sm"></select>
+          </div>
+        </div>
+      </div>
+      <label class="small fw-bold text-muted">關懷對話內容(其他請詳述)</label>
+      <textarea id="lostNote" class="form-control mb-3" rows="3" placeholder="請輸入聯繫內容..."></textarea>
+      <label class="small fw-bold text-muted">服務人員</label>
+      <select id="lostStaff" class="form-select mb-4"></select>
+      <div class="d-grid gap-2">
+        <button class="btn text-white fw-bold shadow-sm" style="background-color: #e76f51;" onclick="submitLostCare()">💾 儲存關懷紀錄</button>
+        <button class="btn btn-light" onclick="document.getElementById('lostModal').style.display='none'">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="qr-input-file" accept="image/*" capture="camera" style="display:none;">
+
+  <script>
+    // ⚡ 初始化 Supabase 客戶端
+    const SUPABASE_URL = "https://niytitszugkfsfdwlwqt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_dsxxWLXxfbTHmXOfmEUUfA_Y8h1tykR";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let allSearchData = []; 
+    let filteredSearchData = []; 
+    let currentRenderIndex = 0; 
+    const BATCH_SIZE = 30; 
+    let currentActiveFilter = '全部';
+    let cache = { staff: [], doctors: [], tags: [], appointList: [], lostAppointList: [], handoverList: [] }; 
+    let html5QrCode;
+    let specialUnreachedData = [];
+
+    function initScrollAnimations() {
+      if (typeof gsap === 'undefined') return;
+      gsap.fromTo(".hero-item", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1, stagger: 0.15, ease: "power3.out" });
+      const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const card = entry.target;
+            if (!card.classList.contains('animated-in')) {
+              const rect = card.getBoundingClientRect();
+              const isRightSide = rect.left > window.innerWidth / 2;
+              gsap.fromTo(card,
+                { opacity: 0, x: isRightSide ? 50 : -50, scale: 0.95 },
+                { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "back.out(1.2)" }
+              );
+              card.classList.add('animated-in');
+              obs.unobserve(card); 
+            }
+          }
+        });
+      }, { threshold: 0.05 }); 
+
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.sys-card').forEach((card, index) => {
+          card.classList.remove('opacity-0', 'animated-in'); 
+          gsap.set(card, { opacity: 0 }); 
+          setTimeout(() => observer.observe(card), index * 30);
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initScrollAnimations();
+    });
+
+    function clearInput(id) { document.getElementById(id).value = ""; document.getElementById(id).focus();  }
+
+    function changeHandoverType(val) {
+      document.getElementById('hDateArea').style.display = val.includes('指定') ? 'block' : 'none';
+      const phoneInput = document.getElementById('hPhone');
+      const phoneLabel = document.getElementById('hPhoneLabel');
+
+      if (val === '物流') {
+        phoneLabel.innerText = "物流對號碼 (系統自動配發)";
+        phoneInput.readOnly = true; 
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const L1 = chars.charAt(Math.floor(Math.random() * 26));
+        const L2 = chars.charAt(Math.floor(Math.random() * 26));
+        const nums = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        phoneInput.value = L1 + L2 + nums;
+      } else {
+        phoneLabel.innerText = "電話備註";
+        phoneInput.readOnly = false;
+        phoneInput.value = ""; 
+      }
+    }
+
+    function showPage(id) { 
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+      const targetPage = document.getElementById(id);
+      if(targetPage) {
+        targetPage.classList.add('active'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      if(id === 'home') {
+        clearAllInputs(); 
+        loadData(); 
+        updateSystemStatus(); 
+        initScrollAnimations();
+      }
+      if(id === 'handover') switchHandTab(1); 
+    }
+  
+    // ⚡ 改為讀取 Supabase system_settings
+    async function updateSystemStatus() {
+      try {
+        const { data, error } = await _supabase.from('system_settings').select('value').eq('key', 'is_maintenance').single();
+        const dot = document.getElementById('sysDot');
+        const txt = document.getElementById('sysStatusText');
+        if (!dot || !txt) return;
+        
+        if (data && data.value === true) {
+          dot.className = "dot dot-offline";
+          txt.innerText = "維護中";
+          txt.style.color = "#d9534f";
+        } else {
+          dot.className = "dot dot-online";
+          txt.innerText = "系統正常";
+          txt.style.color = "#28a745";
+        }
+      } catch (e) {
+        console.error("無法取得維護狀態:", e);
+      }
+    }
+
+    window.addEventListener('load', updateSystemStatus);
+
+    function clearAllInputs() { 
+      try {
+        if(document.getElementById('cStaff')) document.getElementById('cStaff').selectedIndex = 0;
+        if(document.getElementById('cDoctor')) document.getElementById('cDoctor').selectedIndex = 0;
+        if(document.getElementById('cEvent')) document.getElementById('cEvent').value = "";
+        if(document.getElementById('isAppoint')) document.getElementById('isAppoint').checked = false; 
+        if(document.getElementById('hType')) {
+          document.getElementById('hType').selectedIndex = 0;
+          changeHandoverType("指定時間");
+        }
+        if(document.getElementById('hFrom')) document.getElementById('hFrom').selectedIndex = 0;
+        if(document.getElementById('hTo')) document.getElementById('hTo').selectedIndex = 0;
+
+        const appS = document.getElementById('appSelect');
+        if(appS) appS.value = ""; 
+
+        if(document.getElementById('cBarcode')) document.getElementById('cBarcode').value = "";
+        if(document.getElementById('cName')) document.getElementById('cName').value = "";
+        if(document.getElementById('cPhone')) document.getElementById('cPhone').value = "";
+        if(document.getElementById('cBirth')) document.getElementById('cBirth').value = "";
+        if(document.getElementById('hContent')) document.getElementById('hContent').value = "";
+        if(document.getElementById('hNoNotify')) document.getElementById('hNoNotify').checked = false;
+        if(document.getElementById('appNote')) document.getElementById('appNote').value = "";
+        if(document.getElementById('hPhone')) document.getElementById('hPhone').value = "";
+        if(document.getElementById('appDetail')) document.getElementById('appDetail').style.display = 'none'; 
+        if(document.getElementById('specialPwdInput')) document.getElementById('specialPwdInput').value = "";
+
+        const searchIds = ['sBarcode','sName','sPhone','sBirth','sStaff','cControlID','cControlName','cControlPhone','cControlBirth'];
+        searchIds.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+
+        ['searchResults','childrenSearchResults'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ""; });
+        document.querySelectorAll('[id^="reader"]').forEach(r => r.style.display = 'none');
+        initSelectors();
+      } catch (err) {
+        console.log("清理暫存時發生微小錯誤: " + err);
+      }
+    }
+
+    function initSelectors() { 
+      const f = (id, s, e, v) => { 
+        const el = document.getElementById(id); 
+        if(!el) return; 
+        el.innerHTML=""; 
+        let step = (id.includes('Min') || id === 'hMin') ? 5 : 1; 
+        for(let i=s; i<=e; i += step) {
+          let displayTxt = ((id.includes('Min') || id === 'hMin') && i < 10) ? '0' + i : i;
+          el.add(new Option(displayTxt, i)); 
+        }
+        if(v !== undefined) el.value=v; 
+      }; 
+
+      const now = new Date(); 
+      const y = now.getFullYear(); 
+      const startHour = 9;  
+      const endHour = 21;   
+      const yearRange = 1;  
+
+      let currentH = now.getHours();
+      if (currentH < startHour) currentH = startHour;
+      if (currentH > endHour) currentH = endHour;
+      let currentM = Math.floor(now.getMinutes() / 5) * 5;
+
+      ['cAppY', 'hYear', 'careYear', 'appCY'].forEach(id => f(id, y, y + yearRange, y)); 
+      ['cAppM', 'hMonth', 'careMonth', 'appCM'].forEach(id => f(id, 1, 12, now.getMonth()+1)); 
+      ['cAppD', 'hDay', 'careDay', 'appCD'].forEach(id => f(id, 1, 31, now.getDate())); 
+      ['cAppH', 'hHour', 'careHour', 'appCH'].forEach(id => f(id, startHour, endHour, currentH)); 
+      ['cAppMin', 'hMin', 'careMin', 'appCMin'].forEach(id => f(id, 0, 59, currentM));
+    }
+
+    // ⚡ 改為非同步從 Supabase 拼裝出完整的基礎快取資料
+    async function loadData() { 
+      try {
+        // 1. 讀取基礎選單設定
+        const { data: settings } = await _supabase.from('system_settings').select('*');
+        if (settings) {
+          settings.forEach(item => {
+            if (item.key === 'staff_list') cache.staff = item.value;
+            if (item.key === 'doctor_list') cache.doctors = item.value;
+            if (item.key === 'tag_list') cache.tags = item.value;
+          });
+        }
+        cache.statuses = ['待處理', '已關懷', '締結', '其他', '特殊'];
+
+        // 2. 填入下拉選單與標籤
+        fillS('cStaff', cache.staff); 
+        fillS('hFrom', cache.staff); 
+        fillS('hTo', cache.staff); 
+        fillS('cDoctor', cache.doctors); 
+        fillS('appStatus', cache.statuses); 
+        fillS('sStaff', cache.staff);
+        renderTagButtons('cTagContainer', cache.tags);
+        renderTagButtons('sTagContainer', cache.tags);
+
+        // 3. 讀取預約處理名單 (原本的 consultations 資料表中預約為「是」且狀態為「待處理」或「已關懷」的列)
+        const { data: appData } = await _supabase.from('consultations')
+          .select('*')
+          .eq('is_appoint', '是')
+          .in('status', ['待處理', '已關懷'])
+          .order('appoint_time', { ascending: true });
+        
+        cache.appointList = (appData || []).map(item => ({
+          rowIndex: item.id,
+          name: item.name,
+          time: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0, 16) : '無',
+          staff: item.staff,
+          note: item.event,
+          display: `👤 ${item.name} | ⏰ ${item.appoint_time ? item.appoint_time.substring(5,16).replace('T',' ') : '無'} | 👤 ${item.staff || '未指定'}`
+        }));
+
+        // 4. 讀取失聯客群預約名單 (lost_care 資料表中狀態為「未關懷」或「已關懷」但下次有預約時間的列)
+        const { data: lostAppData } = await _supabase.from('lost_care')
+          .select('*')
+          .eq('status', '未關懷')
+          .order('app_time', { ascending: true });
+
+        cache.lostAppointList = (lostAppData || []).map(item => ({
+          rowIndex: item.row_index,
+          name: item.name,
+          phone: item.phone,
+          time: item.app_time || '無',
+          staff: item.staff,
+          note: item.note,
+          display: `🧡 ${item.name} | ⏰ ${item.app_time ? item.app_time.substring(5,16) : '無'} | 📞 ${item.phone}`
+        }));
+
+        renderAppSelect(); 
+
+        // 5. 讀取未完成的交接工作
+        const { data: handData } = await _supabase.from('handovers')
+          .select('*')
+          .neq('push_status', 'Sent')
+          .order('created_at', { ascending: false });
+
+        cache.handoverList = (handData || []).map(item => ({
+          rowIndex: item.id,
+          type: item.type,
+          targetDate: item.target_date || '無',
+          content: item.content,
+          from: item.from_staff,
+          to: item.to_staff,
+          pushStatus: item.push_status,
+          pushTime: item.delay_time,
+          info: `📥 ${item.to_staff} | 📌 ${item.content.substring(0, 15)}...`
+        }));
+
+        const del = document.getElementById('hDelSelect'); 
+        del.innerHTML = '<option value="">- 選擇要刪交接 -</option>'; 
+        cache.handoverList.forEach(it => del.add(new Option(it.info, it.rowIndex))); 
+        renderHandoverList(); 
+      } catch (err) {
+        console.error("載入 Supabase 快取資料出錯:", err);
+      }
+    }
+
+    function fillS(id, arr) { 
+      const el = document.getElementById(id); 
+      if (el && el.innerHTML === "") { 
+        el.add(new Option("-請選擇-", "")); 
+        arr.forEach(i => el.add(new Option(i, i))); 
+      } 
+    } 
+  
+    function renderTagButtons(containerId, tags) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      tags.forEach(t => {
+        if (!t) return; 
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm bg-white text-secondary border rounded-pill tag-btn'; 
+        btn.innerText = t;
+        btn.type = 'button'; 
+        btn.onclick = function() {
+          this.classList.toggle('bg-white'); this.classList.toggle('text-secondary'); this.classList.toggle('border');
+          this.classList.toggle('btn-primary'); this.classList.toggle('text-white'); this.classList.toggle('active');
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function previewImg(i) { if (i.files && i.files[0]) { const r = new FileReader(); r.onload = e => { const p = document.getElementById('photoPreview'); p.src = e.target.result; p.style.display = 'block'; }; r.readAsDataURL(i.files[0]); } }
+    
+    function resetConsultForm() { 
+      document.getElementById('cBarcode').value = ''; document.getElementById('cName').value = ''; document.getElementById('cPhone').value = ''; document.getElementById('cBirth').value = ''; document.getElementById('cEvent').value = ''; document.getElementById('cFile').value = ''; document.getElementById('photoPreview').style.display = 'none'; document.getElementById('photoPreview').src = ''; document.getElementById('isAppoint').checked = false; document.getElementById('cAppSet').style.display = 'none'; 
+      document.querySelectorAll('#cTagContainer .tag-btn').forEach(b => {
+        b.className = 'btn btn-sm bg-white text-secondary border rounded-pill tag-btn';
+      });
+      const btn = document.getElementById('btnC'); if(btn) btn.disabled = false; 
+    }
+
+    // ⚡ 新增諮詢送出存檔
+    async function submitConsult() { 
+      const birthInput = document.getElementById('cBirth').value; 
+      if(!document.getElementById('cName').value) { alert("請填寫姓名"); return; } 
+      if(!document.getElementById('cStaff').value) { alert("請選擇服務人員"); return; } 
+      if(!document.getElementById('cDoctor').value) { alert("請選擇看診醫師"); return; } 
+      if(birthInput.length !== 7 || isNaN(birthInput)) { alert("生日請連打 7 位數字"); return; } 
+
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      const btn = document.getElementById('btnC'); if(btn) btn.disabled = true; 
+      const file = document.getElementById('cFile').files[0]; 
+      const pad = (n) => n < 10 ? '0' + n : n; 
+
+      const isAppointChecked = document.getElementById('isAppoint').checked;
+      const realAppointStatus = isAppointChecked ? "是" : "否";
+      
+      const formattedTime = isAppointChecked ? 
+        `${document.getElementById('cAppY').value}-${pad(document.getElementById('cAppM').value)}-${pad(document.getElementById('cAppD').value)}T${pad(document.getElementById('cAppH').value)}:${pad(document.getElementById('cAppMin').value)}:00` 
+        : null; 
+
+      const activeTags = Array.from(document.querySelectorAll('#cTagContainer .active')).map(b => `[${b.innerText}]`).join('');
+      const rawEvent = document.getElementById('cEvent').value;
+      const finalEvent = activeTags ? `${activeTags} ${rawEvent}` : rawEvent;
+
+      let imageUrl = "";
+      if (file) {
+        // 🚀 如果需要實作圖片上傳，可直接在此處上傳至 Supabase Storage bucket
+        // 範例：await _supabase.storage.from('consults').upload(path, file);
+      }
+
+      const payload = { 
+        barcode: document.getElementById('cBarcode').value || null, 
+        name: document.getElementById('cName').value, 
+        phone: document.getElementById('cPhone').value || null, 
+        birthday: birthInput, 
+        event: finalEvent || null,
+        staff: document.getElementById('cStaff').value, 
+        doctor: document.getElementById('cDoctor').value, 
+        is_appoint: realAppointStatus, 
+        appoint_time: formattedTime, 
+        image_url: imageUrl || null,
+        status: '待處理'
+      }; 
+
+      try {
+        const { error } = await _supabase.from('consultations').insert([payload]);
+        document.getElementById('loadingOverlay').style.display = 'none'; 
+        if (error) throw error;
+        alert("🎉 諮詢紀錄存檔成功！");
+        resetConsultForm();
+        showPage('home');
+      } catch (e) {
+        alert("儲存失敗: " + e.message);
+        if(btn) btn.disabled = false;
+      }
+    }
+
+    let lastSearchScroll = 0; 
+
+    // ⚡ 核心功能：動態查詢多條件組裝 (利用 Supabase 高階 Query)
+    async function doSearch(keepScroll = false) { 
+      const q = { 
+        barcode: document.getElementById('sBarcode').value.trim(), 
+        name: document.getElementById('sName').value.trim(), 
+        phone: document.getElementById('sPhone').value.trim(), 
+        birthday: document.getElementById('sBirth').value.trim(),
+        staff: document.getElementById('sStaff').value,
+        tags: Array.from(document.querySelectorAll('#sTagContainer .active')).map(b => b.innerText)
+      }; 
+      
+      if(!keepScroll && !q.barcode && !q.name && !q.phone && !q.birthday && !q.staff && q.tags.length === 0) { alert("請輸入或選擇查詢條件"); return; } 
+      
+      if (keepScroll) lastSearchScroll = window.scrollY;
+      else lastSearchScroll = 0;
+
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      const resDiv = document.getElementById('searchResults'); 
+      if(!keepScroll) resDiv.innerHTML = '<div class="text-center py-3">🔍 搜尋中...</div>'; 
+
+      try {
+        let query = _supabase.from('consultations').select('*');
+        if (q.barcode) query = query.eq('barcode', q.barcode);
+        if (q.name) query = query.ilike('name', `%${q.name}%`);
+        if (q.phone) query = query.eq('phone', q.phone);
+        if (q.birthday) query = query.eq('birthday', q.birthday);
+        if (q.staff) query = query.eq('staff', q.staff);
+        if (q.tags.length > 0) {
+          q.tags.forEach(tag => {
+            query = query.ilike('event', `%[${tag}]%`);
+          });
+        }
+
+        const { data, error } = await query;
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          resDiv.innerHTML = '<div class="alert alert-warning">查無符合條件的紀錄</div>';
+          return;
+        }
+
+        // 完美保留您的客製化前端排序邏輯
+        data.sort((a, b) => {
+          const isClosed = (item) => (item.status && item.status !== '待處理' && item.status !== '已關懷');
+          const closedA = isClosed(a); const closedB = isClosed(b);
+          if (closedA && !closedB) return 1;
+          if (!closedA && closedB) return -1;
+          const careA = a.care_time || ""; const careB = b.care_time || "";
+          if (careA < careB) return -1; if (careA > careB) return 1;
+          const createA = a.created_at || ""; const createB = b.created_at || "";
+          if (createA < createB) return -1; if (createA > createB) return 1;
+          return 0;
+        });
+
+        allSearchData = data.map(item => ({
+          rowIndex: item.id,
+          name: item.name,
+          status: item.status,
+          barcode: item.barcode,
+          birthday: item.birthday,
+          phone: item.phone,
+          event: item.event,
+          staff: item.staff,
+          doctor: item.doctor,
+          isAppoint: item.is_appoint,
+          appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
+          imageUrl: item.image_url,
+          careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
+          careNote: item.care_note,
+          note: item.note,
+          createdAt: item.created_at ? new Date(item.created_at).toLocaleString('zh-TW') : ''
+        }));
+
+        currentActiveFilter = '全部'; 
+        renderSearchFilterTabs(); 
+        applySearchFilterAndRender(true); 
+
+        if (keepScroll && lastSearchScroll > 0) {
+          setTimeout(() => window.scrollTo(0, lastSearchScroll), 50);
+        }
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("搜尋出錯: " + e.message);
+      }
+    }
+
+    function filterResults(status, btn) {
+      document.querySelectorAll('#filterTabGroup .filter-btn').forEach(b => {
+        b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill filter-btn';
+      });
+      btn.className = 'btn btn-sm btn-primary px-3 rounded-pill filter-btn active';
+      currentActiveFilter = status;
+      applySearchFilterAndRender(true); 
+    }
+
+    function renderSearchFilterTabs() {
+      let countAll = allSearchData.length;
+      let countPending = 0, countCared = 0, countClosed = 0;
+      allSearchData.forEach(r => {
+        const s = r.status ? r.status.trim() : ''; 
+        if (s === '' || s === '待處理') countPending++;
+        else if (s === '已關懷') countCared++;
+        else countClosed++;
+      });
+
+      document.getElementById('searchResults').innerHTML = `
+        <div id="filterTabGroup" class="d-flex overflow-auto mb-3 pb-2" style="gap: 12px; justify-content: center; border-bottom: 1px solid rgba(91, 42, 48, 0.1);">
+          <button class="btn btn-sm btn-primary px-3 rounded-pill filter-btn active" onclick="filterResults('全部', this)">全部 (${countAll})</button>
+          <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill filter-btn" onclick="filterResults('待處理', this)">待處理 (${countPending})</button>
+          <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill filter-btn" onclick="filterResults('已關懷', this)">已關懷 (${countCared})</button>
+          <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill filter-btn" onclick="filterResults('結案', this)">結案 (${countClosed})</button>
+        </div>
+        <div id="searchCardsContainer"></div>
+      `;
+    }
+
+    function applySearchFilterAndRender(isReset = false) {
+      if (isReset) { currentRenderIndex = 0; document.getElementById('searchCardsContainer').innerHTML = ''; }
+      filteredSearchData = allSearchData.filter(r => {
+        const s = r.status ? r.status.trim() : '';
+        if (currentActiveFilter === '全部') return true;
+        if (currentActiveFilter === '待處理') return s === '' || s === '待處理';
+        if (currentActiveFilter === '已關懷') return s === '已關懷';
+        if (currentActiveFilter === '結案') return s !== '' && s !== '待處理' && s !== '已關懷';
+        return true;
+      });
+      renderNextBatch();
+    }
+
+    function renderNextBatch() {
+      const container = document.getElementById('searchCardsContainer');
+      if (!container) return;
+      const endIndex = Math.min(currentRenderIndex + BATCH_SIZE, filteredSearchData.length);
+      if (currentRenderIndex >= endIndex) return; 
+
+      let h = '';
+      for (let i = currentRenderIndex; i < endIndex; i++) {
+        const r = filteredSearchData[i];
+        const resId = 'scard_' + r.rowIndex; 
+        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0;"><a href="${r.imageUrl}" target="_blank"><img src="${r.imageUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px; border: 2px solid #eee;"></a></div>` : ''; 
+        let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
+        let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
+        let colLDisplay = (r.note) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(245, 240, 240, 0.7); border: 1px dashed rgba(181, 131, 141, 0.5); font-size: 0.85rem;"><div class="text-[#5b2a30]" style="white-space: pre-wrap;"><b>📌 附加紀錄:</b> ${r.note}</div></div>` : '';
+
+        let statusClass = 'card-pending'; 
+        if (r.status === '已關懷') statusClass = 'card-cared';
+        else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
+        const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
+
+        h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
+          <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="fw-bold mb-0" style="color:#5b2a30; font-family:'Noto Serif TC',serif;">${r.name}</h4>
+            <span class="badge ${badgeClass} px-3 py-2">${r.status || '待處理'}</span>
+          </div>
+          <div class="row g-1 mb-2 small"><div class="col-6">${barcodeDisplay}</div><div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-12 text-[#87A96B] fw-bold"><b>📞 電話:</b> ${r.phone}</div></div>
+          <div class="p-2 bg-white bg-opacity-60 rounded small mb-2"><div style="white-space: pre-wrap;">${r.event || '無諮詢內容'}</div></div>
+          <div class="row g-1 mb-2 bg-white bg-opacity-80 p-2 rounded border border-secondary border-opacity-10 small"><div class="col-6"><b>👤 服務人:</b> ${r.staff}</div><div class="col-6"><b>👨‍⚕️ 醫師:</b> ${r.doctor}</div><div class="col-12"><b>⏰ 預約:</b> ${r.isAppoint === '是' ? r.appointTime : '未預留'}</div></div>
+          ${careDisplay} ${colLDisplay}
+          <div class="d-flex justify-content-between align-items-end mt-2">
+            <div>
+              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}')">🗑️ 刪除</button>
+              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}')">✏️ 編輯</button>
+              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}')">❤️ 關懷</button>
+            </div>
+            ${imgHtml}
+          </div>
+          <div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
+        </div>`; 
+      }
+      container.insertAdjacentHTML('beforeend', h);
+      currentRenderIndex = endIndex;
+    }
+
+    window.addEventListener('scroll', () => {
+      if (document.getElementById('searchPage').classList.contains('active')) {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+          if (currentRenderIndex < filteredSearchData.length) renderNextBatch();
+        }
+      }
+    });
+
+    function openUpdateModal(rowIndex, name, birth) {
+      document.getElementById('modalRowIndex').value = rowIndex;
+      document.getElementById('modalNewBarcode').value = "";
+      document.getElementById('modalTitle').innerHTML = `補登：${name} <small>(${birth})</small>`;
+      document.getElementById('updateIdModal').style.display = 'flex';
+    }
+
+    function closeUpdateModal() { document.getElementById('updateIdModal').style.display = 'none'; }
+
+    // ⚡ 補登條碼更新
+    async function submitNewBarcode() {
+      const rowIndex = document.getElementById('modalRowIndex').value;
+      const newBarcode = document.getElementById('modalNewBarcode').value.trim();
+      if (!newBarcode) return alert("請輸入或掃描條碼");
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        const { error } = await _supabase.from('consultations').update({ barcode: newBarcode }).eq('id', rowIndex);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+        alert("🎉 條碼補登成功！");
+        closeUpdateModal();
+        doSearch(true);
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("補登失敗: " + e.message);
+      }
+    }
+
+    function confirmCare(idx, name) {
+      document.getElementById('careRowIndex').value = idx;
+      document.getElementById('careTargetName').innerText = name;
+      document.getElementById('careNoteInput').value = "";
+      document.getElementById('careIsAppoint').checked = false;
+      document.getElementById('careIsRefuse').checked = false; 
+      document.getElementById('careIsDeal').checked = false; 
+      document.getElementById('careIsSpecial').checked = false; 
+      document.getElementById('careTimeDiv').style.display = 'none';
+      document.getElementById('careDealDiv').style.display = 'none';
+      document.getElementById('careOrderNo').value = "";
+      document.getElementById('careAmount').value = "";
+      document.getElementById('careLutein').value = "";
+      initSelectors();
+      document.getElementById('careModal').style.display = 'flex';
+    }
+
+    function closeCareModal() { document.getElementById('careModal').style.display = 'none'; }
+
+    // ⚡ 送出關懷紀錄
+    async function submitCareNote() {
+      const idx = document.getElementById('careRowIndex').value;
+      const note = document.getElementById('careNoteInput').value.trim();
+      const isAppoint = document.getElementById('careIsAppoint').checked;
+      const isRefuse = document.getElementById('careIsRefuse').checked; 
+      const isDeal = document.getElementById('careIsDeal').checked; 
+      const isSpecial = document.getElementById('careIsSpecial').checked;
+
+      let statusValue = "已關懷";
+      if (isDeal) statusValue = "締結";
+      else if (isRefuse) statusValue = "其他";
+      else if (isSpecial) statusValue = "特殊";
+
+      const pad = (n) => n.toString().padStart(2, '0');
+      const formattedTime = isAppoint ? `${document.getElementById('careYear').value}-${pad(document.getElementById('careMonth').value)}-${pad(document.getElementById('careDay').value)}T${pad(document.getElementById('careHour').value)}:${pad(document.getElementById('careMin').value)}:00` : null;
+
+      if (!isDeal && !note) { alert("請輸入關懷對話內容"); return; }
+
+      if (confirm(`確定要儲存這筆關懷紀錄嗎？\n(狀態將更新為：${statusValue})`)) {
+        closeCareModal();
+        document.getElementById('loadingText').innerText = "✨ 正在同步更新資料庫...";
+        document.getElementById('loadingOverlay').style.display = 'flex';
+
+        try {
+          const updateData = {
+            status: statusValue,
+            care_note: note || null,
+            care_time: new Date().toISOString(),
+            is_appoint: isAppoint ? "是" : "否",
+            appoint_time: formattedTime,
+            order_no: isDeal ? document.getElementById('careOrderNo').value.trim() : null,
+            amount: (isDeal && document.getElementById('careAmount').value) ? parseFloat(document.getElementById('careAmount').value) : null,
+            lutein: isDeal ? document.getElementById('careLutein').value : null
+          };
+
+          const { error } = await _supabase.from('consultations').update(updateData).eq('id', idx);
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (error) throw error;
+          alert("🎉 關懷紀錄儲存成功！");
+          doSearch(true);
+        } catch(e) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          alert("儲存失敗: " + e.message);
+        }
+      }
+    }
+
+    // ⚡ 刪除諮詢紀錄
+    async function confirmDelConsult(idx, name) {
+      if(confirm(`⚠️ 若要更新狀態請打新單，勿刪除\n\n確定要永久刪除「${name}」的紀錄嗎？`)) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        try {
+          const { error } = await _supabase.from('consultations').delete().eq('id', idx);
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (error) throw error;
+          alert("🗑️ 紀錄已永久移除");
+          doSearch(true);
+        } catch(e) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          alert("刪除失敗: " + e.message);
+        }
+      }   
+    }
+
+    // ⚡ 兒控大檔精密檢索
+    async function doChildrenSearch() { 
+      const q = { 
+        barcode: document.getElementById('cControlID').value.trim(), 
+        name: document.getElementById('cControlName').value.trim(), 
+        phone: document.getElementById('cControlPhone').value.trim(), 
+        birthday: document.getElementById('cControlBirth').value.trim() 
+      }; 
+      if(!q.barcode && !q.name && !q.phone && !q.birthday) { alert("請輸入查詢條件"); return; } 
+      
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      const resDiv = document.getElementById('childrenSearchResults'); 
+      resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索中...</div>'; 
+
+      try {
+        let query = _supabase.from('children_control').select('*');
+        if (q.barcode) query = query.eq('id', q.barcode);
+        if (q.name) query = query.ilike('name', `%${q.name}%`);
+        if (q.phone) query = query.eq('phone', q.phone);
+        if (q.birthday) query = query.eq('birthday', q.birthday);
+
+        const { data, error } = await query;
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          resDiv.innerHTML = '<div class="alert alert-warning">查無資料</div>';
+          return;
+        }
+
+        let h = ''; 
+        data.forEach((r, index) => { 
+          h += `<div class="result-card mb-4 children-card" id="ccard_${index}" style="position:relative;">
+            <div onclick="shareCard('ccard_${index}', '兒控_${r.name}')" style="position:absolute; top:40px; right:8px; cursor:pointer; opacity:0.6; font-size:0.8rem; z-index:5;">📤</div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="fw-bold mb-0 text-[#5b2a30] font-serif-tc">${r.name}</h4>
+              <span class="badge bg-[#b5838d] text-white px-2">${r.product || '未設商品'}</span>
+            </div>
+            <div class="row g-1 mb-2 small">
+              <div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-6"><b>📞 電話:</b> ${r.phone}</div>
+              <div class="col-6"><b>📅 上次回診:</b> ${r.last_visit}</div><div class="col-6 text-danger fw-bold"><b>⏳ 未回天數:</b> ${r.days_not_back}</div>
+            </div>
+            <div class="row g-2 mb-2 p-2 rounded bg-white bg-opacity-70 border border-secondary border-opacity-10 small">
+              <div class="col-6 border-end">
+                <div class="fw-bold text-[#84a59d]">👁️ OD</div>
+                <div>取件: ${r.od_pickup}</div><div>使用: ${r.od_days}d</div><div>年月: ${r.od_ym}</div>
+              </div>
+              <div class="col-6 pl-2">
+                <div class="fw-bold text-[#84a59d]">👁️ OS</div>
+                <div>取件: ${r.os_pickup}</div><div>使用: ${r.os_days}d</div><div>年月: ${r.os_ym}</div>
+              </div>
+            </div>
+            <div class="p-2 bg-white bg-opacity-40 rounded small border border-secondary border-opacity-10">
+              <div class="row g-1">
+                <div class="col-4">AL日: ${r.al_date}</div><div class="col-4">AL(OD): ${r.al_od}</div><div class="col-4">AL(OS): ${r.al_os}</div>
+              </div>
+            </div>
+            <div class="mt-2 small text-muted text-end">
+              <span class="fw-bold" style="color:#d9534f;">🔔 聯繫日期: ${r.result}</span>
+              <span class="me-1">| 🆔: ${r.id} |</span>
+              <span class="badge bg-white text-dark border me-1">${r.staff}</span>
+            </div>
+          </div>`; 
+        }); 
+        resDiv.innerHTML = h; 
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("查詢出錯: " + e.message);
+      }
+    }
+
+    // ⚡ 編輯客檔儲存
+    async function submitEditCustomer() {
+      const rowIndex = document.getElementById('editRowIndex').value;
+      const name = document.getElementById('editName').value.trim();
+      const birth = document.getElementById('editBirth').value.trim();
+      const phone = document.getElementById('editPhone').value.trim();
+      if (!name) { alert("姓名請勿留空"); return; }
+
+      if(confirm(`確定要修改 ${name} 的資料嗎？`)) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        closeEditCustomerModal();
+        try {
+          const { error } = await _supabase.from('consultations').update({ name, birthday: birth, phone }).eq('id', rowIndex);
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (error) throw error;
+          alert("🎉 客戶資料修改成功！");
+          doSearch(true);
+        } catch(e) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          alert("修改失敗: " + e.message);
+        }
+      }
+    }
+
+    // ⚡ 新增工作交接清單登記
+    async function submitHand() {
+      const fromStaff = document.getElementById('hFrom').value;
+      const toStaff = document.getElementById('hTo').value;
+      if (!fromStaff || !toStaff) { alert("⚠️ 請確實選擇交接人與接交人！"); return; }
+
+      const isDelay = document.getElementById('hDelaySwitch').checked;
+      const isNoNotify = document.getElementById('hNoNotify').checked; 
+      let delayTimeStr = null;
+      
+      if (isDelay) {
+        const rawTime = document.getElementById('hDelayTime').value;
+        if (!rawTime) { alert("請設定延遲推播時間"); return; }
+        delayTimeStr = new Date(rawTime).toISOString(); 
+      }
+
+      const t = document.getElementById('hType').value; 
+      const hContentValue = document.getElementById('hContent').value; 
+      const hPhoneValue = document.getElementById('hPhone').value;     
+
+      const pad = (n) => n < 10 ? '0' + n : n; 
+      const timeStr = `${pad(document.getElementById('hHour').value)}:${pad(document.getElementById('hMin').value)}`; 
+      let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
+      if (t.includes('指定')) finalContent += ` ${timeStr}`; 
+
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      
+      const payload = { 
+        type: t, 
+        target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無', 
+        content: finalContent, 
+        from_staff: fromStaff, 
+        to_staff: toStaff, 
+        is_delay: isDelay,
+        delay_time: delayTimeStr,
+        is_no_notify: isNoNotify,
+        push_status: 'Pending'
+      }; 
+
+      try {
+        const { error } = await _supabase.from('handovers').insert([payload]);
+        document.getElementById('loadingOverlay').style.display = 'none'; 
+        if (error) throw error;
+        alert("🎉 工作交接登記成功！");
+        loadData(); 
+        clearAllInputs(); 
+        showPage('home'); 
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("登記交接失敗: " + e.message);
+      }
+    }
+
+    // ⚡ 刪除已完成交接項目
+    async function delHand() { 
+      const r = document.getElementById('hDelSelect').value; 
+      if(r && confirm("確定刪除此項工作？")) { 
+        document.getElementById('loadingOverlay').style.display = 'flex'; 
+        try {
+          const { error } = await _supabase.from('handovers').delete().eq('id', r);
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (error) throw error;
+          alert("🗑️ 交接項目已成功移除");
+          loadData();
+        } catch(e) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          alert("刪除失敗: " + e.message);
+        }
+      }  
+    }
+
+    async function confirmDelHandFromCard(rowIndex, summary) {
+      if (confirm(`確定要移除這項交接工作嗎？\n內容：${summary}...`)) {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        try {
+          const { error } = await _supabase.from('handovers').delete().eq('id', rowIndex);
+          document.getElementById('loadingOverlay').style.display = 'none';
+          if (error) throw error;
+          alert("🗑️ 交接項目已成功移除");
+          loadData();
+        } catch(e) {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          alert("刪除失敗: " + e.message);
+        }
+      }
+    }
+
+    // ⚡ 儲存失聯客群關懷紀錄
+    async function submitLostCare() {
+      const row = document.getElementById('lostRowIndex').value;
+      const staff = document.getElementById('lostStaff').value;
+      const note = document.getElementById('lostNote').value.trim();
+      if (!staff || !note) { alert("請選擇服務人並輸入內容"); return; }
+
+      const isRefuse = document.getElementById('lostIsRefuse').checked;
+      const isAppoint = document.getElementById('lostIsApp').checked;
+      const isNoAnswer = document.getElementById('lostIsNoAnswer').checked; 
+
+      let xStatus = "待處理"; 
+      if (isRefuse) xStatus = "其他";      
+      else if (isAppoint) xStatus = " ";         
+      else if (isNoAnswer) xStatus = "未接通";    
+
+      const pad = (n) => n.toString().padStart(2, '0');
+      const appTime = isAppoint ? `${document.getElementById('lostY').value}/${pad(document.getElementById('lostM').value)}/${pad(document.getElementById('lostD').value)} ${pad(document.getElementById('lostH').value)}:${pad(document.getElementById('lostMin').value)}` : null;
+
+      document.getElementById('lostModal').style.display = 'none';
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      try {
+        const payload = {
+          status: '已關懷',
+          raw_status: xStatus,
+          note: note,
+          staff: staff,
+          app_time: appTime,
+          last_care_time: new Date().toLocaleDateString('zh-TW')
+        };
+        const { error } = await _supabase.from('lost_care').update(payload).eq('row_index', row);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+        alert("🎉 失聯客群關懷同步成功！");
+        loadLostData();
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("關懷紀錄寫入失敗: " + e.message);
+      }
+    }
+
+    // ⚡ 特殊處理安全解鎖驗證
+    async function submitSpecialAuth() {
+      const pwd = document.getElementById('specialPwdInput').value;
+      if (!pwd) { alert("請輸入密碼"); return; }
+      document.getElementById('specialAuthModal').style.display = 'none';
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      
+      try {
+        const { data, error } = await _supabase.from('system_settings').select('value').eq('key', 'special_password').single();
+        if (error) throw error;
+        if (data && data.value === pwd) {
+          const { data: lostData } = await _supabase.from('lost_care').select('*');
+          document.getElementById('loadingOverlay').style.display = 'none';
+          allLostData = lostData || [];
+          showPage('specialProcessPage');
+          renderSpecialList();
+        } else {
+          document.getElementById('loadingOverlay').style.display = 'none';
+          alert("❌ 密碼錯誤，安全驗證未通過。");
+          document.getElementById('specialAuthModal').style.display = 'flex';
+        }
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("驗證系統異常: " + e.message);
+      }
+    }
+
+    // ⚡ 特殊處理：批量簡訊發送一鍵結案
+    async function submitSpecialBatch() {
+      const selectedStaff = document.getElementById('specialBatchStaff').value;
+      if (!selectedStaff) { alert("請選擇執行人員"); return; }
+      const rowIndices = specialUnreachedData.map(d => d.rowIndex);
+
+      document.getElementById('specialBatchModal').style.display = 'none';
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      try {
+        const { error } = await _supabase.from('lost_care')
+          .update({
+            status: '已關懷',
+            raw_status: '結案',
+            note: '多次未接後簡訊關懷',
+            staff: selectedStaff,
+            last_care_time: new Date().toLocaleDateString('zh-TW')
+          })
+          .in('row_index', rowIndices);
+        
+        if (error) throw error;
+        alert(`⚡ 成功大批量修改 ${rowIndices.length} 筆項目為「結案」！`);
+        
+        const { data: refreshedData } = await _supabase.from('lost_care').select('*');
+        document.getElementById('loadingOverlay').style.display = 'none';
+        allLostData = refreshedData || [];
+        renderSpecialList();
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("批量修改失敗: " + e.message);
+      }
+    }
+
+    // ⚡ 點擊更新預約處理狀態
+    async function submitVisit() {
+      const ix = document.getElementById('appSelect').value;
+      if(ix === "") return alert("請先選擇處理名單");
+      const currentList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
+      const it = currentList[ix];
+
+      let newTime = null;
+      let finalStatus = document.getElementById('appStatus').value;
+      const isChangeTime = document.getElementById('appChangeTimeSwitch').checked;
+      let orderNo = null; let amount = null; let lutein = null;
+
+      const pad = (n) => n.toString().padStart(2, '0');
+      if (isChangeTime) {
+        newTime = `${document.getElementById('appCY').value}-${pad(document.getElementById('appCM').value)}-${pad(document.getElementById('appCD').value)}T${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}:00`;
+        finalStatus = "待處理"; 
+      } else {
+        if (!finalStatus) return alert("請選擇赴約狀態");
+        if (finalStatus === "締結") {
+          orderNo = document.getElementById('appOrderNo').value.trim();
+          amount = document.getElementById('appAmount').value ? parseFloat(document.getElementById('appAmount').value) : null;
+          lutein = document.getElementById('appLutein').value;
+        }
+      }
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      try {
+        if (currentAppTab === 1) {
+          // 諮詢預約名單處理更新
+          const updatePayload = {
+            status: finalStatus,
+            note: document.getElementById('appNote').value || null,
+            order_no: orderNo,
+            amount: amount,
+            lutein: lutein
+          };
+          if(isChangeTime) {
+            updatePayload.appoint_time = newTime;
+            updatePayload.is_appoint = "是";
+          }
+          const { error } = await _supabase.from('consultations').update(updatePayload).eq('id', it.rowIndex);
+          if (error) throw error;
+        } else {
+          // 失聯關懷名單處理更新
+          const updatePayload = {
+            raw_status: finalStatus === '締結' ? '結案' : finalStatus,
+            note: document.getElementById('appNote').value || null,
+            order_no: orderNo,
+            amount: amount ? `$${amount}` : null
+          };
+          if(isChangeTime) {
+            updatePayload.app_time = `${document.getElementById('appCY').value}/${pad(document.getElementById('appCM').value)}/${pad(document.getElementById('appCD').value)} ${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}`;
+            updatePayload.status = "未關懷";
+          }
+          const { error } = await _supabase.from('lost_care').update(updatePayload).eq('row_index', it.rowIndex);
+          if (error) throw error;
+        }
+        finishVisit("🎉 預約狀態完美同步更新！");
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("更新失敗: " + e.message);
+      }
+    }
+
+    //以下為原有UI控制與二維碼/OCR相容輔助方法 (完全保留未更動)
+    function handleAppStatusChange(val) { const d = document.getElementById('appDealDiv'); if(d) d.style.display=(val==='締結')?'block':'none'; }
+    function toggleAppChangeMode(chk) { document.getElementById('appChangeTimeDiv').style.display=chk?'block':'none'; document.getElementById('appStatusLabel').style.display=chk?'none':'block'; document.getElementById('appStatus').style.display=chk?'none':'block'; if(chk){if(document.getElementById('appDealDiv'))document.getElementById('appDealDiv').style.display='none';}else{handleAppStatusChange(document.getElementById('appStatus').value);} const n=document.getElementById('appNote'); if(n) n.placeholder=chk?"改期備註 (選填)":"可輸入備註"; }
+    let currentAppTab = 1;
+    function switchAppTab(tab) { currentAppTab = tab; document.getElementById('tabApp1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabApp2').className = tab === 2 ? 'active-tab' : ''; document.getElementById('appDetail').style.display = 'none'; document.getElementById('appInfo').innerHTML = ''; document.getElementById('appSelect').value = ""; if (document.getElementById('appNoteArea')) document.getElementById('appNoteArea').style.display = tab === 1 ? 'block' : 'none'; const ts = document.getElementById('appChangeTimeSwitch'); if (ts) { ts.checked = false; toggleAppChangeMode(false); } renderAppSelect(); }
+    function showAppDetail() { const ix = document.getElementById('appSelect').value; const d = document.getElementById('appDetail'); if(ix === "") { d.style.display='none'; return; } const currentList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; if (!currentList || !currentList[ix]) { d.style.display='none'; return; } const it = currentList[ix]; let timeHtml = it.time; if (new Date(it.time) < new Date()) { timeHtml = `<span style="background-color: #fff3cd; color: #d9534f; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${it.time} (已逾期)</span>`; } let contentHtml = (currentAppTab === 1) ? `📌 <b>待赴約對象：</b>${it.name}<br>⏰ <b>預定時間：</b>${timeHtml}<br>👤 <b>服務人：</b>${it.staff || '未註記'}<br>💬 <b>內容：</b>${it.note || '無'}` : `<span style="color:#e76f51; font-weight:bold;">🧡 失聯回訪對象</span><br>👤 <b>姓名：</b>${it.name}<br>📞 <b>電話：</b>${it.phone}<br>⏰ <b>預約：</b>${timeHtml}<br>💬 <b>內容：</b>${it.note || '無'}`; d.style.display = 'block'; document.getElementById('appInfo').innerHTML = `<div style="position:relative;"><div onclick="shareCard('appInfo', '回報通知_${it.name}')" style="position:absolute; top:-5px; right:-5px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:10;">📤</div>${contentHtml}</div>`; }
+    function finishVisit(m) { document.getElementById('loadingOverlay').style.display = 'none'; alert(m); document.getElementById('appSelect').value = ""; document.getElementById('appDetail').style.display = 'none'; loadData(); showPage('home'); }
+    function toggleDelayInput() { const isChecked = document.getElementById('hDelaySwitch').checked; document.getElementById('hDelayArea').style.display = isChecked ? 'block' : 'none'; if (isChecked && !document.getElementById('hDelayTime').value) setDelayTime(9); }
+    function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
+    function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
+    function renderAppSelect() { const select = document.getElementById('appSelect'); select.innerHTML = '<option value="">-- 請選擇 --</option>'; const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; if (list && list.length > 0) { list.forEach((it, ix) => { const opt = new Option(it.display, ix); if (new Date(it.time) < new Date()) { opt.style.color = '#d9534f'; opt.style.fontWeight = 'bold'; } select.add(opt); }); } }
+    function filterHandSub(type, btn) { document.querySelectorAll('.hand-sub-btn').forEach(b => { b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill hand-sub-btn'; }); btn.className = 'btn btn-sm btn-primary px-3 rounded-pill hand-sub-btn active'; document.querySelectorAll('.handover-main-card').forEach(card => { const cardType = card.getAttribute('data-type') || ""; const isTimed = cardType.includes("指定"); const targetStr = card.getAttribute('data-date'); const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); let isMatch = (type === '全部') || (type === '指定' && isTimed) || (type === '追蹤' && cardType.includes("追蹤")) || (type === '物流' && cardType.includes("物流")) || (type === '過期' && isOverdue); card.style.display = isMatch ? 'block' : 'none'; }); }
+    function renderHandoverList() { const listDiv = document.getElementById('handoverListView'); if (!cache.handoverList || cache.handoverList.length === 0) { listDiv.innerHTML = '<div class="alert alert-light text-center">目前無待辦交接工作</div>'; return; } let countAll = cache.handoverList.length; let countTimed = 0; let countTrack = 0; let countLogistics = 0; let countOverdue = 0; cache.handoverList.forEach(it => { const isTimed = it.type.includes("指定"); if (isTimed) { countTimed++; if (it.targetDate !== '無' && new Date(it.targetDate) < new Date()) countOverdue++; } else if (it.type.includes("物流")) { countLogistics++; } else { countTrack++; } }); let sortedList = [...cache.handoverList].sort((a, b) => { const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); const isOverB = isTimedB && b.targetDate !== '無' && new Date(b.targetDate) < new Date(); if (isOverA && !isOverB) return -1; if (!isOverA && isOverB) return 1; if (isTimedA && !isTimedB) return -1; if (!isTimedA && isTimedB) return 1; if (isTimedA && isTimedB) return new Date(a.targetDate) - new Date(b.targetDate); return 0; }); let h = `<div class="sub-filter-scroll mb-2"><button class="btn btn-sm btn-primary hand-sub-btn active px-3 rounded-pill" onclick="filterHandSub('全部', this)">全部 ${countAll}</button><button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button><button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button><button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button><button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button></div>`; sortedList.forEach((it, index) => { const isTimed = it.type.includes("指定"); const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); if (isOverdue) cardClass += " handover-overdue"; let pushBadge = (it.pushStatus === 'Pending') ? `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;"><span class="spinner-grow spinner-grow-sm me-2"></span><span>⏳ 預計 <b>${it.pushTime ? it.pushTime.substring(11,16) : '稍後'}</b> 推播</span></div>` : ''; h += `<div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}"><div onclick="shareCard('hcard_${index}', '交接_${it.to}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div><div class="d-flex justify-content-start align-items-center mb-2"><span onclick="confirmDelHandFromCard(${it.rowIndex}, '${it.content.substring(0,10).replace(/'/g, "\\'")}')" style="cursor:pointer; color:#d9534f; margin-right: 10px; font-weight:bold; font-size:0.8rem;">✖</span><span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span><small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small></div><div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}</div>${pushBadge}<div class="row g-0 small text-muted border-top pt-2"><div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}</div></div></div>`; }); listDiv.innerHTML = h; }
+    function closeEditCustomerModal() { document.getElementById('editCustomerModal').style.display = 'none'; }
+    function handleCareSwitches(t) { const a = document.getElementById('careIsAppoint'), r = document.getElementById('careIsRefuse'), d = document.getElementById('careIsDeal'), s = document.getElementById('careIsSpecial'), td = document.getElementById('careTimeDiv'), dd = document.getElementById('careDealDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); d.checked = (t === 'deal' && d.checked); s.checked = (t === 'special' && s.checked); td.style.display = a.checked ? 'block' : 'none'; dd.style.display = d.checked ? 'block' : 'none'; }
+    function clearLostSearch(id) { document.getElementById(id).value = ''; renderLostTabs(); }
+    function handleLostSwitches(t) { const a = document.getElementById('lostIsApp'), r = document.getElementById('lostIsRefuse'), n = document.getElementById('lostIsNoAnswer'), td = document.getElementById('lostTimeDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); n.checked = (t === 'noAnswer' && n.checked); td.style.display = a.checked ? 'block' : 'none'; }
+    function showLostCarePage() { document.getElementById('loadingOverlay').style.display = 'flex'; currentLostFilter = '未關懷'; document.querySelectorAll('.lost-filter-btn').forEach(b => { b.className = b.innerText.includes('未關懷') ? 'btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill' : 'btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'; }); showPage('lostCarePage'); const s = document.getElementById('searchLostStaff'); s.innerHTML = '<option value="">👤 所有服務人員</option>'; fillStaffOptions(s); loadLostData(); }
+    function fillStaffOptions(s) { if (cache.staff) cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); }); }
+    async function loadLostData() { document.getElementById('loadingOverlay').style.display = 'flex'; try { const { data } = await _supabase.from('lost_care').select('*'); document.getElementById('loadingOverlay').style.display = 'none'; allLostData = data || []; renderLostTabs(); } catch(e) { alert(e.message); } }
+    function getFilteredLostData() {
+      const qName = document.getElementById('searchLostName').value.trim().toLowerCase();
+      const qPhone = document.getElementById('searchLostPhone').value.trim();
+      const qPrice = parseInt(document.getElementById('searchLostPrice').value) || 0;
+      const qAgeMin = parseInt(document.getElementById('searchLostAgeMin').value) || 0;
+      const qAgeMax = parseInt(document.getElementById('searchLostAgeMax').value) || 100;
+      const todayStr = new Date().toLocaleDateString('zh-TW');
+
+      let cAll=0, cPending=0, cNoAns=0, cToday=0, cClosed=0;
+      allLostData.forEach(d => {
+        if (d.status === '已關懷') { 
+           cAll++; if (d.raw_status === '待處理') cPending++; else if (d.raw_status === '未接通') { cNoAns++; if (d.last_care_time === todayStr) cToday++; } else cClosed++;
+        }
+      });
+      if(document.getElementById('cntXAll')) { document.getElementById('cntXAll').innerText = cAll; document.getElementById('cntXPending').innerText = cPending; document.getElementById('cntXNoAns').innerText = cNoAns; document.getElementById('cntXToday').innerText = cToday; document.getElementById('cntXClosed').innerText = cClosed; }
+
+      return allLostData.filter(d => {
+        if ((currentLostFilter === '已關懷' && d.status !== '已關懷') || (currentLostFilter === '未關懷' && d.status === '已關懷')) return false;
+        if (qName && (!d.name || !d.name.toLowerCase().includes(qName))) return false;
+        if (qPhone && d.phone !== qPhone) return false;
+        const amt = parseInt(d.amount ? d.amount.replace(/[^0-9]/g, '') : '0') || 0;
+        if (qPrice > 0 && amt < qPrice) return false;
+        if (d.birth) {
+          const age = 2026 - parseInt(d.birth.substring(0, 4));
+          if (!isNaN(age) && (age < qAgeMin || age > qAgeMax)) return false;
+        }
+        if (currentLostFilter === '已關懷') {
+          if (currentLostXFilter === '待處理' && d.raw_status !== '待處理') return false;
+          if (currentLostXFilter === '未接通' && d.raw_status !== '未接通') return false;
+          if (currentLostXFilter === '今日未接通' && (d.raw_status !== '未接通' || d.last_care_time !== todayStr)) return false;
+          if (currentLostXFilter === '結案' && (d.raw_status === '待處理' || d.raw_status === '未接通')) return false;
+        }
+        return true;
+      });
+    }
+    function renderLostTabs() { const filtered = getFilteredLostData(); const years = {}; filtered.forEach(d => { years[d.finish_year] = (years[d.finish_year] || 0) + 1; }); const sorted = Object.keys(years).sort((a,b)=>b-a); let h = ''; sorted.forEach(y => { h += `<button class="btn btn-sm btn-outline-dark px-3 text-nowrap" onclick="renderLostCards('${y}')">${y}年 (${years[y]})</button>`; }); document.getElementById('lostYearTabs').innerHTML = h; if(sorted.length > 0) renderLostCards(sorted[0]); else document.getElementById('lostCareResults').innerHTML = '<div class="text-center text-muted py-5">查無客戶</div>'; }
+    function filterLost(type, btn) { document.querySelectorAll('.lost-filter-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'); btn.className='btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill'; currentLostFilter = type; document.getElementById('lostXFilterRow').style.display = (type === '已關懷') ? 'flex' : 'none'; renderLostTabs(); }
+    function filterLostX(xType, btn) { document.querySelectorAll('.lost-x-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill'); btn.className='btn btn-sm btn-primary lost-x-btn active px-3 rounded-pill'; currentLostXFilter = xType; renderLostTabs(); }
+    function renderLostCards(year) { const filtered = getFilteredLostData().filter(d => d.finish_year === year).sort((a,b)=>new Date(a.finish_date)-new Date(b.finish_date)); let h = ''; filtered.forEach((r, idx) => { h += `<div class="result-card mb-3" id="lostCard_${idx}" style="border-left: 6px solid #f4a261; position: relative; background: rgba(255,255,255,0.7);"><div onclick="shareCard('lostCard_${idx}', '失聯關懷_${r.name}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:1rem; z-index:5;">📤</div><div class="d-flex justify-content-between align-items-start mb-1"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><div class="text-end" style="margin-right:25px;"><div class="badge bg-warning text-dark mb-1">${r.raw_status}</div><br><span class="badge bg-white text-dark border" style="font-size:0.7rem;">完銷:${r.finish_date}</span></div></div><div class="row g-1 small mb-2"><div class="col-6">🆔 會員編號:<br><small class="fw-bold">${r.id}</small></div><div class="col-6">🎂 生日: ${r.birth}<br><span class="badge bg-white text-dark border">${2026-parseInt(r.birth.substring(0,4))}歲</span></div><div class="col-12 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">📄 單號: ${r.order_no}</div><div class="col-6 text-danger fw-bold">💰 金額: ${r.amount}</div><div class="col-12 mt-1 border-top pt-1 text-muted">🕒 最後關懷: ${r.last_care_time || '尚無'}</div></div>${r.status==='已關懷'?`<div class="mt-2 p-2 rounded bg-success bg-opacity-10 border border-success small"><b class="text-success">✅ 已關懷</b> | 👤 ${r.staff}<br>💬 內容: ${r.note}</div>`:''}<button class="btn btn-sm w-100 mt-2 text-white shadow-sm" style="background-color: #e76f51;" onclick="openLostModal(${r.row_index}, '${r.name}')">❤️ 進行關懷紀錄</button></div>`; }); document.getElementById('lostCareResults').innerHTML = h; }
+    function openLostModal(row, name) { document.getElementById('lostRowIndex').value = row; document.getElementById('lostTargetName').value = name; document.getElementById('lostNote').value = ""; document.getElementById('lostIsApp').checked = false; document.getElementById('lostIsRefuse').checked = false; document.getElementById('lostIsNoAnswer').checked = false; document.getElementById('lostTimeDiv').style.display = 'none'; const s = document.getElementById('lostStaff'); s.innerHTML = '<option value="">- 請選擇服務人 -</option>'; cache.staff.forEach(p => s.add(new Option(p, p))); document.getElementById('lostModal').style.display = 'flex'; }
+    function renderSpecialList() { specialUnreachedData = allLostData.filter(d => d.raw_status === '未接通'); document.getElementById('specialTotalCount').innerText = specialUnreachedData.length; const listDiv = document.getElementById('specialListContainer'); if (specialUnreachedData.length === 0) { listDiv.innerHTML = '<div class="alert alert-success text-center">目前沒有未接通的客戶資料！</div>'; return; } let h = ''; specialUnreachedData.forEach(r => { h += `<div class="result-card mb-3 shadow-sm border-start border-[6px] border-[#d9534f]" style="background: rgba(255,255,255,0.8);"><div class="d-flex justify-content-between align-items-center mb-2"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><span class="badge bg-danger">未接通</span></div><div class="row g-1 small mb-1"><div class="col-6">🎂 生日: ${r.birth}</div><div class="col-6 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">💰 金額: ${r.amount}</div><div class="col-6">📅 完銷: ${r.finish_date}</div><div class="col-12 text-muted border-top pt-1 mt-1">👤 人員: ${r.staff}</div></div></div>`; }); listDiv.innerHTML = h; }
+    function exportSpecialPhones() { if (specialUnreachedData.length === 0) return alert('沒有資料可匯出'); const phoneList = specialUnreachedData.map(d => d.phone).filter(p => p).join('\n'); const blob = new Blob([phoneList], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `多次未接電話匯出_${new Date().getTime()}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+    function openSpecialBatchModal() { if (specialUnreachedData.length === 0) return alert('沒有可修改的資料'); const sel = document.getElementById('specialBatchStaff'); sel.innerHTML = '<option value="">--請選擇--</option>'; cache.staff.forEach(s => { if(s) sel.add(new Option(s, s)); }); document.getElementById('specialBatchModal').style.display = 'flex'; }
+    async function shareCard(elementId, fileName) { const element = document.getElementById(elementId); if (!element) return; document.getElementById('loadingOverlay').style.display = 'flex'; try { const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: null, logging: false }); canvas.toBlob(async (blob) => { const file = new File([blob], `${fileName}.png`, { type: 'image/png' }); document.getElementById('loadingOverlay').style.display = 'none'; if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); } else { const link = document.createElement('a'); link.download = `${fileName}.png`; link.href = canvas.toDataURL(); link.click(); alert("圖片已成功下載至您的裝置。"); } }, 'image/png'); } catch (e) { document.getElementById('loadingOverlay').style.display = 'none'; alert("分享失敗: " + e.toString()); } }
+    async function startScan(inputId, readerId) { const fileInput = document.getElementById('qr-input-file'); fileInput.onchange = async (e) => { if (e.target.files.length === 0) return; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = 'flex'; document.getElementById('loadingText').innerText = "🔍 強化辨識中..."; const image = await createImageBitmap(e.target.files[0]); const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const size = Math.min(image.width, image.height) * 0.8; canvas.width = 1200; canvas.height = 1200; ctx.filter = 'contrast(300%) grayscale(1) brightness(90%)'; ctx.drawImage(image, (image.width-size)/2, (image.height-size)/2, size, size, 0, 0, 1200, 1200); const html5QrCode = new Html5Qrcode(readerId); const dataUrl = canvas.toDataURL('image/jpeg', 1.0); try { let barcodeResult = await html5QrCode.scanFile(dataUrl, false); if (inputId === 'cControlID') { const childMatch = barcodeResult.match(/[A-Za-z]\d{5}/); if (!childMatch) throw new Error("Not child ID"); barcodeResult = childMatch[0].toUpperCase(); } else { if (/^[A-Za-z][1,2]\d{8}$/.test(barcodeResult)) throw new Error("ID"); if (barcodeResult.length === 8 && !barcodeResult.includes('-')) barcodeResult = barcodeResult.substring(0, 7) + "-" + barcodeResult.substring(7, 8); } document.getElementById(inputId).value = barcodeResult; overlay.style.display = 'none'; html5QrCode.clear(); fileInput.value = ""; } catch (err) { try { const { data: { text } } = await Tesseract.recognize(dataUrl, 'eng', { tessedit_char_whitelist: inputId==='cControlID'?'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':'0123456789-' }); const match = text.match(inputId==='cControlID'?/[A-Za-z]\d{5}/:/\d{7}-\d{1}/); if (match) document.getElementById(inputId).value = match[0].toUpperCase(); else alert("❌ 條碼模糊或格式不符，請重新拍攝。"); } catch(e) { alert("辨識引擎異常"); } finally { overlay.style.display = 'none'; fileInput.value = ""; } } }; fileInput.click(); }
+    window.addEventListener('load', () => { initSelectors(); loadData(); });
+  </script>
+</body>
+</html>
