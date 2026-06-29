@@ -2124,26 +2124,54 @@
       }
     }
 
-    // ⚡ 開啟系統設定：將 UID 地圖轉為文字顯示在網頁上
-    function openSystemSettingsModal() {
-      document.getElementById('setStaffInput').value = cache.staff.join(',');
-      document.getElementById('setDoctorInput').value = cache.doctors.join(',');
-      document.getElementById('setTagInput').value = cache.tags.join(',');
-      
-      // 將物件 {"林哲玄":"UID"} 轉換成一行一行的 "林哲玄:UID" 文字，方便人類直接修改
-      const mapObj = cache.lineUidMap || {};
-      const mapLines = Object.keys(mapObj).map(name => `${name}:${mapObj[name]}`);
-      document.getElementById('setUidMapInput').value = mapLines.join('\n');
-      
-      const maintSelect = document.getElementById('setMaintSelect');
-      const dotClass = document.getElementById('sysDot').className;
-      maintSelect.value = dotClass.includes('dot-offline') ? "true" : "false";
-      document.getElementById('setPwdInput').value = "******"; 
+    // ⚡ 安全驗證版：點擊系統設定時先進行密碼驗證
+    async function openSystemSettingsModal() {
+      const checkPwd = prompt("🔒 請輸入系統核心維護密碼：");
+      if (!checkPwd) return; // 取消或留空就直接跳出
 
-      document.getElementById('systemSettingsModal').style.display = 'flex';
+      document.getElementById('loadingText').innerText = "安全憑證核對中...";
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      try {
+        // 去資料庫比對 special_password 是否正確
+        const { data, error } = await _supabase.from('system_settings').select('value').eq('key', 'special_password').single();
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+
+        if (data && data.value === checkPwd) {
+          // 🎉 驗證成功，開始撈取最新設定填入輸入框
+          document.getElementById('setStaffInput').value = cache.staff.join(',');
+          document.getElementById('setDoctorInput').value = cache.doctors.join(',');
+          document.getElementById('setTagInput').value = cache.tags.join(',');
+          
+          const mapObj = cache.lineUidMap || {};
+          const mapLines = Object.keys(mapObj).map(name => {
+            // 如果是新架構的物件格式 {"uid":"...", "password":"..."}
+            if (typeof mapObj[name] === 'object') {
+              return `${name}:${mapObj[name].uid}:${mapObj[name].password}`;
+            }
+            // 相容舊字串格式
+            return `${name}:${mapObj[name]}`;
+          });
+          document.getElementById('setUidMapInput').value = mapLines.join('\n');
+          
+          const maintSelect = document.getElementById('setMaintSelect');
+          const dotClass = document.getElementById('sysDot').className;
+          maintSelect.value = dotClass.includes('dot-offline') ? "true" : "false";
+          document.getElementById('setPwdInput').value = data.value; // 直接帶入目前密碼
+
+          // 打開設定大彈窗
+          document.getElementById('systemSettingsModal').style.display = 'flex';
+        } else {
+          alert("❌ 密碼錯誤！拒絕存取系統核心設定。");
+        }
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("驗證失敗: " + e.message);
+      }
     }
 
-    // ⚡ 儲存系統設定：將網頁上的姓名與 UID 重新打包回 JSONB
+    // ⚡ 升級版儲存：完美打包 姓名、UID 與 個人裝置密碼
     async function submitSystemSettings() {
       const staffArr = document.getElementById('setStaffInput').value.split(',').map(s => s.trim()).filter(s => s);
       const doctorArr = document.getElementById('setDoctorInput').value.split(',').map(d => d.trim()).filter(d => d);
@@ -2151,7 +2179,7 @@
       const isMaint = document.getElementById('setMaintSelect').value === "true";
       const newPwd = document.getElementById('setPwdInput').value.trim();
 
-      // 解析 LINE UID 地圖文字，重新打包成 JSON 物件
+      // 解析多欄位對照表 (支援 姓名:UID:密碼)
       const uidLines = document.getElementById('setUidMapInput').value.split('\n');
       const newUidMap = {};
       uidLines.forEach(line => {
@@ -2159,12 +2187,16 @@
           const parts = line.split(':');
           const name = parts[0].trim();
           const uid = parts[1].trim();
-          if (name && uid) newUidMap[name] = uid;
+          const pwd = parts[2] ? parts[2].trim() : "123456"; // 若沒填密碼預設給 123456
+          
+          if (name && uid) {
+            newUidMap[name] = { "uid": uid, "password": pwd };
+          }
         }
       });
 
       document.getElementById('systemSettingsModal').style.display = 'none';
-      document.getElementById('loadingText').innerText = "🔧 正在更新系統設定與 UID 對照表...";
+      document.getElementById('loadingText').innerText = "🔧 正在同步最新設定至 Supabase...";
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
@@ -2172,16 +2204,14 @@
         await _supabase.from('system_settings').upsert({ key: 'doctor_list', value: doctorArr });
         await _supabase.from('system_settings').upsert({ key: 'tag_list', value: tagArr });
         await _supabase.from('system_settings').upsert({ key: 'is_maintenance', value: isMaint });
-        
-        // ⚡ 將解析好的全新 UID 地圖直接 upsert 回 Supabase！
         await _supabase.from('system_settings').upsert({ key: 'line_uid_map', value: newUidMap });
 
-        if (newPwd && newPwd !== "******") {
+        if (newPwd) {
           await _supabase.from('system_settings').upsert({ key: 'special_password', value: newPwd });
         }
 
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert("🎉 設定已更新！選單與 LINE UID 對照表已全數生效。");
+        alert("🎉 系統核心設定已成功鎖定並更新！");
         location.reload();
       } catch(e) {
         document.getElementById('loadingOverlay').style.display = 'none';
