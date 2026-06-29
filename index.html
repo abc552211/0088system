@@ -335,11 +335,12 @@
       <label class="fw-bold small text-muted">客戶病歷序號</label>
       <div class="input-group mb-3">
         <div class="clear-wrapper">
-          <input type="text" id="cBarcode" class="form-control" placeholder="輸入或掃碼"><button class="clear-btn" onclick="clearInput('cBarcode')">×</button>
+          <input type="text" id="cBarcode" class="form-control" placeholder="輸入或掃碼">
+          <button class="clear-btn" onclick="clearInput('cBarcode')">×</button>
         </div>
-        <button class="btn btn-warning" onclick="startScan('cBarcode','reader')">📷</button>
+        <button class="btn btn-warning" onclick="toggleLiveScan('cBarcode','reader')">📷</button>
       </div>
-      <div id="reader"></div>
+      <div id="reader" style="width: 100%; display:none; border-radius: 15px; overflow: hidden; margin-bottom: 15px; border: 2px solid #84a59d;"></div>
       <div class="row">
         <div class="col-6"><label class="fw-bold small text-muted">客戶姓名</label>
           <div class="clear-wrapper">
@@ -548,9 +549,9 @@
           <input type="text" id="sBarcode" class="form-control" placeholder="輸入或掃碼">
           <button class="clear-btn" onclick="clearInput('sBarcode')">×</button>
         </div>
-        <button class="btn btn-warning" onclick="startScan('sBarcode','readerSearch')">📷</button>
+        <button class="btn btn-warning" onclick="toggleLiveScan('sBarcode','readerSearch')">📷</button>
       </div>
-      <div id="readerSearch"></div>
+      <div id="readerSearch" style="width: 100%; display:none; border-radius: 15px; overflow: hidden; margin-bottom: 15px; border: 2px solid #4a4e69;"></div>
       <div class="row g-2">
         <div class="col-6">
           <label class="small fw-bold text-muted">依姓名</label>
@@ -592,13 +593,6 @@
     <div class="card p-4">
       <h4 class="mb-4">❇️兒控大檔查詢</h4>
       <label class="small fw-bold text-muted">依編號(條碼A00000)</label>
-      <div class="input-group mb-3">
-        <div class="clear-wrapper">
-          <input type="text" id="cControlID" class="form-control" placeholder="輸入或掃碼"><button class="clear-btn" onclick="clearInput('cControlID')">×</button>
-        </div>
-        <button class="btn btn-warning" onclick="startScan('cControlID','readerChildren')">📷</button>
-      </div>
-      <div id="readerChildren"></div>
       <div class="row g-2">
         <div class="col-6"><label class="small fw-bold text-muted">依姓名</label>
           <div class="clear-wrapper">
@@ -943,6 +937,12 @@
         <button class="btn btn-light" onclick="document.getElementById('lostModal').style.display='none'">取消</button>
       </div>
     </div>
+  </div
+    <div id="imageViewerModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.85); z-index: 11000 !important;" onclick="closeImageViewer()">
+    <div style="position: relative; max-width: 90%; max-height: 90vh;">
+      <img id="viewerModalImg" src="" style="width: 100%; max-height: 85vh; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="color: #fff; text-center mt-3 font-serif-tc text-sm tracking-wider opacity-75">點擊任意處關閉</div>
+    </div>
   </div>
 
   <input type="file" id="qr-input-file" accept="image/*" capture="camera" style="display:none;">
@@ -1018,21 +1018,7 @@
       }
     }
 
-    function showPage(id) { 
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-      const targetPage = document.getElementById(id);
-      if(targetPage) {
-        targetPage.classList.add('active'); 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      if(id === 'home') {
-        clearAllInputs(); 
-        loadData(); 
-        updateSystemStatus(); 
-        initScrollAnimations();
-      }
-      if(id === 'handover') switchHandTab(1); 
-    }
+   
   
     // ⚡ 改為讀取 Supabase system_settings
     async function updateSystemStatus() {
@@ -1238,7 +1224,7 @@
       });
     }
 
-    function previewImg(i) { if (i.files && i.files[0]) { const r = new FileReader(); r.onload = e => { const p = document.getElementById('photoPreview'); p.src = e.target.result; p.style.display = 'block'; }; r.readAsDataURL(i.files[0]); } }
+    
     
     function resetConsultForm() { 
       document.getElementById('cBarcode').value = ''; document.getElementById('cName').value = ''; document.getElementById('cPhone').value = ''; document.getElementById('cBirth').value = ''; document.getElementById('cEvent').value = ''; document.getElementById('cFile').value = ''; document.getElementById('photoPreview').style.display = 'none'; document.getElementById('photoPreview').src = ''; document.getElementById('isAppoint').checked = false; document.getElementById('cAppSet').style.display = 'none'; 
@@ -1248,7 +1234,150 @@
       const btn = document.getElementById('btnC'); if(btn) btn.disabled = false; 
     }
 
-    // ⚡ 新增諮詢送出存檔
+    
+
+    let lastSearchScroll = 0;
+    // ⚡ 全域相機控制器，確保全站只有一個相機實例在跑
+    let activeScanner = null;
+    let activeReaderId = null;
+
+    // ⚡ 核心優化 1：即時串流掃碼與防卡死切換措施
+    async function toggleLiveScan(inputId, readerId) {
+      const readerEl = document.getElementById(readerId);
+      
+      // 1. 如果點擊的是正在開啟的相機 -> 執行關閉
+      if (activeScanner && activeReaderId === readerId) {
+        await stopGlobalScan();
+        return;
+      }
+
+      // 2. 如果有點擊其他相機 -> 先強制釋放前一個鏡頭
+      if (activeScanner) {
+        await stopGlobalScan();
+      }
+
+      // 3. 啟動新相機串流
+      readerEl.style.display = "block";
+      activeReaderId = readerId;
+      activeScanner = new Html5Qrcode(readerId);
+
+      const config = { 
+        fps: 15, 
+        qrbox: (width, height) => {
+          return { width: Math.min(width, height) * 0.7, height: Math.min(width, height) * 0.4 }
+        },
+        aspectRatio: 1.0
+      };
+
+      try {
+        await activeScanner.start(
+          { facingMode: "environment" }, 
+          config, 
+          async (decodedText) => {
+            // 🎉 掃碼成功回傳
+            let finalResult = decodedText.trim();
+            const isChildrenPage = (inputId === 'cControlID');
+
+            if (isChildrenPage) {
+              const childMatch = finalResult.match(/[A-Za-z]\d{5}/);
+              if (childMatch) finalResult = childMatch[0].toUpperCase();
+            } else {
+              // 護照/身分證防呆
+              if (/^[A-Za-z][1,2]\d{8}$/.test(finalResult)) return; 
+              // 補上格式橫線防呆
+              if (finalResult.length === 8 && !finalResult.includes('-')) {
+                finalResult = finalResult.substring(0, 7) + "-" + finalResult.substring(7, 8);
+              }
+            }
+
+            document.getElementById(inputId).value = finalResult;
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            // 🎯 掃碼成功立刻關閉鏡頭，防止卡死
+            await stopGlobalScan();
+          },
+          (errorMessage) => { /* 忽略持續追蹤的環境錯誤 */ }
+        );
+      } catch (err) {
+        alert("無法啟動相機串流，請檢查權限或重新整理: " + err);
+        readerEl.style.display = "none";
+        activeScanner = null;
+        activeReaderId = null;
+      }
+    }
+
+    // ⚡ 徹底釋放相機與硬體資源
+    async function stopGlobalScan() {
+      if (activeScanner) {
+        try {
+          await activeScanner.stop();
+        } catch (e) { console.log("釋放相機微小錯誤: " + e); }
+        activeScanner = null;
+      }
+      if (activeReaderId) {
+        document.getElementById(activeReaderId).style.display = "none";
+        activeReaderId = null;
+      }
+    }
+
+    // ⚡ 升級防卡死措施：重寫原本的頁面切換，只要切換頁面，一律先沒收相機鏡頭
+    function showPage(id) { 
+      // 🚨 切換頁面防卡死：先徹底關閉任何執行中的即時掃碼
+      stopGlobalScan();
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+      const targetPage = document.getElementById(id);
+      if(targetPage) {
+        targetPage.classList.add('active'); 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      if(id === 'home') {
+        clearAllInputs(); 
+        loadData(); 
+        updateSystemStatus(); 
+        initScrollAnimations();
+      }
+      if(id === 'handover') switchHandTab(1); 
+    }
+
+    // ⚡ 核心優化 2：照片強制剪裁壓縮成 300x300 節省文字空間
+    function previewImg(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 強制剪裁為 300x300 正方形
+            canvas.width = 300;
+            canvas.height = 300;
+            
+            // 計算置中剪裁切片位置
+            let size = Math.min(img.width, img.height);
+            let sx = (img.width - size) / 2;
+            let sy = (img.height - size) / 2;
+            
+            ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
+            
+            // 以 0.75 的品質壓縮轉為超輕量 Base64 文字
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+            
+            const preview = document.getElementById('photoPreview');
+            preview.src = compressedBase64;
+            preview.style.display = 'block';
+            
+            // 暫存在 input 的安全屬性中，供 submit 直接呼叫
+            input.dataset.compressed = compressedBase64;
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    // ⚡ 諮詢登記確認送出 (讀取 300x300 Base64 文字直接儲存)
     async function submitConsult() { 
       const birthInput = document.getElementById('cBirth').value; 
       if(!document.getElementById('cName').value) { alert("請填寫姓名"); return; } 
@@ -1258,12 +1387,13 @@
 
       document.getElementById('loadingOverlay').style.display = 'flex'; 
       const btn = document.getElementById('btnC'); if(btn) btn.disabled = true; 
-      const file = document.getElementById('cFile').files[0]; 
-      const pad = (n) => n < 10 ? '0' + n : n; 
+      
+      const fileInput = document.getElementById('cFile');
+      const base64Photo = fileInput.dataset.compressed || ""; // 讀取 300x300 快取文字
 
       const isAppointChecked = document.getElementById('isAppoint').checked;
       const realAppointStatus = isAppointChecked ? "是" : "否";
-      
+      const pad = (n) => n < 10 ? '0' + n : n; 
       const formattedTime = isAppointChecked ? 
         `${document.getElementById('cAppY').value}-${pad(document.getElementById('cAppM').value)}-${pad(document.getElementById('cAppD').value)}T${pad(document.getElementById('cAppH').value)}:${pad(document.getElementById('cAppMin').value)}:00` 
         : null; 
@@ -1271,12 +1401,6 @@
       const activeTags = Array.from(document.querySelectorAll('#cTagContainer .active')).map(b => `[${b.innerText}]`).join('');
       const rawEvent = document.getElementById('cEvent').value;
       const finalEvent = activeTags ? `${activeTags} ${rawEvent}` : rawEvent;
-
-      let imageUrl = "";
-      if (file) {
-        // 🚀 如果需要實作圖片上傳，可直接在此處上傳至 Supabase Storage bucket
-        // 範例：await _supabase.storage.from('consults').upload(path, file);
-      }
 
       const payload = { 
         barcode: document.getElementById('cBarcode').value || null, 
@@ -1288,7 +1412,7 @@
         doctor: document.getElementById('cDoctor').value, 
         is_appoint: realAppointStatus, 
         appoint_time: formattedTime, 
-        image_url: imageUrl || null,
+        image_url: base64Photo || null, // 儲存 300x300 輕量化字串
         status: '待處理'
       }; 
 
@@ -1296,7 +1420,8 @@
         const { error } = await _supabase.from('consultations').insert([payload]);
         document.getElementById('loadingOverlay').style.display = 'none'; 
         if (error) throw error;
-        alert("🎉 諮詢紀錄存檔成功！");
+        alert("🎉 諮詢紀錄與輕量照片已同步存入 Supabase！");
+        fileInput.removeAttribute('data-compressed');
         resetConsultForm();
         showPage('home');
       } catch (e) {
@@ -1305,7 +1430,67 @@
       }
     }
 
-    let lastSearchScroll = 0; 
+    // ⚡ 核心優化 3：查詢列表渲染小圖，點擊彈出大圖
+    function renderNextBatch() {
+      const container = document.getElementById('searchCardsContainer');
+      if (!container) return;
+      const endIndex = Math.min(currentRenderIndex + BATCH_SIZE, filteredSearchData.length);
+      if (currentRenderIndex >= endIndex) return; 
+
+      let h = '';
+      for (let i = currentRenderIndex; i < endIndex; i++) {
+        const r = filteredSearchData[i];
+        const resId = 'scard_' + r.rowIndex; 
+        
+        // 💡 點擊圖片時直接觸發 openImageViewer 大圖瀏覽
+        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>` : ''; 
+        
+        let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
+        let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
+        let colLDisplay = (r.note) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(245, 240, 240, 0.7); border: 1px dashed rgba(181, 131, 141, 0.5); font-size: 0.85rem;"><div class="text-[#5b2a30]" style="white-space: pre-wrap;"><b>📌 附加紀錄:</b> ${r.note}</div></div>` : '';
+
+        let statusClass = 'card-pending'; 
+        if (r.status === '已關懷') statusClass = 'card-cared';
+        else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
+        const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
+
+        h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
+          <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="fw-bold mb-0" style="color:#5b2a30; font-family:'Noto Serif TC',serif;">${r.name}</h4>
+            <span class="badge ${badgeClass} px-3 py-2">${r.status || '待處理'}</span>
+          </div>
+          <div class="row g-1 mb-2 small"><div class="col-6">${barcodeDisplay}</div><div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-12 text-[#87A96B] fw-bold"><b>📞 電話:</b> ${r.phone}</div></div>
+          <div class="p-2 bg-white bg-opacity-60 rounded small mb-2"><div style="white-space: pre-wrap;">${r.event || '無諮詢內容'}</div></div>
+          <div class="row g-1 mb-2 bg-white bg-opacity-80 p-2 rounded border border-secondary border-opacity-10 small"><div class="col-6"><b>👤 服務人:</b> ${r.staff}</div><div class="col-6"><b>👨‍⚕️ 醫師:</b> ${r.doctor}</div><div class="col-12"><b>⏰ 預約:</b> ${r.isAppoint === '是' ? r.appointTime : '未預留'}</div></div>
+          ${careDisplay} ${colLDisplay}
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div>
+              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}')">🗑️ 刪除</button>
+              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}')">✏️ 編輯</button>
+              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}')">❤️ 關懷</button>
+            </div>
+            ${imgHtml}
+          </div>
+          <div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
+        </div>`; 
+      }
+      container.insertAdjacentHTML('beforeend', h);
+      currentRenderIndex = endIndex;
+    }
+
+    // ⚡ 彈窗放大檢視與關閉邏輯
+    function openImageViewer(src) {
+      const viewer = document.getElementById('imageViewerModal');
+      const img = document.getElementById('viewerModalImg');
+      if (viewer && img) {
+        img.src = src;
+        viewer.style.display = 'flex';
+      }
+    }
+    function closeImageViewer() {
+      document.getElementById('imageViewerModal').style.display = 'none';
+    }
 
     // ⚡ 核心功能：動態查詢多條件組裝 (利用 Supabase 高階 Query)
     async function doSearch(keepScroll = false) { 
@@ -1437,50 +1622,7 @@
       renderNextBatch();
     }
 
-    function renderNextBatch() {
-      const container = document.getElementById('searchCardsContainer');
-      if (!container) return;
-      const endIndex = Math.min(currentRenderIndex + BATCH_SIZE, filteredSearchData.length);
-      if (currentRenderIndex >= endIndex) return; 
-
-      let h = '';
-      for (let i = currentRenderIndex; i < endIndex; i++) {
-        const r = filteredSearchData[i];
-        const resId = 'scard_' + r.rowIndex; 
-        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0;"><a href="${r.imageUrl}" target="_blank"><img src="${r.imageUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px; border: 2px solid #eee;"></a></div>` : ''; 
-        let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
-        let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
-        let colLDisplay = (r.note) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(245, 240, 240, 0.7); border: 1px dashed rgba(181, 131, 141, 0.5); font-size: 0.85rem;"><div class="text-[#5b2a30]" style="white-space: pre-wrap;"><b>📌 附加紀錄:</b> ${r.note}</div></div>` : '';
-
-        let statusClass = 'card-pending'; 
-        if (r.status === '已關懷') statusClass = 'card-cared';
-        else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
-        const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
-
-        h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
-          <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h4 class="fw-bold mb-0" style="color:#5b2a30; font-family:'Noto Serif TC',serif;">${r.name}</h4>
-            <span class="badge ${badgeClass} px-3 py-2">${r.status || '待處理'}</span>
-          </div>
-          <div class="row g-1 mb-2 small"><div class="col-6">${barcodeDisplay}</div><div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-12 text-[#87A96B] fw-bold"><b>📞 電話:</b> ${r.phone}</div></div>
-          <div class="p-2 bg-white bg-opacity-60 rounded small mb-2"><div style="white-space: pre-wrap;">${r.event || '無諮詢內容'}</div></div>
-          <div class="row g-1 mb-2 bg-white bg-opacity-80 p-2 rounded border border-secondary border-opacity-10 small"><div class="col-6"><b>👤 服務人:</b> ${r.staff}</div><div class="col-6"><b>👨‍⚕️ 醫師:</b> ${r.doctor}</div><div class="col-12"><b>⏰ 預約:</b> ${r.isAppoint === '是' ? r.appointTime : '未預留'}</div></div>
-          ${careDisplay} ${colLDisplay}
-          <div class="d-flex justify-content-between align-items-end mt-2">
-            <div>
-              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}')">🗑️ 刪除</button>
-              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}')">✏️ 編輯</button>
-              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}')">❤️ 關懷</button>
-            </div>
-            ${imgHtml}
-          </div>
-          <div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
-        </div>`; 
-      }
-      container.insertAdjacentHTML('beforeend', h);
-      currentRenderIndex = endIndex;
-    }
+    
 
     window.addEventListener('scroll', () => {
       if (document.getElementById('searchPage').classList.contains('active')) {
