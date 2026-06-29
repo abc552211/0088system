@@ -194,6 +194,25 @@
       backdrop-filter: blur(5px);
       border: 1px solid rgba(91, 42, 48, 0.2) !important;
     }
+
+    /* 🚀 掃描器中間的定位雷射紅線 */
+    .laser-line {
+      position: absolute;
+      top: 50%;
+      left: 10%;
+      width: 80%;
+      height: 3px;
+      background-color: #ff3b30;
+      box-shadow: 0 0 8px #ff3b30;
+      z-index: 10;
+      transform: translateY(-50%);
+      pointer-events: none;
+      animation: laser-blink 1.2s infinite;
+    }
+    @keyframes laser-blink {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
   </style>
 </head>
 
@@ -593,6 +612,14 @@
     <div class="card p-4">
       <h4 class="mb-4">❇️兒控大檔查詢</h4>
       <label class="small fw-bold text-muted">依編號(條碼A00000)</label>
+      <div class="input-group mb-3">
+        <div class="clear-wrapper">
+          <input type="text" id="cControlID" class="form-control" placeholder="輸入或掃碼">
+          <button class="clear-btn" onclick="clearInput('cControlID')">×</button>
+        </div>
+        <button class="btn btn-warning" onclick="toggleLiveScan('cControlID','readerChildren')">📷</button>
+      </div>
+      <div id="readerChildren" style="width: 100%; display:none; border-radius: 15px; overflow: hidden; margin-bottom: 15px; border: 2px solid #e5989b; position: relative;"></div>
       <div class="row g-2">
         <div class="col-6"><label class="small fw-bold text-muted">依姓名</label>
           <div class="clear-wrapper">
@@ -1241,28 +1268,27 @@
     let activeScanner = null;
     let activeReaderId = null;
 
-    // ⚡ 核心優化 1：即時串流掃碼與防卡死切換措施
     async function toggleLiveScan(inputId, readerId) {
       const readerEl = document.getElementById(readerId);
       
-      // 1. 如果點擊的是正在開啟的相機 -> 執行關閉
       if (activeScanner && activeReaderId === readerId) {
         await stopGlobalScan();
         return;
       }
-
-      // 2. 如果有點擊其他相機 -> 先強制釋放前一個鏡頭
       if (activeScanner) {
         await stopGlobalScan();
       }
 
-      // 3. 啟動新相機串流
       readerEl.style.display = "block";
+      
+      // 🚀 動態注入固定位置的呼吸閃爍紅線
+      readerEl.innerHTML = '<div class="laser-line"></div>';
+
       activeReaderId = readerId;
       activeScanner = new Html5Qrcode(readerId);
 
       const config = { 
-        fps: 15, 
+        fps: 20, 
         qrbox: (width, height) => {
           return { width: Math.min(width, height) * 0.7, height: Math.min(width, height) * 0.4 }
         },
@@ -1274,7 +1300,6 @@
           { facingMode: "environment" }, 
           config, 
           async (decodedText) => {
-            // 🎉 掃碼成功回傳
             let finalResult = decodedText.trim();
             const isChildrenPage = (inputId === 'cControlID');
 
@@ -1282,9 +1307,7 @@
               const childMatch = finalResult.match(/[A-Za-z]\d{5}/);
               if (childMatch) finalResult = childMatch[0].toUpperCase();
             } else {
-              // 護照/身分證防呆
               if (/^[A-Za-z][1,2]\d{8}$/.test(finalResult)) return; 
-              // 補上格式橫線防呆
               if (finalResult.length === 8 && !finalResult.includes('-')) {
                 finalResult = finalResult.substring(0, 7) + "-" + finalResult.substring(7, 8);
               }
@@ -1293,15 +1316,31 @@
             document.getElementById(inputId).value = finalResult;
             if (navigator.vibrate) navigator.vibrate(50);
             
-            // 🎯 掃碼成功立刻關閉鏡頭，防止卡死
             await stopGlobalScan();
           },
-          (errorMessage) => { /* 忽略持續追蹤的環境錯誤 */ }
+          (errorMessage) => {}
         );
       } catch (err) {
-        alert("無法啟動相機串流，請檢查權限或重新整理: " + err);
+        alert("無法啟動相機: " + err);
         readerEl.style.display = "none";
+        readerEl.innerHTML = "";
         activeScanner = null;
+        activeReaderId = null;
+      }
+    }
+
+    // ⚡ 釋放相機時，同時清空裡面的雷射紅線 DOM
+    async function stopGlobalScan() {
+      if (activeScanner) {
+        try { await activeScanner.stop(); } catch (e) {}
+        activeScanner = null;
+      }
+      if (activeReaderId) {
+        const el = document.getElementById(activeReaderId);
+        if (el) {
+          el.style.display = "none";
+          el.innerHTML = ""; // 移除紅線
+        }
         activeReaderId = null;
       }
     }
@@ -1430,7 +1469,7 @@
       }
     }
 
-    // ⚡ 核心優化 3：查詢列表渲染小圖，點擊彈出大圖
+    // ⚡ 修正版：完美對齊欄位名稱，綁定放大鏡與編輯、關懷事件
     function renderNextBatch() {
       const container = document.getElementById('searchCardsContainer');
       if (!container) return;
@@ -1442,8 +1481,8 @@
         const r = filteredSearchData[i];
         const resId = 'scard_' + r.rowIndex; 
         
-        // 💡 點擊圖片時直接觸發 openImageViewer 大圖瀏覽
-        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>` : ''; 
+        // 🚀 修正型態對齊：確保大圖小圖均能完美呼叫
+        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;"></div>` : ''; 
         
         let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
         let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
@@ -1454,6 +1493,7 @@
         else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
         const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
 
+        // 🚀 修正按鈕點擊後強制模糊 focus，解決底色殘留問題
         h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
           <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1466,9 +1506,9 @@
           ${careDisplay} ${colLDisplay}
           <div class="d-flex justify-content-between align-items-center mt-2">
             <div>
-              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}')">🗑️ 刪除</button>
-              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}')">✏️ 編輯</button>
-              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}')">❤️ 關懷</button>
+              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); this.blur();">🗑️ 刪除</button>
+              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}'); this.blur();">✏️ 編輯</button>
+              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); this.blur();">❤️ 關懷</button>
             </div>
             ${imgHtml}
           </div>
