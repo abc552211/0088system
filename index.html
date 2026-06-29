@@ -1503,7 +1503,9 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         alert("儲存失敗: " + e.message);
         if(btn) btn.disabled = false;
       }
-    }
+    };
+    
+    
 
     // ⚡ 4. 列表分批渲染卡片 (修正點擊、藍底殘留、大圖點不開)
     function renderNextBatch() {
