@@ -2222,16 +2222,17 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
                                            let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
                                            if (isOverdue) cardClass += " handover-overdue"; 
                                            
-                                           // 🚀 【核心修正：推播狀態精準辨識器】
-                                           let pushBadge = '';
-                                           const pStatus = String(it.pushStatus || '').trim();
-                                           const pTime = String(it.pushTime || '').trim();
+                                           // 🚀 【核心修正：推播狀態精準辨識器】 - 僅保留待推播狀態
+let pushBadge = '';
+const pStatus = String(it.pushStatus || '').trim();
+const pTime = String(it.pushTime || '').trim();
 
-                                           if (pStatus === 'Success' && pTime && pTime !== '無') {
-                                             // 1. 已推播成功
-                                             pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #e2f0d9; border: 1px dashed #385723; color: #385723;">
-                                                            <span>🔔 已於 <b>${pTime.substring(11,16)}</b> 成功推播</span>
-                                                          </div>`;
+// 只有「Pending」且確實有時間時，才顯示等待推播的小黃條
+if (pStatus === 'Pending' && pTime && pTime !== '無') {
+  pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
+                 <span class="spinner-grow spinner-grow-sm me-2"></span>
+                 <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
+               </div>`;
                                            } else if (pStatus === 'Pending' && pTime && pTime !== '無') {
                                              // 2. 系統排程中，確實待推播
                                              pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
