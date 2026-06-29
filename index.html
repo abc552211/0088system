@@ -2233,18 +2233,7 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
                  <span class="spinner-grow spinner-grow-sm me-2"></span>
                  <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
                </div>`;
-                                           } else if (pStatus === 'Pending' && pTime && pTime !== '無') {
-                                             // 2. 系統排程中，確實待推播
-                                             pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
-                                                            <span class="spinner-grow spinner-grow-sm me-2"></span>
-                                                            <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
-                                                          </div>`;
-                                           } else {
-                                             // 3. 舊資料、寫"無"、或未啟用推播
-                                             pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #f2f2f2; border: 1px dashed #bcbcbc; color: #595959; opacity: 0.7;">
-                                                            <span>非預約推播</span>
-                                                          </div>`;
-                                           }
+                                           } 
 
                                            h += `
                                            <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
