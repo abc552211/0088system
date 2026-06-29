@@ -991,6 +991,28 @@
     let html5QrCode;
     let specialUnreachedData = [];
 
+    // ⚡ 全自動背景日曆發送器 (專屬 API 網址)
+const GAS_CALENDAR_URL = "https://script.google.com/macros/s/AKfycbwyB4bj_j36fQTyjNsL8nl1UGrSLh1NhDCMPFJ2EgNd3SDYqMbzREGsRTZVWsM52ouxng/exec"; 
+
+async function autoSyncCalendar(tableName, recordId, title, timeStr) {
+  try {
+    const response = await fetch(GAS_CALENDAR_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+      body: JSON.stringify({ events: [{ title: title, startTime: timeStr }] })
+    });
+    
+    const result = await response.json();
+    if (result.status === 'success') {
+      const idColumn = (tableName === 'lost_care') ? 'row_index' : 'id';
+      await _supabase.from(tableName).update({ cal_status: 'Done' }).eq(idColumn, recordId);
+      console.log(`✅ [${title}] 已自動寫入日曆！`);
+    }
+  } catch (error) {
+    console.error(`❌ 日曆寫入失敗 [${title}]:`, error);
+  }
+}
+
     function initScrollAnimations() {
       if (typeof gsap === 'undefined') return;
       gsap.fromTo(".hero-item", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1, stagger: 0.15, ease: "power3.out" });
@@ -1460,7 +1482,14 @@
       }; 
 
       try {
-        const { error } = await _supabase.from('consultations').insert([payload]);
+        const { data, error } = await _supabase.from('consultations').insert([payload]).select();
+        document.getElementById('loadingOverlay').style.display = 'none'; 
+        if (error) throw error;
+
+        // 🚀 自動發送日曆
+        if (isAppointChecked && formattedTime) {
+          autoSyncCalendar('consultations', data[0].id, `[諮詢] ${payload.name}`, formattedTime);
+        }
         document.getElementById('loadingOverlay').style.display = 'none'; 
         if (error) throw error;
         alert("🎉 諮詢紀錄與輕量照片已同步存入 Supabase！");
@@ -1750,6 +1779,10 @@
           const { error } = await _supabase.from('consultations').update(updateData).eq('id', idx);
           document.getElementById('loadingOverlay').style.display = 'none';
           if (error) throw error;
+          // 🚀 自動發送日曆 (關懷後產生新預約)
+         if (isAppoint && formattedTime) {
+           autoSyncCalendar('consultations', idx, `[關懷預約] ${document.getElementById('careTargetName').innerText}`, formattedTime);
+         }
           alert("🎉 關懷紀錄儲存成功！");
           doSearch(true);
         } catch(e) {
@@ -1911,7 +1944,15 @@
       }; 
 
       try {
-        const { error } = await _supabase.from('handovers').insert([payload]);
+        const { data, error } = await _supabase.from('handovers').insert([payload]).select();
+        document.getElementById('loadingOverlay').style.display = 'none'; 
+        if (error) throw error;
+
+        // 🚀 自動發送日曆
+        if (t.includes('指定')) {
+          const calTime = payload.target_date.replace(/\//g, '-');
+          autoSyncCalendar('handovers', data[0].id, `[交接-${toStaff}] ${hContentValue.substring(0,10)}`, calTime);
+        }
         document.getElementById('loadingOverlay').style.display = 'none'; 
         if (error) throw error;
         alert("🎉 工作交接登記成功！");
@@ -1992,6 +2033,11 @@
         const { error } = await _supabase.from('lost_care').update(payload).eq('row_index', row);
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
+        // 🚀 自動發送日曆 (失聯後產生新預約)
+        if (isAppoint && appTime) {
+          const calTime = appTime.replace(/\//g, '-');
+          autoSyncCalendar('lost_care', row, `[失聯預約] ${document.getElementById('lostTargetName').value}`, calTime);
+        }
         alert("🎉 失聯客群關懷同步成功！");
         loadLostData();
       } catch(e) {
@@ -2117,6 +2163,11 @@
           }
           const { error } = await _supabase.from('lost_care').update(updatePayload).eq('row_index', it.rowIndex);
           if (error) throw error;
+        }
+        // 🚀 自動發送日曆 (客戶要改期)
+        if (isChangeTime && newTime) {
+          const tableName = (currentAppTab === 1) ? 'consultations' : 'lost_care';
+          autoSyncCalendar(tableName, it.rowIndex, `[改期] ${it.name}`, newTime);
         }
         finishVisit("🎉 預約狀態完美同步更新！");
       } catch(e) {
