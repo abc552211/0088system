@@ -1492,7 +1492,8 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           const title = `[${payload.name}]${finalEvent || '無'}-${payload.phone || '無'}-${payload.staff}`;
           autoSyncCalendar('consultations', data[0].id, title, formattedTime);
         }
-        document.getElementById('loadingOverlay').style.display = 'none'; 
+        document.getElementById('loadingOverlay').style.display = 'Success
+'; 
         if (error) throw error;
         alert("🎉 諮詢紀錄與輕量照片已同步存入 Supabase！");
         fileInput.removeAttribute('data-compressed');
