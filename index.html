@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>桃園南崁綜合工作管理系統 (Supabase 極速版)</title>
+  <title>桃園南崁綜合工作管理系統</title>
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -195,22 +195,22 @@
       border: 1px solid rgba(91, 42, 48, 0.2) !important;
     }
 
-    /* 🚀 掃描器中間的定位雷射紅線 */
+    /* 🚀 強制置頂、絕不移動的呼吸閃爍雷射紅線 */
     .laser-line {
-      position: absolute;
-      top: 50%;
-      left: 10%;
-      width: 80%;
-      height: 3px;
-      background-color: #ff3b30;
-      box-shadow: 0 0 8px #ff3b30;
-      z-index: 10;
-      transform: translateY(-50%);
-      pointer-events: none;
-      animation: laser-blink 1.2s infinite;
+      position: absolute !important;
+      top: 50% !important;
+      left: 10% !important;
+      width: 80% !important;
+      height: 3px !important;
+      background-color: #ff3b30 !important;
+      box-shadow: 0 0 10px #ff3b30, 0 0 2px #ffffff !important;
+      z-index: 9999 !important; /* 強制置頂於相機畫面上層 */
+      transform: translateY(-50%) !important;
+      pointer-events: none !important;
+      animation: laser-blink 1.2s infinite !important;
     }
     @keyframes laser-blink {
-      0%, 100% { opacity: 0.4; }
+      0%, 100% { opacity: 0.3; }
       50% { opacity: 1; }
     }
   </style>
@@ -218,10 +218,6 @@
 
 <body>
   <div class="noise-overlay"></div>
-
-  <div class="d-inline-block px-3 py-1 rounded-pill" style="position:fixed; top:10px; left:10px; z-index:9999; background: rgba(217, 202, 35, 0.85); color: #5b2a30; font-size: 0.6rem; letter-spacing: 1.5px; backdrop-filter: blur(4px); box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); font-family: 'Noto Serif TC', serif;">
-    💰八方來財💰 📿阿彌陀佛📿
-  </div>
   <div class="status-indicator" style="background: rgba(245, 240, 232, 0.9); border: 1px solid rgba(91, 42, 48, 0.1); font-family: 'Noto Serif TC', serif; color: #5b2a30;">
     <div id="sysDot" class="dot"></div>
     <span id="sysStatusText">檢查中...</span>
@@ -750,9 +746,9 @@
       <input type="hidden" id="modalRowIndex">
       <div class="input-group mb-3 d-flex align-items-center">
         <input type="text" id="modalNewBarcode" class="form-control" placeholder="手輸或掃碼">
-        <button class="btn btn-primary btn-circle ms-2" onclick="startModalScan()">📷</button>
+        <button class="btn btn-primary btn-circle ms-2" onclick="toggleLiveScan('modalNewBarcode','modalReader')">📷</button>
       </div>
-      <div id="modalReader" style="display:none; width:100%; margin-bottom:15px; border: 1px solid #ccc;"></div>
+      <div id="modalReader" style="display:none; width:100%; margin-bottom:15px; border: 1px solid #ccc; position: relative;"></div>
       <div class="d-grid gap-2">
         <button class="btn btn-success" onclick="submitNewBarcode()">確認更新</button>
         <button class="btn btn-light" onclick="closeUpdateModal()">取消關閉</button>
@@ -1329,7 +1325,7 @@
       }
     }
 
-    // ⚡ 釋放相機時，同時清空裡面的雷射紅線 DOM
+    // ⚡ 徹底關閉相機，並乾淨移除紅線與容器殘留 DOM
     async function stopGlobalScan() {
       if (activeScanner) {
         try { await activeScanner.stop(); } catch (e) {}
@@ -1339,7 +1335,7 @@
         const el = document.getElementById(activeReaderId);
         if (el) {
           el.style.display = "none";
-          el.innerHTML = ""; // 移除紅線
+          el.innerHTML = ""; // 徹底清空，防止殘留卡死
         }
         activeReaderId = null;
       }
@@ -1469,7 +1465,7 @@
       }
     }
 
-    // ⚡ 修正版：完美對齊欄位名稱，綁定放大鏡與編輯、關懷事件
+    // ⚡ 修正版 renderNextBatch：精準綁定相片放大與編輯事件
     function renderNextBatch() {
       const container = document.getElementById('searchCardsContainer');
       if (!container) return;
@@ -1481,8 +1477,8 @@
         const r = filteredSearchData[i];
         const resId = 'scard_' + r.rowIndex; 
         
-        // 🚀 修正型態對齊：確保大圖小圖均能完美呼叫
-        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;"></div>` : ''; 
+        // 🚀 修正：利用安全單引號跳脫，確保放大鏡能順利讀取 Base64 文字
+        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer(this.src)" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;"></div>` : ''; 
         
         let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
         let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
@@ -1493,7 +1489,6 @@
         else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
         const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
 
-        // 🚀 修正按鈕點擊後強制模糊 focus，解決底色殘留問題
         h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
           <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1532,7 +1527,7 @@
       document.getElementById('imageViewerModal').style.display = 'none';
     }
 
-    // ⚡ 核心功能：動態查詢多條件組裝 (利用 Supabase 高階 Query)
+    // ⚡ 修正版 doSearch：精準對齊欄位與大小寫
     async function doSearch(keepScroll = false) { 
       const q = { 
         barcode: document.getElementById('sBarcode').value.trim(), 
@@ -1544,9 +1539,7 @@
       }; 
       
       if(!keepScroll && !q.barcode && !q.name && !q.phone && !q.birthday && !q.staff && q.tags.length === 0) { alert("請輸入或選擇查詢條件"); return; } 
-      
-      if (keepScroll) lastSearchScroll = window.scrollY;
-      else lastSearchScroll = 0;
+      if (keepScroll) lastSearchScroll = window.scrollY; else lastSearchScroll = 0;
 
       document.getElementById('loadingOverlay').style.display = 'flex'; 
       const resDiv = document.getElementById('searchResults'); 
@@ -1560,33 +1553,21 @@
         if (q.birthday) query = query.eq('birthday', q.birthday);
         if (q.staff) query = query.eq('staff', q.staff);
         if (q.tags.length > 0) {
-          q.tags.forEach(tag => {
-            query = query.ilike('event', `%[${tag}]%`);
-          });
+          q.tags.forEach(tag => { query = query.ilike('event', `%[${tag}]%`); });
         }
 
         const { data, error } = await query;
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
+        if (!data || data.length === 0) { resDiv.innerHTML = '<div class="alert alert-warning">查無符合條件的紀錄</div>'; return; }
 
-        if (!data || data.length === 0) {
-          resDiv.innerHTML = '<div class="alert alert-warning">查無符合條件的紀錄</div>';
-          return;
-        }
-
-        // 完美保留您的客製化前端排序邏輯
         data.sort((a, b) => {
           const isClosed = (item) => (item.status && item.status !== '待處理' && item.status !== '已關懷');
-          const closedA = isClosed(a); const closedB = isClosed(b);
-          if (closedA && !closedB) return 1;
-          if (!closedA && closedB) return -1;
-          const careA = a.care_time || ""; const careB = b.care_time || "";
-          if (careA < careB) return -1; if (careA > careB) return 1;
-          const createA = a.created_at || ""; const createB = b.created_at || "";
-          if (createA < createB) return -1; if (createA > createB) return 1;
-          return 0;
+          if (isClosed(a) && !isClosed(b)) return 1; if (!isClosed(a) && isClosed(b)) return -1;
+          return new Date(a.created_at) - new Date(b.created_at);
         });
 
+        // 🚀 關鍵對齊：將資料庫的底線欄位轉為前端渲染專用名稱
         allSearchData = data.map(item => ({
           rowIndex: item.id,
           name: item.name,
@@ -1599,7 +1580,7 @@
           doctor: item.doctor,
           isAppoint: item.is_appoint,
           appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
-          imageUrl: item.image_url,
+          imageUrl: item.image_url, // 修正：轉為前端元件要讀的 imageUrl
           careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
           careNote: item.care_note,
           note: item.note,
@@ -1679,7 +1660,10 @@
       document.getElementById('updateIdModal').style.display = 'flex';
     }
 
-    function closeUpdateModal() { document.getElementById('updateIdModal').style.display = 'none'; }
+    function closeUpdateModal() {
+      stopGlobalScan(); // 🚨 安全措施：關閉彈窗時，順手把相機徹底關閉釋放
+      document.getElementById('updateIdModal').style.display = 'none';
+    }
 
     // ⚡ 補登條碼更新
     async function submitNewBarcode() {
