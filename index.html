@@ -195,19 +195,17 @@
       border: 1px solid rgba(91, 42, 48, 0.2) !important;
     }
 
-    /* 🚀 強制置頂、絕不移動的呼吸閃爍雷射紅線 */
+    /* 🚀 絕對浮在最上層、不移動的固定紅線 */
     .laser-line {
       position: absolute !important;
       top: 50% !important;
       left: 10% !important;
       width: 80% !important;
-      height: 3px !important;
+      height: 2px !important;
       background-color: #ff3b30 !important;
-      box-shadow: 0 0 10px #ff3b30, 0 0 2px #ffffff !important;
-      z-index: 9999 !important; /* 強制置頂於相機畫面上層 */
-      transform: translateY(-50%) !important;
+      z-index: 20000 !important; /* 超高層級，絕對不會被蓋住 */
       pointer-events: none !important;
-      animation: laser-blink 1.2s infinite !important;
+      box-shadow: 0 0 6px #ff3b30 !important;
     }
     @keyframes laser-blink {
       0%, 100% { opacity: 0.3; }
@@ -1264,9 +1262,11 @@
     let activeScanner = null;
     let activeReaderId = null;
 
+    // ⚡ 1. 統一相機串流控制器 (注入純外框紅線)
     async function toggleLiveScan(inputId, readerId) {
       const readerEl = document.getElementById(readerId);
-      
+      if (!readerEl) return;
+
       if (activeScanner && activeReaderId === readerId) {
         await stopGlobalScan();
         return;
@@ -1277,7 +1277,7 @@
 
       readerEl.style.display = "block";
       
-      // 🚀 動態注入固定位置的呼吸閃爍紅線
+      // 🚀 關鍵：直接用內建 DOM 強制塞入紅線，這是一定會出現的實體線
       readerEl.innerHTML = '<div class="laser-line"></div>';
 
       activeReaderId = readerId;
@@ -1317,7 +1317,7 @@
           (errorMessage) => {}
         );
       } catch (err) {
-        alert("無法啟動相機: " + err);
+        alert("相機啟動失敗: " + err);
         readerEl.style.display = "none";
         readerEl.innerHTML = "";
         activeScanner = null;
@@ -1325,7 +1325,7 @@
       }
     }
 
-    // ⚡ 徹底關閉相機，並乾淨移除紅線與容器殘留 DOM
+    // ⚡ 2. 徹底關閉相機，移除紅線
     async function stopGlobalScan() {
       if (activeScanner) {
         try { await activeScanner.stop(); } catch (e) {}
@@ -1335,7 +1335,7 @@
         const el = document.getElementById(activeReaderId);
         if (el) {
           el.style.display = "none";
-          el.innerHTML = ""; // 徹底清空，防止殘留卡死
+          el.innerHTML = ""; 
         }
         activeReaderId = null;
       }
@@ -1465,7 +1465,7 @@
       }
     }
 
-    // ⚡ 修正版 renderNextBatch：精準綁定相片放大與編輯事件
+    // ⚡ 4. 列表分批渲染卡片 (修正點擊、藍底殘留、大圖點不開)
     function renderNextBatch() {
       const container = document.getElementById('searchCardsContainer');
       if (!container) return;
@@ -1477,8 +1477,8 @@
         const r = filteredSearchData[i];
         const resId = 'scard_' + r.rowIndex; 
         
-        // 🚀 修正：利用安全單引號跳脫，確保放大鏡能順利讀取 Base64 文字
-        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer(this.src)" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;"></div>` : ''; 
+        // 🚀 修正：小圖使用全相容點擊，直接調用大圖檢視，並解決點不開問題
+        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;"></div>` : ''; 
         
         let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
         let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
@@ -1501,9 +1501,9 @@
           ${careDisplay} ${colLDisplay}
           <div class="d-flex justify-content-between align-items-center mt-2">
             <div>
-              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); this.blur();">🗑️ 刪除</button>
-              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}'); this.blur();">✏️ 編輯</button>
-              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); this.blur();">❤️ 關懷</button>
+              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); window.getSelection().removeAllRanges();">🗑️ 刪除</button>
+              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone}'); window.getSelection().removeAllRanges();">✏️ 編輯</button>
+              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); window.getSelection().removeAllRanges();">❤️ 關懷</button>
             </div>
             ${imgHtml}
           </div>
@@ -1527,7 +1527,7 @@
       document.getElementById('imageViewerModal').style.display = 'none';
     }
 
-    // ⚡ 修正版 doSearch：精準對齊欄位與大小寫
+    // ⚡ 3. 諮詢查詢：精準補抓、對齊資料庫所有欄位
     async function doSearch(keepScroll = false) { 
       const q = { 
         barcode: document.getElementById('sBarcode').value.trim(), 
@@ -1567,7 +1567,7 @@
           return new Date(a.created_at) - new Date(b.created_at);
         });
 
-        // 🚀 關鍵對齊：將資料庫的底線欄位轉為前端渲染專用名稱
+        // 🚀 強制進行資料欄位本地映射，消滅大小寫與底線混用的衝突
         allSearchData = data.map(item => ({
           rowIndex: item.id,
           name: item.name,
@@ -1580,7 +1580,7 @@
           doctor: item.doctor,
           isAppoint: item.is_appoint,
           appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
-          imageUrl: item.image_url, // 修正：轉為前端元件要讀的 imageUrl
+          imageUrl: item.image_url || "", // 🚀 綁定 image_url 至變數
           careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
           careNote: item.care_note,
           note: item.note,
