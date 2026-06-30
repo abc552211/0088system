@@ -50,7 +50,16 @@
       margin: 0;
     }
     input[type="number"] { -moz-appearance: textfield; }
-    
+
+
+    @keyframes flash-red {
+      0% { border-color: rgba(217, 83, 79, 0.4); box-shadow: 0 0 4px rgba(217, 83, 79, 0.2); }
+      100% { border-color: rgba(217, 83, 79, 1); box-shadow: 0 0 16px rgba(217, 83, 79, 0.6); background-color: #fff1f0 !important; }
+    }
+    .card-overdue-flash {
+      animation: flash-red 1s infinite alternate;
+      border: 2px solid #d9534f !important;
+    }
     .card { 
       border-radius: 20px; 
       box-shadow: var(--card-shadow) !important; 
@@ -401,24 +410,24 @@
   <div id="appointment" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
     <div class="card p-4" style="background: rgba(255, 250, 240, 0.98) !important;">
-      <h4 class="mb-4">📝 客戶預約處理</h4>
+      <h4 class="mb-4">📝 客戶今日預約處理</h4>
       <div class="nav-tabs-custom mb-3">
         <div id="tabApp1" class="active-tab" onclick="switchAppTab(1)">諮詢預約</div>
-        <div id="tabApp2" onclick="switchAppTab(2)">失聯關懷</div>
+        <div id="tabApp2" onclick="switchAppTab(2)">交接提醒預約</div>
       </div>
-      <label class="fw-bold small text-muted">選擇處理名單</label>
-      <select id="appSelect" class="form-select mb-3" onchange="showAppDetail()"></select>
+      
+      <!-- 卡片牆容器 -->
+      <div id="appCardsContainer" class="mt-2"></div>
 
-      <div id="appDetail" style="display:none;">
+      <!-- 點擊小卡後才彈出的動態處理抽屜 (原本的處理表單) -->
+      <div id="appDetail" style="display:none;" class="mt-4 pt-3 border-top border-secondary border-opacity-25">
         <div class="alert alert-info border-0 shadow-sm" style="background-color: rgba(132, 165, 157, 0.15); color: #3e2723;" id="appInfo"></div>
         <div class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
           <div class="d-flex align-items-center">
             <div class="form-check form-switch m-0 p-0">
               <input class="form-check-input m-0" type="checkbox" id="appChangeTimeSwitch" onchange="toggleAppChangeMode(this.checked)">
             </div>
-            <label class="fw-bold text-[#5b2a30] ms-3 mb-0" for="appChangeTimeSwitch" style="font-size: 1.1rem; cursor: pointer;">
-              🔄 客戶要改期
-            </label>
+            <label class="fw-bold text-[#5b2a30] ms-3 mb-0" for="appChangeTimeSwitch" style="font-size: 1.1rem; cursor: pointer;">🔄 客戶要改期</label>
           </div>
           <div id="appChangeTimeDiv" style="display:none;" class="mt-3 pt-3 border-top border-secondary border-opacity-25">
             <div class="date-row">
@@ -439,20 +448,10 @@
         <div id="appDealDiv" style="display:none;" class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
           <label class="small text-muted mb-2 fw-bold">💰 締結詳細資訊</label>
           <div class="row g-2">
-            <div class="col-6">
-              <div class="clear-wrapper">
-                <input type="text" id="appOrderNo" class="form-control form-control-sm" placeholder="三聯單號">
-                <button class="clear-btn" onclick="clearInput('appOrderNo')">×</button>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="clear-wrapper">
-                <input type="number" id="appAmount" class="form-control form-control-sm" placeholder="總金額">
-                <button class="clear-btn" onclick="clearInput('appAmount')">×</button>
-              </div>
-            </div>
+            <div class="col-6"><input type="text" id="appOrderNo" class="form-control form-control-sm" placeholder="三聯單號"></div>
+            <div class="col-6"><input type="number" id="appAmount" class="form-control form-control-sm" placeholder="總金額"></div>
             <div class="col-12">
-              <select id="appLutein" class="form-select form-select-sm" style="color: #6c757d;" onchange="this.style.color = this.value ? '#3e2723' : '#6c757d'">
+              <select id="appLutein" class="form-select form-select-sm">
                 <option value="">-- 是否加購葉黃素 --</option>
                 <option value="是">是</option>
                 <option value="否">否</option>
@@ -463,10 +462,7 @@
 
         <div id="appNoteArea">
           <label class="small fw-bold text-muted">備註</label>
-          <div class="clear-wrapper">
-            <input type="text" id="appNote" class="form-control mb-4" placeholder="可輸入備註">
-            <button class="clear-btn" onclick="clearInput('appNote')">×</button>
-          </div>
+          <div class="clear-wrapper"><input type="text" id="appNote" class="form-control mb-4" placeholder="可輸入備註"></div>
         </div>
         <button class="btn btn-success w-100 shadow" id="btnApp" onclick="submitVisit()">更新紀錄</button>
       </div>
@@ -1070,40 +1066,25 @@
         renderTagButtons('cTagContainer', cache.tags);
         renderTagButtons('sTagContainer', cache.tags);
 
-        // 讀取預約處理名單
+        // 讀取預約處理名單 (來自 consultations)
         const { data: appData } = await _supabase.from('consultations')
           .select('*')
           .eq('is_appoint', '是')
           .in('status', ['待處理', '已關懷'])
           .order('appoint_time', { ascending: true });
         
-        cache.appointList = (appData || []).map(item => ({
-          rowIndex: item.id,
-          name: item.name,
-          phone: item.phone,
-          time: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0, 16) : '無',
-          staff: item.staff,
-          note: item.event,
-          display: `👤 ${item.name} | ⏰ ${item.appoint_time ? item.appoint_time.substring(5,16).replace('T',' ') : '無'} | 👤 ${item.staff || '未指定'}`
-        }));
+        cache.appointList = appData || [];
 
-        // 讀取失聯客群預約名單
-        const { data: lostAppData } = await _supabase.from('lost_care')
+        // 讀取未完成且屬於指定時間的交接提醒預約 (來自 handovers)
+        const { data: handDataForApp } = await _supabase.from('handovers')
           .select('*')
-          .eq('status', '未關懷')
-          .order('app_time', { ascending: true });
+          .neq('push_status', 'Sent')
+          .ilike('type', '%指定時間%')
+          .order('target_date', { ascending: true });
 
-        cache.lostAppointList = (lostAppData || []).map(item => ({
-          rowIndex: item.id,
-          name: item.name,
-          phone: item.phone,
-          time: item.app_time || '無',
-          staff: item.staff,
-          note: item.note,
-          display: `🧡 ${item.name} | ⏰ ${item.app_time ? item.app_time.substring(5,16) : '無'} | 📞 ${item.phone}`
-        }));
+        cache.lostAppointList = handDataForApp || []; // 借用此快取位儲存交接類排程
 
-        renderAppSelect(); 
+        renderAppSelect(); // 渲染卡片牆
 
         // 讀取未完成的交接工作
         const { data: handData } = await _supabase.from('handovers')
@@ -1856,28 +1837,22 @@
     async function submitSpecialBatch() {
       const selectedStaff = document.getElementById('specialBatchStaff').value;
       if (!selectedStaff) { alert("請選擇執行人員"); return; }
-      const rowIndices = specialUnreachedData.map(d => d.rowIndex);
+      const rowIds = specialUnreachedData.map(d => d.id);
 
       document.getElementById('specialBatchModal').style.display = 'none';
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
-        const { error } = await _supabase.from('lost_care')
+        const { error } = await _supabase.from('consultations')
           .update({
-            status: '已關懷',
-            raw_status: '結案',
-            note: '多次未接後簡訊關懷',
-            staff: selectedStaff,
-            last_care_time: new Date().toLocaleDateString('zh-TW')
+            status: '特殊',
+            note: '多次未接後批次簡訊關懷結案',
+            staff: selectedStaff
           })
-          .in('id', rowIndices);
+          .in('id', rowIds);
         
         if (error) throw error;
-        alert(`⚡ 成功大批量修改 ${rowIndices.length} 筆項目為「結案」！`);
-        
-        const { data: refreshedData } = await _supabase.from('lost_care').select('*');
-        document.getElementById('loadingOverlay').style.display = 'none';
-        allLostData = refreshedData || [];
+        alert(`⚡ 成功完成批量修改 ${rowIds.length} 筆未結案資料為「特殊結案」！`);
         renderSpecialList();
       } catch(e) {
         document.getElementById('loadingOverlay').style.display = 'none';
@@ -1886,10 +1861,9 @@
     }
 
     async function submitVisit() {
-      const ix = document.getElementById('appSelect').value;
-      if(ix === "") return alert("請先選擇處理名單");
-      const currentList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
-      const it = currentList[ix];
+      if(currentSelectedAppIndex === null) return alert("請先點擊上方小卡選擇處理對象");
+      const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
+      const it = list[currentSelectedAppIndex];
 
       let newTime = null;
       let finalStatus = document.getElementById('appStatus').value;
@@ -1924,29 +1898,23 @@
             updatePayload.appoint_time = newTime;
             updatePayload.is_appoint = "是";
           }
-          const { error } = await _supabase.from('consultations').update(updatePayload).eq('id', it.rowIndex);
+          const { error } = await _supabase.from('consultations').update(updatePayload).eq('id', it.id);
           if (error) throw error;
         } else {
+          // 交接完成，若改期則壓回 Pending 新時間，赴約則結案 Sent
           const updatePayload = {
-            raw_status: finalStatus === '締結' ? '結案' : finalStatus,
-            note: document.getElementById('appNote').value || null,
-            order_no: orderNo,
-            amount: amount ? `$${amount}` : null
+            push_status: isChangeTime ? 'Pending' : 'Sent',
+            content: (document.getElementById('appNote').value) ? `${it.content} (回報: ${document.getElementById('appNote').value})` : it.content
           };
           if(isChangeTime) {
-            updatePayload.app_time = `${document.getElementById('appCY').value}/${pad(document.getElementById('appCM').value)}/${pad(document.getElementById('appCD').value)} ${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}`;
-            updatePayload.status = "未關懷";
+            updatePayload.target_date = `${document.getElementById('appCY').value}/${pad(document.getElementById('appCM').value)}/${pad(document.getElementById('appCD').value)} ${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}`;
           }
-          const { error } = await _supabase.from('lost_care').update(updatePayload).eq('id', it.rowIndex);
+          const { error } = await _supabase.from('handovers').update(updatePayload).eq('id', it.id);
           if (error) throw error;
         }
-        if (isChangeTime && newTime) {
-          const tableName = (currentAppTab === 1) ? 'consultations' : 'lost_care';
-          const noteStr = document.getElementById('appNote').value || '改期';
-          const title = `[${it.name}]${noteStr}-${it.phone || '無'}-${it.staff || '無'}`;
-          autoSyncCalendar(tableName, it.rowIndex, title, newTime);
-        }
-        finishVisit("🎉 預約狀態完美同步更新！");
+        
+        finishVisit("🎉 狀態已更新完成！");
+        currentSelectedAppIndex = null;
       } catch(e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("更新失敗: " + e.message);
@@ -1963,25 +1931,76 @@
     function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
     function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
     
-    function renderAppSelect() { 
-      const select = document.getElementById('appSelect'); 
-      if (!select) return;
+    let currentSelectedAppIndex = null;
 
-      select.innerHTML = '<option value="">-- 請選擇處理名單 --</option>'; 
+    function renderAppSelect() { 
+      const container = document.getElementById('appCardsContainer'); 
+      if (!container) return;
+
+      container.innerHTML = ''; 
       const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
       
-      if (list && list.length > 0) {
-        list.forEach((it, ix) => { 
-          const opt = new Option(it.display, ix); 
-          if (new Date(it.time) < new Date()) { 
-            opt.style.color = '#d9534f'; 
-            opt.style.fontWeight = 'bold'; 
-          } 
-          select.add(opt); 
-        });
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div class="alert alert-light text-center small text-muted">🎉 目前沒有待處理的名單</div>';
+        return;
       }
-      select.value = "";
-      document.getElementById('appDetail').style.display = 'none';
+      
+      let h = '';
+      const now = new Date();
+
+      list.forEach((it, ix) => { 
+        let timeStr = (currentAppTab === 1) ? it.appoint_time : it.target_date;
+        if(timeStr) timeStr = timeStr.replace('T', ' ').substring(0, 16);
+        
+        // 判斷是否逾期
+        const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
+        const cardStyle = isOverdue ? 'card-overdue-flash' : '';
+        const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
+
+        if (currentAppTab === 1) {
+          // 諮詢預約小卡
+          h += `
+            <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '${it.name}')">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name}</span>
+                <div>${badgeHtml}<span class="badge bg-secondary">${it.status}</span></div>
+              </div>
+              <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr || '未定'}</b></div>
+              <div class="small text-dark text-truncate mt-1" style="max-width:400px;">📌 內容：${it.event || '無'}</div>
+              <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
+            </div>`;
+        } else {
+          // 交接預約小卡
+          h += `
+            <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '交接項目')">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-md text-[#5b2a30]">📥 接收人：${it.to_staff}</span>
+                <div>${badgeHtml}<span class="badge bg-warning text-dark">交接</span></div>
+              </div>
+              <div class="small text-muted mt-1">⏰ 執行截止：<b>${timeStr || '未定'}</b></div>
+              <div class="small text-dark mt-1" style="white-space: pre-wrap;">📝 待辦：${it.content || '無'}</div>
+              <div class="text-end text-xs text-muted mt-1">📤 交接人：${it.from_staff || '未知'}</div>
+            </div>`;
+        }
+      });
+      
+      container.innerHTML = h;
+    }
+
+    function selectAppCard(index, id, name) {
+      currentSelectedAppIndex = index;
+      const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
+      const it = list[index];
+      
+      document.getElementById('appDetail').style.display = 'block';
+      let contentHtml = (currentAppTab === 1) 
+        ? `🎯 <b>正處理諮詢對象：</b> ${name}<br>💬 <b>原登記需求：</b> ${it.event || '無'}`
+        : `⚙️ <b>正更新內部交接項目</b><br>📥 <b>接手同仁：</b> ${it.to_staff}<br>📝 <b>交付工作：</b> ${it.content}`;
+      
+      document.getElementById('appInfo').innerHTML = contentHtml;
+      
+      // 自動滾動至下方表單處理區
+      document.getElementById('appDetail').scrollIntoView({ behavior: 'smooth' });
     }
     function filterHandSub(type, btn) { document.querySelectorAll('.hand-sub-btn').forEach(b => { b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill hand-sub-btn'; }); btn.className = 'btn btn-sm btn-primary px-3 rounded-pill hand-sub-btn active'; document.querySelectorAll('.handover-main-card').forEach(card => { const cardType = card.getAttribute('data-type') || ""; const isTimed = cardType.includes("指定"); const targetStr = card.getAttribute('data-date'); const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); let isMatch = (type === '全部') || (type === '指定' && isTimed) || (type === '追蹤' && cardType.includes("追蹤")) || (type === '物流' && cardType.includes("物流")) || (type === '過期' && isOverdue); card.style.display = isMatch ? 'block' : 'none'; }); }
     
@@ -2051,18 +2070,48 @@
       listDiv.innerHTML = h; 
     }
 
-    function renderSpecialList() { 
-      specialUnreachedData = allLostData.filter(d => d.raw_status === '未接通'); 
-      document.getElementById('specialTotalCount').innerText = specialUnreachedData.length; 
-      const listDiv = document.getElementById('specialListContainer'); 
-      if (specialUnreachedData.length === 0) { 
-        listDiv.innerHTML = '<div class="alert alert-success text-center">目前沒有未接通的客戶資料！</div>'; return; 
-      } 
-      let h = ''; 
-      specialUnreachedData.forEach(r => { 
-        h += `<div class="result-card mb-3 shadow-sm border-start border-[6px] border-[#d9534f]" style="background: rgba(255,255,255,0.8);"><div class="d-flex justify-content-between align-items-center mb-2"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><span class="badge bg-danger">未接通</span></div><div class="row g-1 small mb-1"><div class="col-6">🎂 生日: ${r.birth}</div><div class="col-6 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">💰 金額: ${r.amount}</div><div class="col-6">📅 完銷: ${r.finish_date}</div><div class="col-12 text-muted border-top pt-1 mt-1">👤 人員: ${r.staff}</div></div></div>`; 
-      }); 
-      listDiv.innerHTML = h; 
+    async function renderSpecialList() { 
+      // 🛠️ 1. 核心變更：不再過濾舊表，直接在 consultations 裡撈出 [待處理/已關懷] 的未結案名單
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        const { data, error } = await _supabase.from('consultations')
+          .select('*')
+          .in('status', ['待處理', '已關懷']);
+        
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+
+        specialUnreachedData = data || [];  
+        document.getElementById('specialTotalCount').innerText = specialUnreachedData.length; 
+        
+        const listDiv = document.getElementById('specialListContainer'); 
+        if (specialUnreachedData.length === 0) { 
+          listDiv.innerHTML = '<div class="alert alert-success text-center">目前沒有待處理的未結案群眾！</div>'; return; 
+        } 
+        
+        let h = ''; 
+        specialUnreachedData.forEach(r => { 
+          let descTime = r.appoint_time ? r.appoint_time.replace('T',' ').substring(5,16) : '無';
+          h += `
+            <div class="result-card mb-3 shadow-sm border-start border-[6px] border-[#d9534f]" style="background: rgba(255,255,255,0.8);">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5>
+                <span class="badge bg-secondary">${r.status || '待處理'}</span>
+              </div>
+              <div class="p-2 rounded bg-white bg-opacity-70 small mb-2" style="white-space: pre-wrap;">${r.event || '無紀錄內容'}</div>
+              <div class="row g-1 small mb-1 border-top pt-2 mt-1">
+                <div class="col-6">🆔 序號: ${r.barcode || '無'}</div>
+                <div class="col-6 text-[#87A96B] fw-bold">📞 電話: ${r.phone || '無'}</div>
+                <div class="col-6">⏰ 預約: ${descTime}</div>
+                <div class="col-6 text-muted">👤 服務人員: ${r.staff || '未註記'}</div>
+              </div>
+            </div>`; 
+        }); 
+        listDiv.innerHTML = h; 
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert('特殊名單讀取異常: ' + e.message);
+      }
     }
     
     function exportSpecialPhones() { if (specialUnreachedData.length === 0) return alert('沒有資料可匯出'); const phoneList = specialUnreachedData.map(d => d.phone).filter(p => p).join('\n'); const blob = new Blob([phoneList], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `多次未接電話匯出_${new Date().getTime()}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
