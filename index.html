@@ -1934,10 +1934,14 @@
       } else {
         if (!finalStatus) return alert("請選擇赴約狀態");
         if (finalStatus === "締結") {
-          orderNo = document.getElementById('appOrderNo').value.trim();
-          amount = document.getElementById('appAmount').value ? parseFloat(document.getElementById('appAmount').value) : null;
-          lutein = document.getElementById('appLutein').value;
-        }
+  const elOrderNo = document.getElementById('appOrderNo');
+  const elAmount = document.getElementById('appAmount');
+  const elLutein = document.getElementById('appLutein');
+
+  orderNo = elOrderNo ? elOrderNo.value.trim() : null;
+  amount = (elAmount && elAmount.value) ? parseFloat(elAmount.value) : null;
+  lutein = elLutein ? elLutein.value : null;
+}
       }
 
       document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1946,7 +1950,8 @@
         if (currentAppTab === 1) {
           const updatePayload = {
             status: finalStatus,
-            note: document.getElementById('appNote').value || null,
+            const elNote = document.getElementById('appNote');
+            note: elNote ? (elNote.value || null) : null,
             order_no: orderNo,
             amount: amount,
             lutein: lutein
