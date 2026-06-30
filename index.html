@@ -938,8 +938,13 @@
       });
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    // ✨ 修正：將所有初始加載邏輯捆綁，確保首次開啟 100% 渲染選單
+    window.addEventListener('DOMContentLoaded', async () => {
       initScrollAnimations();
+      checkDeviceSecurityLock();
+      initSelectors();
+      await loadData();
+      await updateSystemStatus();
     });
 
     function clearInput(id) { document.getElementById(id).value = ""; document.getElementById(id).focus();  }
@@ -985,7 +990,14 @@
       }
     }
 
-    window.addEventListener('load', updateSystemStatus);
+    // ✨ 修正：將所有初始加載邏輯捆綁，確保首次開啟 100% 渲染選單
+    window.addEventListener('DOMContentLoaded', async () => {
+      initScrollAnimations();
+      checkDeviceSecurityLock();
+      initSelectors();
+      await loadData();
+      await updateSystemStatus();
+    });
 
     function clearAllInputs() { 
       try {
@@ -1411,7 +1423,8 @@
             </div>
             ${imgHtml}
           </div>
-          <div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
+          // 確保 renderNextBatch() 底部是讀取小寫開頭的 createdAt
+<div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
         </div>`; 
       }
       container.insertAdjacentHTML('beforeend', h);
@@ -1474,7 +1487,8 @@
           careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
           careNote: item.care_note,
           note: item.note,
-          createdAt: item.created_at ? new Date(item.created_at).toLocaleString('zh-TW') : ''
+          // ✨ 修正：相容轉 text 欄位後的各種時間字串格式
+          createdAt: item.created_at ? (String(item.created_at).includes('T') ? new Date(item.created_at).toLocaleString('zh-TW') : item.created_at) : '無'
         }));
 
         currentActiveFilter = '全部'; 
@@ -2242,7 +2256,14 @@
         if(lockModal) lockModal.style.display = 'flex'; 
       }
     }
-    window.addEventListener('DOMContentLoaded', checkDeviceSecurityLock);
+    // ✨ 修正：將所有初始加載邏輯捆綁，確保首次開啟 100% 渲染選單
+    window.addEventListener('DOMContentLoaded', async () => {
+      initScrollAnimations();
+      checkDeviceSecurityLock();
+      initSelectors();
+      await loadData();
+      await updateSystemStatus();
+    });
 
     async function verifyDeviceGlobalPassword() {
       const inputPwd = document.getElementById('deviceGlobalPwdInput').value.trim();
