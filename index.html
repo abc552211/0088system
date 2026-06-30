@@ -1200,26 +1200,22 @@ const { data: appData } = await _supabase.from('consultations')
   activeReaderId = readerId;
   activeScanner = new Html5Qrcode(readerId);
 
-  // 🛑 核心優化：掃描器參數升級
+  // 掃描器參數設定
   const config = { 
     fps: 10, // 降低幀率，讓手機相機有足夠時間「自動對焦」
     qrbox: (videoWidth, videoHeight) => {
-      // 把掃描框改成「長方形」，寬度拉到螢幕的 90%，專門對付長條形病歷條碼
+      // 掃描框改成「長方形」，寬度拉到 90%，專門對付長條形病歷條碼
       return { width: videoWidth * 0.9, height: 150 };
     },
     experimentalFeatures: {
-      useBarCodeDetectorIfSupported: true // 啟用手機原生硬體掃碼加速 (大幅提升 iOS/Android 辨識率)
+      useBarCodeDetectorIfSupported: true // 啟用手機原生硬體掃碼加速
     }
-    // 移除了 aspectRatio: 1.0，讓手機保持正常的直立長寬比
   };
 
   try {
+    // 嚴格遵守套件規則：只傳入 facingMode
     await activeScanner.start(
-      { 
-        facingMode: "environment",
-        // 強制連續對焦模式 (如果手機支援的話)
-        advanced: [{ focusMode: "continuous" }] 
-      }, 
+      { facingMode: "environment" }, 
       config, 
       async (decodedText) => {
         let finalResult = decodedText.trim();
@@ -1229,23 +1225,19 @@ const { data: appData } = await _supabase.from('consultations')
           const childMatch = finalResult.match(/[A-Za-z]\d{5}/);
           if (childMatch) finalResult = childMatch[0].toUpperCase();
         } else {
-          // 注意：這裡的防呆會把「身分證字號」直接擋掉不輸入
           if (/^[A-Za-z][1,2]\d{8}$/.test(finalResult)) return; 
           
-          // 自動幫 8 碼數字補上 dash (例如: 12345678 -> 1234567-8)
           if (finalResult.length === 8 && !finalResult.includes('-')) {
             finalResult = finalResult.substring(0, 7) + "-" + finalResult.substring(7, 8);
           }
         }
 
         document.getElementById(inputId).value = finalResult;
-        if (navigator.vibrate) navigator.vibrate(50); // 掃到時震動回饋
+        if (navigator.vibrate) navigator.vibrate(50); 
         
         await stopGlobalScan();
       },
-      (errorMessage) => {
-        // 忽略掃描過程中的背景報錯，避免洗頻
-      }
+      (errorMessage) => {}
     );
   } catch (err) {
     alert("相機啟動失敗，請確認是否給予瀏覽器相機權限！\n錯誤訊息：" + err);
@@ -1757,7 +1749,17 @@ const { data: appData } = await _supabase.from('consultations')
         if (q.barcode) query = query.eq('id', q.barcode);
         if (q.name) query = query.ilike('name', `%${q.name}%`);
         if (q.phone) query = query.eq('phone', q.phone);
-        if (q.birthday) query = query.eq('birthday', q.birthday);
+        
+        // ✨ 新增：將 7 碼民國年 (例如 1001010) 轉為西元年 (2011/10/10) 進行搜尋
+        if (q.birthday) {
+          let searchBirth = q.birthday;
+          if (searchBirth.length === 7 && !isNaN(searchBirth)) {
+            const gregYear = parseInt(searchBirth.substring(0, 3), 10) + 1911;
+            searchBirth = `${gregYear}/${searchBirth.substring(3, 5)}/${searchBirth.substring(5, 7)}`;
+          }
+          // 防呆：同時相容資料庫可能是 yyyy/mm/dd 或 yyyy-mm-dd 格式
+          query = query.or(`birthday.eq.${searchBirth},birthday.eq.${searchBirth.replace(/\//g, '-')}`);
+        }
 
         const { data, error } = await query;
         document.getElementById('loadingOverlay').style.display = 'none';
@@ -1770,6 +1772,18 @@ const { data: appData } = await _supabase.from('consultations')
 
         let h = ''; 
         data.forEach((r, index) => { 
+          // ✨ 新增：將資料庫的西元年 (yyyy/mm/dd) 轉回民國年顯示
+          let displayBirth = r.birthday || '無';
+          if (displayBirth !== '無') {
+            const parts = displayBirth.includes('/') ? displayBirth.split('/') : displayBirth.split('-');
+            if (parts.length === 3) {
+              const y = parseInt(parts[0], 10);
+              if (!isNaN(y) && y > 1911) {
+                displayBirth = `${y - 1911}/${parts[1]}/${parts[2]}`;
+              }
+            }
+          }
+
           h += `<div class="result-card mb-4 children-card" id="ccard_${index}" style="position:relative;">
             <div onclick="shareCard('ccard_${index}', '兒控_${r.name}')" style="position:absolute; top:40px; right:8px; cursor:pointer; opacity:0.6; font-size:0.8rem; z-index:5;">📤</div>
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1777,7 +1791,7 @@ const { data: appData } = await _supabase.from('consultations')
               <span class="badge bg-[#b5838d] text-white px-2">${r.product || '未設商品'}</span>
             </div>
             <div class="row g-1 mb-2 small">
-              <div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-6"><b>📞 電話:</b> ${r.phone}</div>
+              <div class="col-6"><b>🎂 生日:</b> ${displayBirth}</div><div class="col-6"><b>📞 電話:</b> ${r.phone}</div>
               <div class="col-6"><b>📅 上次回診:</b> ${r.last_visit}</div><div class="col-6 text-danger fw-bold"><b>⏳ 未回天數:</b> ${r.days_not_back}</div>
             </div>
             <div class="row g-2 mb-2 p-2 rounded bg-white bg-opacity-70 border border-secondary border-opacity-10 small">
