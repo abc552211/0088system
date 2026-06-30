@@ -1103,11 +1103,12 @@
         renderTagButtons('sTagContainer', cache.tags);
 
         // 讀取預約處理名單 (來自 consultations)
-        const { data: appData } = await _supabase.from('consultations')
-          .select('*')
-          .eq('is_appoint', '是')
-          .in('status', ['待處理', '已關懷'])
-          .order('appoint_time', { ascending: true });
+const { data: appData } = await _supabase.from('consultations')
+  .select('*')
+  .eq('is_appoint', '是')
+  // 涵蓋：待處理、已關懷、null(空值) 以及 空字串
+  .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.')
+  .order('appoint_time', { ascending: true });
         
         cache.appointList = appData || [];
 
@@ -1601,7 +1602,37 @@
       document.getElementById('careModal').style.display = 'flex';
     }
 
-    function closeCareModal() { document.getElementById('careModal').style.display = 'none'; }
+    function closeCareModal() { document.getElementById('careModal').style.display = 'none';}
+    function handleCareSwitches(type) {
+  const isAppoint = document.getElementById('careIsAppoint');
+  const isRefuse = document.getElementById('careIsRefuse');
+  const isDeal = document.getElementById('careIsDeal');
+  const isSpecial = document.getElementById('careIsSpecial');
+
+  if (type === 'deal' && isDeal.checked) {
+    isRefuse.checked = false;
+    isSpecial.checked = false;
+    document.getElementById('careDealDiv').style.display = 'block';
+  } else if (type === 'deal' && !isDeal.checked) {
+    document.getElementById('careDealDiv').style.display = 'none';
+  }
+
+  if (type === 'refuse' && isRefuse.checked) {
+    isDeal.checked = false;
+    isSpecial.checked = false;
+    document.getElementById('careDealDiv').style.display = 'none';
+  }
+  
+  if (type === 'special' && isSpecial.checked) {
+    isDeal.checked = false;
+    isRefuse.checked = false;
+    document.getElementById('careDealDiv').style.display = 'none';
+  }
+  
+  if (type === 'appoint') {
+    document.getElementById('careTimeDiv').style.display = isAppoint.checked ? 'block' : 'none';
+  }
+}
 
     async function submitCareNote() {
       const idx = document.getElementById('careRowIndex').value;
