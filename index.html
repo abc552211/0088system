@@ -2249,7 +2249,8 @@
       }); 
       showPage('lostCarePage'); 
       
-      // 🛠️ 乾淨整合：只負責呼叫全域加載與撈取數據
+      // 🛠️ 完全移除手動 push/forEach 塞人邏輯！
+      // 進入此頁面時直接執行 loadData()，該選單便會直接與「諮詢輸入」共用 staff_list
       loadData(); 
       loadLostData(); 
     }
