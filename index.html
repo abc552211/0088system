@@ -195,33 +195,32 @@
       border: 1px solid rgba(91, 42, 48, 0.2) !important;
     }
 
-    /* 假設你的相機掃描視窗容器叫 #interactive */
-#interactive {
-  position: relative;
-  height: 160px; /* 💡 直接把高度縮小壓扁 (例如 120px ~ 160px) */
-  overflow: hidden;
-}
+    /* 相機掃描視窗容器 */
+    #interactive {
+      position: relative;
+      height: 160px; 
+      overflow: hidden;
+    }
 
-/* 🎯 強制在畫面正中央畫出一條「雷射紅線」 */
-#interactive::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 5%;
-  width: 90%;
-  height: 2px;
-  background-color: #ff0000; /* 🔴 鮮明紅色 */
-  box-shadow: 0 0 8px #ff0000; /* 帶有雷射發光特效 */
-  transform: translateY(-50%);
-  z-index: 10;
-  /* 讓紅線微微呼吸閃爍，更有高科技感 */
-  animation: laser-blink 1.5s infinite alternate;
-}
+    /* 畫面正中央雷射紅線 */
+    #interactive::after, .laser-line {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 5%;
+      width: 90%;
+      height: 2px;
+      background-color: #ff0000; 
+      box-shadow: 0 0 8px #ff0000; 
+      transform: translateY(-50%);
+      z-index: 10;
+      animation: laser-blink 1.5s infinite alternate;
+    }
 
-@keyframes laser-blink {
-  0% { opacity: 0.4; }
-  100% { opacity: 1; }
-}
+    @keyframes laser-blink {
+      0% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 
@@ -381,7 +380,7 @@
       <div class="clear-wrapper">
         <input type="text" id="cBirth" class="form-control" placeholder="例:0870115"><button class="clear-btn" onclick="clearInput('cBirth')">×</button>
       </div>
-      <label class="fw-bold small text-muted mt-3">拍照存檔</label><input type="file" id="cFile" class="form-control" accept="image/*" capture="camera" onchange="previewImg(this)"><img id="photoPreview">
+      <label class="fw-bold small text-muted mt-3">拍照存檔</label><input type="file" id="cFile" class="form-control" accept="image/*" capture="camera" onchange="previewImg(this)"><img id="photoPreview" alt="">
       <label class="fw-bold small text-muted mt-3">諮詢內容</label>
       <div class="clear-wrapper">
         <textarea id="cEvent" class="form-control" rows="3"></textarea><button class="clear-btn" onclick="clearInput('cEvent')">×</button>
@@ -652,11 +651,11 @@
     <div class="card search-box mb-3 p-3 bg-white border rounded shadow-sm">
       <div class="row g-2">
         <div class="col-6 position-relative">
-          <input type="text" id="searchLostName" class="form-control form-control-sm pe-4" placeholder="🔍 搜姓名">
+          <input type="text" id="searchLostName" class="form-control form-control-sm" placeholder="🔍 搜姓名">
           <span class="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="cursor:pointer; z-index:10;" onclick="clearLostSearch('searchLostName')">×</span>
         </div>
         <div class="col-6 position-relative">
-          <input type="tel" id="searchLostPhone" class="form-control form-control-sm pe-4" placeholder="🔍 搜電話">
+          <input type="tel" id="searchLostPhone" class="form-control form-control-sm" placeholder="🔍 搜電話">
           <span class="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="cursor:pointer; z-index:10;" onclick="clearLostSearch('searchLostPhone')">×</span>
         </div>
         <div class="col-12 my-2">
@@ -764,6 +763,7 @@
       </div>
     </div>
   </div>
+
   <div id="systemSettingsModal" class="modal-overlay" style="display:none;">
     <div class="modal-body" style="max-width: 480px; max-height: 85vh; overflow-y: auto;">
       <h5 class="mb-3 font-serif-tc fw-bold text-[#b5838d]">⚙️ 系統核心設定</h5>
@@ -808,6 +808,7 @@
       </div>
     </div>
   </div>
+
   <div id="deviceSecurityLockModal" class="modal-overlay" style="display:flex; background: #F5F0E8; z-index: 10000 !important;">
     <div class="modal-body text-center shadow-lg" style="border: 1px solid rgba(91,42,48,0.2);">
       <div class="text-4xl text-[#5b2a30] mb-3"><iconify-icon icon="ph:shield-check-duotone"></iconify-icon></div>
@@ -819,6 +820,7 @@
       </div>
     </div>
   </div>
+
   <div id="careModal" class="modal-overlay" style="display:none;">
     <div class="modal-body">
       <h5 class="mb-3 fw-bold" style="color: #84a59d;">❤️ 關懷紀錄輸入</h5>
@@ -966,18 +968,18 @@
         <button class="btn btn-light" onclick="document.getElementById('lostModal').style.display='none'">取消</button>
       </div>
     </div>
-  </div
-    <div id="imageViewerModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.85); z-index: 11000 !important;" onclick="closeImageViewer()">
+  </div>
+  
+  <div id="imageViewerModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.85); z-index: 11000 !important;" onclick="closeImageViewer()">
     <div style="position: relative; max-width: 90%; max-height: 90vh;">
-      <img id="viewerModalImg" src="" style="width: 100%; max-height: 85vh; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-      <div style="color: #fff; text-center mt-3 font-serif-tc text-sm tracking-wider opacity-75">點擊任意處關閉</div>
+      <img id="viewerModalImg" src="" style="width: 100%; max-height: 85vh; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" alt="">
+      <div style="color: #fff; text-align: center; margin-top: 13px;" class="font-serif-tc text-sm tracking-wider opacity-75">點擊任意處關閉</div>
     </div>
   </div>
 
   <input type="file" id="qr-input-file" accept="image/*" capture="camera" style="display:none;">
 
   <script>
-    // ⚡ 初始化 Supabase 客戶端
     const SUPABASE_URL = "https://niytitszugkfsfdwlwqt.supabase.co";
     const SUPABASE_KEY = "sb_publishable_dsxxWLXxfbTHmXOfmEUUfA_Y8h1tykR";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -987,31 +989,32 @@
     let currentRenderIndex = 0; 
     const BATCH_SIZE = 30; 
     let currentActiveFilter = '全部';
-    let cache = { staff: [], doctors: [], tags: [], appointList: [], lostAppointList: [], handoverList: [] }; 
-    let html5QrCode;
+    let currentLostFilter = '未關懷';
+    let currentLostXFilter = '全部';
+    let allLostData = [];
+    let cache = { staff: [], doctors: [], tags: [], appointList: [], lostAppointList: [], handoverList: [], lineUidMap: {} }; 
     let specialUnreachedData = [];
 
-    // ⚡ 全自動背景日曆發送器 (專屬 API 網址)
-const GAS_CALENDAR_URL = "https://script.google.com/macros/s/AKfycbwyB4bj_j36fQTyjNsL8nl1UGrSLh1NhDCMPFJ2EgNd3SDYqMbzREGsRTZVWsM52ouxng/exec"; 
+    const GAS_CALENDAR_URL = "https://script.google.com/macros/s/AKfycbwyB4bj_j36fQTyjNsL8nl1UGrSLh1NhDCMPFJ2EgNd3SDYqMbzREGsRTZVWsM52ouxng/exec"; 
 
-async function autoSyncCalendar(tableName, recordId, title, timeStr) {
-  try {
-    const response = await fetch(GAS_CALENDAR_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-      body: JSON.stringify({ events: [{ title: title, startTime: timeStr }] })
-    });
-    
-    const result = await response.json();
-    if (result.status === 'success') {
-      const idColumn = (tableName === 'lost_care') ? 'row_index' : 'id';
-      await _supabase.from(tableName).update({ cal_status: 'Done' }).eq(idColumn, recordId);
-      console.log(`✅ [${title}] 已自動寫入日曆！`);
+    async function autoSyncCalendar(tableName, recordId, title, timeStr) {
+      try {
+        const response = await fetch(GAS_CALENDAR_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+          body: JSON.stringify({ events: [{ title: title, startTime: timeStr }] })
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+          const idColumn = (tableName === 'lost_care') ? 'row_index' : 'id';
+          await _supabase.from(tableName).update({ cal_status: 'Done' }).eq(idColumn, recordId);
+          console.log(`✅ [${title}] 已自動寫入日曆！`);
+        }
+      } catch (error) {
+        console.error(`❌ 日曆寫入失敗 [${title}]:`, error);
+      }
     }
-  } catch (error) {
-    console.error(`❌ 日曆寫入失敗 [${title}]:`, error);
-  }
-}
 
     function initScrollAnimations() {
       if (typeof gsap === 'undefined') return;
@@ -1069,9 +1072,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-   
-  
-    // ⚡ 改為讀取 Supabase system_settings
     async function updateSystemStatus() {
       try {
         const { data, error } = await _supabase.from('system_settings').select('value').eq('key', 'is_maintenance').single();
@@ -1157,28 +1157,26 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       if (currentH > endHour) currentH = endHour;
       let currentM = Math.floor(now.getMinutes() / 5) * 5;
 
-      ['cAppY', 'hYear', 'careYear', 'appCY'].forEach(id => f(id, y, y + yearRange, y)); 
-      ['cAppM', 'hMonth', 'careMonth', 'appCM'].forEach(id => f(id, 1, 12, now.getMonth()+1)); 
-      ['cAppD', 'hDay', 'careDay', 'appCD'].forEach(id => f(id, 1, 31, now.getDate())); 
-      ['cAppH', 'hHour', 'careHour', 'appCH'].forEach(id => f(id, startHour, endHour, currentH)); 
-      ['cAppMin', 'hMin', 'careMin', 'appCMin'].forEach(id => f(id, 0, 59, currentM));
+      ['cAppY', 'hYear', 'careYear', 'appCY', 'lostY'].forEach(id => f(id, y, y + yearRange, y)); 
+      ['cAppM', 'hMonth', 'careMonth', 'appCM', 'lostM'].forEach(id => f(id, 1, 12, now.getMonth()+1)); 
+      ['cAppD', 'hDay', 'careDay', 'appCD', 'lostD'].forEach(id => f(id, 1, 31, now.getDate())); 
+      ['cAppH', 'hHour', 'careHour', 'appCH', 'lostH'].forEach(id => f(id, startHour, endHour, currentH)); 
+      ['cAppMin', 'hMin', 'careMin', 'appCMin', 'lostMin'].forEach(id => f(id, 0, 59, currentM));
     }
 
-    // ⚡ 改為非同步從 Supabase 拼裝出完整的基礎快取資料
     async function loadData() { 
       try {
-        // 1. 讀取基礎選單設定
         const { data: settings } = await _supabase.from('system_settings').select('*');
         if (settings) {
           settings.forEach(item => {
             if (item.key === 'staff_list') cache.staff = item.value;
             if (item.key === 'doctor_list') cache.doctors = item.value;
             if (item.key === 'tag_list') cache.tags = item.value;
+            if (item.key === 'line_uid_map') cache.lineUidMap = item.value; 
           });
         }
         cache.statuses = ['待處理', '已關懷', '締結', '其他', '特殊'];
 
-        // 2. 填入下拉選單與標籤
         fillS('cStaff', cache.staff); 
         fillS('hFrom', cache.staff); 
         fillS('hTo', cache.staff); 
@@ -1188,7 +1186,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         renderTagButtons('cTagContainer', cache.tags);
         renderTagButtons('sTagContainer', cache.tags);
 
-        // 3. 讀取預約處理名單 (原本的 consultations 資料表中預約為「是」且狀態為「待處理」或「已關懷」的列)
+        // 讀取預約處理名單
         const { data: appData } = await _supabase.from('consultations')
           .select('*')
           .eq('is_appoint', '是')
@@ -1198,13 +1196,14 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         cache.appointList = (appData || []).map(item => ({
           rowIndex: item.id,
           name: item.name,
+          phone: item.phone,
           time: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0, 16) : '無',
           staff: item.staff,
           note: item.event,
           display: `👤 ${item.name} | ⏰ ${item.appoint_time ? item.appoint_time.substring(5,16).replace('T',' ') : '無'} | 👤 ${item.staff || '未指定'}`
         }));
 
-        // 4. 讀取失聯客群預約名單 (lost_care 資料表中狀態為「未關懷」或「已關懷」但下次有預約時間的列)
+        // 讀取失聯客群預約名單
         const { data: lostAppData } = await _supabase.from('lost_care')
           .select('*')
           .eq('status', '未關懷')
@@ -1222,7 +1221,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
 
         renderAppSelect(); 
 
-        // 5. 讀取未完成的交接工作
+        // 讀取未完成的交接工作
         const { data: handData } = await _supabase.from('handovers')
           .select('*')
           .neq('push_status', 'Sent')
@@ -1275,8 +1274,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       });
     }
 
-    
-    
     function resetConsultForm() { 
       document.getElementById('cBarcode').value = ''; document.getElementById('cName').value = ''; document.getElementById('cPhone').value = ''; document.getElementById('cBirth').value = ''; document.getElementById('cEvent').value = ''; document.getElementById('cFile').value = ''; document.getElementById('photoPreview').style.display = 'none'; document.getElementById('photoPreview').src = ''; document.getElementById('isAppoint').checked = false; document.getElementById('cAppSet').style.display = 'none'; 
       document.querySelectorAll('#cTagContainer .tag-btn').forEach(b => {
@@ -1285,14 +1282,10 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       const btn = document.getElementById('btnC'); if(btn) btn.disabled = false; 
     }
 
-    
-
     let lastSearchScroll = 0;
-    // ⚡ 全域相機控制器，確保全站只有一個相機實例在跑
     let activeScanner = null;
     let activeReaderId = null;
 
-    // ⚡ 1. 統一相機串流控制器 (注入純外框紅線)
     async function toggleLiveScan(inputId, readerId) {
       const readerEl = document.getElementById(readerId);
       if (!readerEl) return;
@@ -1306,8 +1299,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
 
       readerEl.style.display = "block";
-      
-      // 🚀 關鍵：直接用內建 DOM 強制塞入紅線，這是一定會出現的實體線
       readerEl.innerHTML = '<div class="laser-line"></div>';
 
       activeReaderId = readerId;
@@ -1355,10 +1346,11 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 2. 徹底關閉相機，移除紅線
     async function stopGlobalScan() {
       if (activeScanner) {
-        try { await activeScanner.stop(); } catch (e) {}
+        try {
+          await activeScanner.stop();
+        } catch (e) { console.log("釋放相機微小錯誤: " + e); }
         activeScanner = null;
       }
       if (activeReaderId) {
@@ -1371,23 +1363,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 徹底釋放相機與硬體資源
-    async function stopGlobalScan() {
-      if (activeScanner) {
-        try {
-          await activeScanner.stop();
-        } catch (e) { console.log("釋放相機微小錯誤: " + e); }
-        activeScanner = null;
-      }
-      if (activeReaderId) {
-        document.getElementById(activeReaderId).style.display = "none";
-        activeReaderId = null;
-      }
-    }
-
-    // ⚡ 升級防卡死措施：重寫原本的頁面切換，只要切換頁面，一律先沒收相機鏡頭
     function showPage(id) { 
-      // 🚨 切換頁面防卡死：先徹底關閉任何執行中的即時掃碼
       stopGlobalScan();
 
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
@@ -1405,7 +1381,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       if(id === 'handover') switchHandTab(1); 
     }
 
-    // ⚡ 核心優化 2：照片強制剪裁壓縮成 300x300 節省文字空間
     function previewImg(input) {
       if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -1415,25 +1390,21 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 強制剪裁為 300x300 正方形
             canvas.width = 300;
             canvas.height = 300;
             
-            // 計算置中剪裁切片位置
             let size = Math.min(img.width, img.height);
             let sx = (img.width - size) / 2;
             let sy = (img.height - size) / 2;
             
             ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
             
-            // 以 0.75 的品質壓縮轉為超輕量 Base64 文字
             const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
             
             const preview = document.getElementById('photoPreview');
             preview.src = compressedBase64;
             preview.style.display = 'block';
             
-            // 暫存在 input 的安全屬性中，供 submit 直接呼叫
             input.dataset.compressed = compressedBase64;
           };
           img.src = e.target.result;
@@ -1442,7 +1413,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 諮詢登記確認送出 (讀取 300x300 Base64 文字直接儲存)
     async function submitConsult() { 
       const birthInput = document.getElementById('cBirth').value; 
       if(!document.getElementById('cName').value) { alert("請填寫姓名"); return; } 
@@ -1454,7 +1424,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       const btn = document.getElementById('btnC'); if(btn) btn.disabled = true; 
       
       const fileInput = document.getElementById('cFile');
-      const base64Photo = fileInput.dataset.compressed || ""; // 讀取 300x300 快取文字
+      const base64Photo = fileInput.dataset.compressed || ""; 
 
       const isAppointChecked = document.getElementById('isAppoint').checked;
       const realAppointStatus = isAppointChecked ? "是" : "否";
@@ -1477,7 +1447,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         doctor: document.getElementById('cDoctor').value, 
         is_appoint: realAppointStatus, 
         appoint_time: formattedTime, 
-        image_url: base64Photo || null, // 儲存 300x300 輕量化字串
+        image_url: base64Photo || null, 
         status: '待處理'
       }; 
 
@@ -1486,15 +1456,10 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         document.getElementById('loadingOverlay').style.display = 'none'; 
         if (error) throw error;
 
-        // 🚀 自動發送日曆
         if (isAppointChecked && formattedTime) {
-          // 格式：[姓名]內容-電話-處理人
           const title = `[${payload.name}]${finalEvent || '無'}-${payload.phone || '無'}-${payload.staff}`;
           autoSyncCalendar('consultations', data[0].id, title, formattedTime);
         }
-        document.getElementById('loadingOverlay').style.display = 'Success';
- 
-        if (error) throw error;{
         alert("🎉 諮詢紀錄與輕量照片已同步存入 Supabase！");
         fileInput.removeAttribute('data-compressed');
         resetConsultForm();
@@ -1503,11 +1468,8 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         alert("儲存失敗: " + e.message);
         if(btn) btn.disabled = false;
       }
-    };
+    }
     
-    
-
-    // ⚡ 4. 列表分批渲染卡片 (修正點擊、藍底殘留、大圖點不開)
     function renderNextBatch() {
       const container = document.getElementById('searchCardsContainer');
       if (!container) return;
@@ -1519,8 +1481,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         const r = filteredSearchData[i];
         const resId = 'scard_' + r.rowIndex; 
         
-        // 🚀 修正：小圖使用全相容點擊，直接調用大圖檢視，並解決點不開問題
-        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;"></div>` : ''; 
+        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;" alt=""></div>` : ''; 
         
         let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
         let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
@@ -1556,7 +1517,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       currentRenderIndex = endIndex;
     }
 
-    // ⚡ 彈窗放大檢視與關閉邏輯
     function openImageViewer(src) {
       const viewer = document.getElementById('imageViewerModal');
       const img = document.getElementById('viewerModalImg');
@@ -1569,7 +1529,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       document.getElementById('imageViewerModal').style.display = 'none';
     }
 
-    // ⚡ 3. 諮詢查詢：精準補抓、對齊資料庫所有欄位
     async function doSearch(keepScroll = false) { 
       const q = { 
         barcode: document.getElementById('sBarcode').value.trim(), 
@@ -1609,7 +1568,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           return new Date(a.created_at) - new Date(b.created_at);
         });
 
-        // 🚀 強制進行資料欄位本地映射，消滅大小寫與底線混用的衝突
         allSearchData = data.map(item => ({
           rowIndex: item.id,
           name: item.name,
@@ -1622,7 +1580,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           doctor: item.doctor,
           isAppoint: item.is_appoint,
           appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
-          imageUrl: item.image_url || "", // 🚀 綁定 image_url 至變數
+          imageUrl: item.image_url || "", 
           careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
           careNote: item.care_note,
           note: item.note,
@@ -1678,14 +1636,12 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         const s = r.status ? r.status.trim() : '';
         if (currentActiveFilter === '全部') return true;
         if (currentActiveFilter === '待處理') return s === '' || s === '待處理';
-        if (currentActiveFilter === '已關懷') return s === '已關懷';
+        if (currentActiveFilter === '已關懷') return s === 'visited' || s === '已關懷';
         if (currentActiveFilter === '結案') return s !== '' && s !== '待處理' && s !== '已關懷';
         return true;
       });
       renderNextBatch();
     }
-
-    
 
     window.addEventListener('scroll', () => {
       if (document.getElementById('searchPage').classList.contains('active')) {
@@ -1703,11 +1659,10 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
     }
 
     function closeUpdateModal() {
-      stopGlobalScan(); // 🚨 安全措施：關閉彈窗時，順手把相機徹底關閉釋放
+      stopGlobalScan(); 
       document.getElementById('updateIdModal').style.display = 'none';
     }
 
-    // ⚡ 補登條碼更新
     async function submitNewBarcode() {
       const rowIndex = document.getElementById('modalRowIndex').value;
       const newBarcode = document.getElementById('modalNewBarcode').value.trim();
@@ -1745,7 +1700,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
 
     function closeCareModal() { document.getElementById('careModal').style.display = 'none'; }
 
-    // ⚡ 送出關懷紀錄
     async function submitCareNote() {
       const idx = document.getElementById('careRowIndex').value;
       const note = document.getElementById('careNoteInput').value.trim();
@@ -1784,10 +1738,10 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           const { error } = await _supabase.from('consultations').update(updateData).eq('id', idx);
           document.getElementById('loadingOverlay').style.display = 'none';
           if (error) throw error;
-          // 🚀 自動發送日曆 (關懷後產生新預約)
-         if (isAppoint && formattedTime) {
-           autoSyncCalendar('consultations', idx, `[關懷預約] ${document.getElementById('careTargetName').innerText}`, formattedTime);
-         }
+          
+          if (isAppoint && formattedTime) {
+            autoSyncCalendar('consultations', idx, `[關懷預約] ${document.getElementById('careTargetName').innerText}`, formattedTime);
+          }
           alert("🎉 關懷紀錄儲存成功！");
           doSearch(true);
         } catch(e) {
@@ -1797,7 +1751,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 刪除諮詢紀錄
     async function confirmDelConsult(idx, name) {
       if(confirm(`⚠️ 若要更新狀態請打新單，勿刪除\n\n確定要永久刪除「${name}」的紀錄嗎？`)) {
         document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1814,7 +1767,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }   
     }
 
-    // ⚡ 兒控大檔精密檢索
     async function doChildrenSearch() { 
       const q = { 
         barcode: document.getElementById('cControlID').value.trim(), 
@@ -1885,7 +1837,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 編輯客檔儲存
     async function submitEditCustomer() {
       const rowIndex = document.getElementById('editRowIndex').value;
       const name = document.getElementById('editName').value.trim();
@@ -1909,7 +1860,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 新增工作交接清單登記
     async function submitHand() {
       const fromStaff = document.getElementById('hFrom').value;
       const toStaff = document.getElementById('hTo').value;
@@ -1922,8 +1872,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       if (isDelay) {
         const rawTime = document.getElementById('hDelayTime').value;
         if (!rawTime) { alert("請設定延遲推播時間"); return; }
-        // 🛑 修正 1：不再使用 ISOString，直接儲存當地時間字串 (如 2026-06-30 08:00)
-        // 避免 Make 或後台產生 8 小時時差誤判而立刻觸發
         delayTimeStr = rawTime.replace('T', ' '); 
       }
 
@@ -1936,7 +1884,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
       if (t.includes('指定')) finalContent += ` ${timeStr}`;
 
-      // 🛑 修正 2：如果不推播，把狀態直接改成 'None'，後台腳本就不會抓走它了
       let finalPushStatus = isNoNotify ? 'None' : 'Pending';
 
       document.getElementById('loadingOverlay').style.display = 'flex';
@@ -1950,7 +1897,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         is_delay: isDelay,
         delay_time: delayTimeStr,
         is_no_notify: isNoNotify,
-        push_status: finalPushStatus // 替換為修正後的狀態
+        push_status: finalPushStatus
       };
 
       try {
@@ -1958,10 +1905,8 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
-        // 🚀 自動發送日曆
         if (t.includes('指定')) {
           const calTime = payload.target_date.replace(/\//g, '-');
-          // 格式：[指定時間]內容-接交人
           const title = `[${t}]${hContentValue}-${toStaff}`;
           autoSyncCalendar('handovers', data[0].id, title, calTime);
         }
@@ -1976,7 +1921,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 刪除已完成交接項目
     async function delHand() { 
       const r = document.getElementById('hDelSelect').value; 
       if(r && confirm("確定刪除此項工作？")) { 
@@ -2010,7 +1954,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 儲存失聯客群關懷紀錄
     async function submitLostCare() {
       const row = document.getElementById('lostRowIndex').value;
       const staff = document.getElementById('lostStaff').value;
@@ -2044,15 +1987,12 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         const { error } = await _supabase.from('lost_care').update(payload).eq('row_index', row);
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
-        // 🚀 自動發送日曆 (關懷後產生新預約)
-         if (isAppoint && formattedTime) {
-           // 從暫存檔抓取該客戶的電話與服務人
-           const record = allSearchData.find(r => r.rowIndex == idx) || {};
-           const name = record.name || document.getElementById('careTargetName').innerText;
-           // 格式：[姓名]關懷內容-電話-處理人
-           const title = `[${name}]${note}-${record.phone || '無'}-${record.staff || '無'}`;
-           autoSyncCalendar('consultations', idx, title, formattedTime);
-         }
+
+        if (isAppoint && appTime) {
+          const calTime = appTime.replace(/\//g, '-');
+          const title = `[失聯預約]${document.getElementById('lostTargetName').value || '未定義'}-${note}`;
+          autoSyncCalendar('lost_care', row, title, calTime);
+        }
         alert("🎉 失聯客群關懷同步成功！");
         loadLostData();
       } catch(e) {
@@ -2061,7 +2001,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 特殊處理安全解鎖驗證
     async function submitSpecialAuth() {
       const pwd = document.getElementById('specialPwdInput').value;
       if (!pwd) { alert("請輸入密碼"); return; }
@@ -2088,7 +2027,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 特殊處理：批量簡訊發送一鍵結案
     async function submitSpecialBatch() {
       const selectedStaff = document.getElementById('specialBatchStaff').value;
       if (!selectedStaff) { alert("請選擇執行人員"); return; }
@@ -2121,7 +2059,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    // ⚡ 點擊更新預約處理狀態
     async function submitVisit() {
       const ix = document.getElementById('appSelect').value;
       if(ix === "") return alert("請先選擇處理名單");
@@ -2150,7 +2087,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
 
       try {
         if (currentAppTab === 1) {
-          // 諮詢預約名單處理更新
           const updatePayload = {
             status: finalStatus,
             note: document.getElementById('appNote').value || null,
@@ -2165,7 +2101,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           const { error } = await _supabase.from('consultations').update(updatePayload).eq('id', it.rowIndex);
           if (error) throw error;
         } else {
-          // 失聯關懷名單處理更新
           const updatePayload = {
             raw_status: finalStatus === '締結' ? '結案' : finalStatus,
             note: document.getElementById('appNote').value || null,
@@ -2179,11 +2114,9 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
           const { error } = await _supabase.from('lost_care').update(updatePayload).eq('row_index', it.rowIndex);
           if (error) throw error;
         }
-        // 🚀 自動發送日曆 (客戶要改期)
         if (isChangeTime && newTime) {
           const tableName = (currentAppTab === 1) ? 'consultations' : 'lost_care';
           const noteStr = document.getElementById('appNote').value || '改期';
-          // 格式：[姓名]改期備註-電話-處理人
           const title = `[${it.name}]${noteStr}-${it.phone || '無'}-${it.staff || '無'}`;
           autoSyncCalendar(tableName, it.rowIndex, title, newTime);
         }
@@ -2194,7 +2127,6 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       }
     }
 
-    //以下為原有UI控制與二維碼/OCR相容輔助方法 (完全保留未更動)
     function handleAppStatusChange(val) { const d = document.getElementById('appDealDiv'); if(d) d.style.display=(val==='締結')?'block':'none'; }
     function toggleAppChangeMode(chk) { document.getElementById('appChangeTimeDiv').style.display=chk?'block':'none'; document.getElementById('appStatusLabel').style.display=chk?'none':'block'; document.getElementById('appStatus').style.display=chk?'none':'block'; if(chk){if(document.getElementById('appDealDiv'))document.getElementById('appDealDiv').style.display='none';}else{handleAppStatusChange(document.getElementById('appStatus').value);} const n=document.getElementById('appNote'); if(n) n.placeholder=chk?"改期備註 (選填)":"可輸入備註"; }
     let currentAppTab = 1;
@@ -2222,7 +2154,7 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
         if (isTimed) { countTimed++; 
                       if (it.targetDate !== '無' && new Date(it.targetDate) < new Date()) countOverdue++; 
                      } else if (it.type.includes("物流")) { countLogistics++; 
-                                                                        } else { countTrack++; } }); 
+                                                                                        } else { countTrack++; } }); 
       let sortedList = [...cache.handoverList].sort((a, b) => { 
         const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); 
         const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); 
@@ -2236,54 +2168,50 @@ async function autoSyncCalendar(tableName, recordId, title, timeStr) {
               <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
               <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button></div>`; 
           sortedList.forEach((it, index) => { const isTimed = it.type.includes("指定"); 
-                                           const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
-                                           let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
-                                           if (isOverdue) cardClass += " handover-overdue"; 
-                                           
-                                           // 🚀 【核心修正：推播狀態精準辨識器】 - 時間一過自動消失
-let pushBadge = '';
-const pStatus = String(it.pushStatus || '').trim();
-const pTime = String(it.pushTime || '').trim();
+                                             const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
+                                             let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
+                                             if (isOverdue) cardClass += " handover-overdue"; 
+                                             
+                                             let pushBadge = '';
+                                             const pStatus = String(it.pushStatus || '').trim();
+                                             const pTime = String(it.pushTime || '').trim();
 
-if (pStatus === 'Pending' && pTime && pTime !== '無') {
-  // 將字串轉換為安全的時間格式 (把 - 換成 /，確保蘋果裝置也能正常解析)
-  const targetTime = new Date(pTime.replace(/-/g, '/'));
-  const now = new Date();
-  
-  // 💡 只有當「預計推播時間」大於「現在時間」(也就是還沒到)，才顯示小黃條
-  if (targetTime > now) {
-    pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
-                   <span class="spinner-grow spinner-grow-sm me-2"></span>
-                   <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
-                 </div>`;
-  }
-}
+                                             if (pStatus === 'Pending' && pTime && pTime !== '無') {
+                                               const targetTime = new Date(pTime.replace(/-/g, '/'));
+                                               const now = new Date();
+                                               
+                                               if (targetTime > now) {
+                                                 pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
+                                                                <span class="spinner-grow spinner-grow-sm me-2"></span>
+                                                                <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
+                                                              </div>`;
+                                               }
+                                             }
 
-                                           h += `
-                                           <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
-                                             <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
-                                             <div class="d-flex justify-content-start align-items-center mb-2">
-                                               <span onclick="confirmDelHandFromCard(${it.rowIndex}, '${it.content.substring(0,10).replace(/'/g, "\\'")}')" style="cursor:pointer; color:#d9534f; margin-right: 10px; font-weight:bold; font-size:0.8rem;">✖</span>
-                                             <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
-                                               <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small></div>
-                                             <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}</div>${pushBadge}
-                                           <div class="row g-0 small text-muted border-top pt-2">
-                                           <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}
-                                           </div>
-                                           </div>
-                                           </div>`; 
-                                         }); 
+                                             h += `
+                                             <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
+                                               <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+                                               <div class="d-flex justify-content-start align-items-center mb-2">
+                                                 <span onclick="confirmDelHandFromCard(${it.rowIndex}, '${it.content.substring(0,10).replace(/'/g, "\\'")}')" style="cursor:pointer; color:#d9534f; margin-right: 10px; font-weight:bold; font-size:0.8rem;">✖</span>
+                                               <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
+                                                 <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small></div>
+                                               <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}</div>${pushBadge}
+                                             <div class="row g-0 small text-muted border-top pt-2">
+                                             <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}
+                                             </div>
+                                             </div>
+                                             </div>`; 
+                                           }); 
       listDiv.innerHTML = h; 
     }
 
-
-    
     function handleCareSwitches(t) { const a = document.getElementById('careIsAppoint'), r = document.getElementById('careIsRefuse'), d = document.getElementById('careIsDeal'), s = document.getElementById('careIsSpecial'), td = document.getElementById('careTimeDiv'), dd = document.getElementById('careDealDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); d.checked = (t === 'deal' && d.checked); s.checked = (t === 'special' && s.checked); td.style.display = a.checked ? 'block' : 'none'; dd.style.display = d.checked ? 'block' : 'none'; }
     function clearLostSearch(id) { document.getElementById(id).value = ''; renderLostTabs(); }
     function handleLostSwitches(t) { const a = document.getElementById('lostIsApp'), r = document.getElementById('lostIsRefuse'), n = document.getElementById('lostIsNoAnswer'), td = document.getElementById('lostTimeDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); n.checked = (t === 'noAnswer' && n.checked); td.style.display = a.checked ? 'block' : 'none'; }
     function showLostCarePage() { document.getElementById('loadingOverlay').style.display = 'flex'; currentLostFilter = '未關懷'; document.querySelectorAll('.lost-filter-btn').forEach(b => { b.className = b.innerText.includes('未關懷') ? 'btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill' : 'btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'; }); showPage('lostCarePage'); const s = document.getElementById('searchLostStaff'); s.innerHTML = '<option value="">👤 所有服務人員</option>'; fillStaffOptions(s); loadLostData(); }
     function fillStaffOptions(s) { if (cache.staff) cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); }); }
     async function loadLostData() { document.getElementById('loadingOverlay').style.display = 'flex'; try { const { data } = await _supabase.from('lost_care').select('*'); document.getElementById('loadingOverlay').style.display = 'none'; allLostData = data || []; renderLostTabs(); } catch(e) { alert(e.message); } }
+    
     function getFilteredLostData() {
       const qName = document.getElementById('searchLostName').value.trim().toLowerCase();
       const qPhone = document.getElementById('searchLostPhone').value.trim();
@@ -2319,81 +2247,104 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
         return true;
       });
     }
+    
     function renderLostTabs() { const filtered = getFilteredLostData(); const years = {}; filtered.forEach(d => { years[d.finish_year] = (years[d.finish_year] || 0) + 1; }); const sorted = Object.keys(years).sort((a,b)=>b-a); let h = ''; sorted.forEach(y => { h += `<button class="btn btn-sm btn-outline-dark px-3 text-nowrap" onclick="renderLostCards('${y}')">${y}年 (${years[y]})</button>`; }); document.getElementById('lostYearTabs').innerHTML = h; if(sorted.length > 0) renderLostCards(sorted[0]); else document.getElementById('lostCareResults').innerHTML = '<div class="text-center text-muted py-5">查無客戶</div>'; }
     function filterLost(type, btn) { document.querySelectorAll('.lost-filter-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'); btn.className='btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill'; currentLostFilter = type; document.getElementById('lostXFilterRow').style.display = (type === '已關懷') ? 'flex' : 'none'; renderLostTabs(); }
     function filterLostX(xType, btn) { document.querySelectorAll('.lost-x-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill'); btn.className='btn btn-sm btn-primary lost-x-btn active px-3 rounded-pill'; currentLostXFilter = xType; renderLostTabs(); }
-    function renderLostCards(year) { const filtered = getFilteredLostData().filter(d => d.finish_year === year).sort((a,b)=>new Date(a.finish_date)-new Date(b.finish_date)); let h = ''; filtered.forEach((r, idx) => { h += `<div class="result-card mb-3" id="lostCard_${idx}" style="border-left: 6px solid #f4a261; position: relative; background: rgba(255,255,255,0.7);"><div onclick="shareCard('lostCard_${idx}', '失聯關懷_${r.name}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:1rem; z-index:5;">📤</div><div class="d-flex justify-content-between align-items-start mb-1"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><div class="text-end" style="margin-right:25px;"><div class="badge bg-warning text-dark mb-1">${r.raw_status}</div><br><span class="badge bg-white text-dark border" style="font-size:0.7rem;">完銷:${r.finish_date}</span></div></div><div class="row g-1 small mb-2"><div class="col-6">🆔 會員編號:<br><small class="fw-bold">${r.id}</small></div><div class="col-6">🎂 生日: ${r.birth}<br><span class="badge bg-white text-dark border">${2026-parseInt(r.birth.substring(0,4))}歲</span></div><div class="col-12 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">📄 單號: ${r.order_no}</div><div class="col-6 text-danger fw-bold">💰 金額: ${r.amount}</div><div class="col-12 mt-1 border-top pt-1 text-muted">🕒 最後關懷: ${r.last_care_time || '尚無'}</div></div>${r.status==='已關懷'?`<div class="mt-2 p-2 rounded bg-success bg-opacity-10 border border-success small"><b class="text-success">✅ 已關懷</b> | 👤 ${r.staff}<br>💬 內容: ${r.note}</div>`:''}<button class="btn btn-sm w-100 mt-2 text-white shadow-sm" style="background-color: #e76f51;" onclick="openLostModal(${r.row_index}, '${r.name}')">❤️ 進行關懷紀錄</button></div>`; }); document.getElementById('lostCareResults').innerHTML = h; }
+    
+    function renderLostCards(year) { 
+      const filtered = getFilteredLostData().filter(d => d.finish_year === year).sort((a,b)=>new Date(a.finish_date)-new Date(b.finish_date)); 
+      let h = ''; 
+      filtered.forEach((r, idx) => { 
+        h += `<div class="result-card mb-3" id="lostCard_${idx}" style="border-left: 6px solid #f4a261; position: relative; background: rgba(255,255,255,0.7);"><div onclick="shareCard('lostCard_${idx}', '失聯關懷_${r.name}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:1rem; z-index:5;">📤</div><div class="d-flex justify-content-between align-items-start mb-1"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><div class="text-end" style="margin-right:25px;"><div class="badge bg-warning text-dark mb-1">${r.raw_status}</div><br><span class="badge bg-white text-dark border" style="font-size:0.7rem;">完銷:${r.finish_date}</span></div></div><div class="row g-1 small mb-2"><div class="col-6">🆔 會員編號:<br><small class="fw-bold">${r.id}</small></div><div class="col-6">🎂 生日: ${r.birth}<br><span class="badge bg-white text-dark border">${2026-parseInt(r.birth.substring(0,4))}歲</span></div><div class="col-12 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">📄 單號: ${r.order_no}</div><div class="col-6 text-danger fw-bold">💰 金額: ${r.amount}</div><div class="col-12 mt-1 border-top pt-1 text-muted">🕒 最後關懷: ${r.last_care_time || '尚無'}</div></div>${r.status==='已關懷'?`<div class="mt-2 p-2 rounded bg-success bg-opacity-10 border border-success small"><b class="text-success">✅ 已關懷</b> | 👤 ${r.staff}<br>💬 內容: ${r.note}</div>`:''}<button class="btn btn-sm w-100 mt-2 text-white shadow-sm" style="background-color: #e76f51;" onclick="openLostModal(${r.row_index}, '${r.name}')">❤️ 進行關懷紀錄</button></div>`; 
+      }); 
+      document.getElementById('lostCareResults').innerHTML = h; 
+    }
+    
     function openLostModal(row, name) { document.getElementById('lostRowIndex').value = row; document.getElementById('lostTargetName').value = name; document.getElementById('lostNote').value = ""; document.getElementById('lostIsApp').checked = false; document.getElementById('lostIsRefuse').checked = false; document.getElementById('lostIsNoAnswer').checked = false; document.getElementById('lostTimeDiv').style.display = 'none'; const s = document.getElementById('lostStaff'); s.innerHTML = '<option value="">- 請選擇服務人 -</option>'; cache.staff.forEach(p => s.add(new Option(p, p))); document.getElementById('lostModal').style.display = 'flex'; }
-    function renderSpecialList() { specialUnreachedData = allLostData.filter(d => d.raw_status === '未接通'); document.getElementById('specialTotalCount').innerText = specialUnreachedData.length; const listDiv = document.getElementById('specialListContainer'); if (specialUnreachedData.length === 0) { listDiv.innerHTML = '<div class="alert alert-success text-center">目前沒有未接通的客戶資料！</div>'; return; } let h = ''; specialUnreachedData.forEach(r => { h += `<div class="result-card mb-3 shadow-sm border-start border-[6px] border-[#d9534f]" style="background: rgba(255,255,255,0.8);"><div class="d-flex justify-content-between align-items-center mb-2"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><span class="badge bg-danger">未接通</span></div><div class="row g-1 small mb-1"><div class="col-6">🎂 生日: ${r.birth}</div><div class="col-6 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">💰 金額: ${r.amount}</div><div class="col-6">📅 完銷: ${r.finish_date}</div><div class="col-12 text-muted border-top pt-1 mt-1">👤 人員: ${r.staff}</div></div></div>`; }); listDiv.innerHTML = h; }
+    
+    function renderSpecialList() { 
+      specialUnreachedData = allLostData.filter(d => d.raw_status === '未接通'); 
+      document.getElementById('specialTotalCount').innerText = specialUnreachedData.length; 
+      const listDiv = document.getElementById('specialListContainer'); 
+      if (specialUnreachedData.length === 0) { 
+        listDiv.innerHTML = '<div class="alert alert-success text-center">目前沒有未接通的客戶資料！</div>'; return; 
+      } 
+      let h = ''; 
+      specialUnreachedData.forEach(r => { 
+        h += `<div class="result-card mb-3 shadow-sm border-start border-[6px] border-[#d9534f]" style="background: rgba(255,255,255,0.8);"><div class="d-flex justify-content-between align-items-center mb-2"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><span class="badge bg-danger">未接通</span></div><div class="row g-1 small mb-1"><div class="col-6">🎂 生日: ${r.birth}</div><div class="col-6 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">💰 金額: ${r.amount}</div><div class="col-6">📅 完銷: ${r.finish_date}</div><div class="col-12 text-muted border-top pt-1 mt-1">👤 人員: ${r.staff}</div></div></div>`; 
+      }); 
+      listDiv.innerHTML = h; 
+    }
+    
     function exportSpecialPhones() { if (specialUnreachedData.length === 0) return alert('沒有資料可匯出'); const phoneList = specialUnreachedData.map(d => d.phone).filter(p => p).join('\n'); const blob = new Blob([phoneList], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `多次未接電話匯出_${new Date().getTime()}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
     function openSpecialBatchModal() { if (specialUnreachedData.length === 0) return alert('沒有可修改的資料'); const sel = document.getElementById('specialBatchStaff'); sel.innerHTML = '<option value="">--請選擇--</option>'; cache.staff.forEach(s => { if(s) sel.add(new Option(s, s)); }); document.getElementById('specialBatchModal').style.display = 'flex'; }
     async function shareCard(elementId, fileName) { const element = document.getElementById(elementId); if (!element) return; document.getElementById('loadingOverlay').style.display = 'flex'; try { const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: null, logging: false }); canvas.toBlob(async (blob) => { const file = new File([blob], `${fileName}.png`, { type: 'image/png' }); document.getElementById('loadingOverlay').style.display = 'none'; if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); } else { const link = document.createElement('a'); link.download = `${fileName}.png`; link.href = canvas.toDataURL(); link.click(); alert("圖片已成功下載至您的裝置。"); } }, 'image/png'); } catch (e) { document.getElementById('loadingOverlay').style.display = 'none'; alert("分享失敗: " + e.toString()); } }
-    async function startScan(inputId, readerId) { const fileInput = document.getElementById('qr-input-file'); fileInput.onchange = async (e) => { if (e.target.files.length === 0) return; const overlay = document.getElementById('loadingOverlay'); overlay.style.display = 'flex'; document.getElementById('loadingText').innerText = "🔍 強化辨識中..."; const image = await createImageBitmap(e.target.files[0]); const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const size = Math.min(image.width, image.height) * 0.8; canvas.width = 1200; canvas.height = 1200; ctx.filter = 'contrast(300%) grayscale(1) brightness(90%)'; ctx.drawImage(image, (image.width-size)/2, (image.height-size)/2, size, size, 0, 0, 1200, 1200); const html5QrCode = new Html5Qrcode(readerId); const dataUrl = canvas.toDataURL('image/jpeg', 1.0); try { let barcodeResult = await html5QrCode.scanFile(dataUrl, false); if (inputId === 'cControlID') { const childMatch = barcodeResult.match(/[A-Za-z]\d{5}/); if (!childMatch) throw new Error("Not child ID"); barcodeResult = childMatch[0].toUpperCase(); } else { if (/^[A-Za-z][1,2]\d{8}$/.test(barcodeResult)) throw new Error("ID"); if (barcodeResult.length === 8 && !barcodeResult.includes('-')) barcodeResult = barcodeResult.substring(0, 7) + "-" + barcodeResult.substring(7, 8); } document.getElementById(inputId).value = barcodeResult; overlay.style.display = 'none'; html5QrCode.clear(); fileInput.value = ""; } catch (err) { try { const { data: { text } } = await Tesseract.recognize(dataUrl, 'eng', { tessedit_char_whitelist: inputId==='cControlID'?'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':'0123456789-' }); const match = text.match(inputId==='cControlID'?/[A-Za-z]\d{5}/:/\d{7}-\d{1}/); if (match) document.getElementById(inputId).value = match[0].toUpperCase(); else alert("❌ 條碼模糊或格式不符，請重新拍攝。"); } catch(e) { alert("辨識引擎異常"); } finally { overlay.style.display = 'none'; fileInput.value = ""; } } }; fileInput.click(); }
-    window.addEventListener('load', () => { initSelectors(); loadData(); });
-
-    // ⚡ 改編版：網頁初始化載入資料
-    async function loadData() { 
-      try {
-        const { data: settings } = await _supabase.from('system_settings').select('*');
-        if (settings) {
-          settings.forEach(item => {
-            if (item.key === 'staff_list') cache.staff = item.value;
-            if (item.key === 'doctor_list') cache.doctors = item.value;
-            if (item.key === 'tag_list') cache.tags = item.value;
-            if (item.key === 'line_uid_map') cache.lineUidMap = item.value; // 快取 UID 地圖
-          });
-        }
-        cache.statuses = ['待處理', '已關懷', '締結', '其他', '特殊'];
-
-        fillS('cStaff', cache.staff); 
-        fillS('hFrom', cache.staff); 
-        fillS('hTo', cache.staff); 
-        fillS('cDoctor', cache.doctors); 
-        fillS('appStatus', cache.statuses); 
-        fillS('sStaff', cache.staff);
-        renderTagButtons('cTagContainer', cache.tags);
-        renderTagButtons('sTagContainer', cache.tags);
-
-        // 讀取預約處理名單
-        const { data: appData } = await _supabase.from('consultations').select('*').eq('is_appoint', '是').in('status', ['待處理', '已關懷']).order('appoint_time', { ascending: true });
-        cache.appointList = (appData || []).map(item => ({
-          rowIndex: item.id, name: item.name,
-          time: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0, 16) : '無',
-          staff: item.staff, note: item.event,
-          display: `👤 ${item.name} | ⏰ ${item.appoint_time ? item.appoint_time.substring(5,16).replace('T',' ') : '無'} | 👤 ${item.staff || '未指定'}`
-        }));
-
-        // 讀取未完成交接
-        const { data: handData } = await _supabase.from('handovers').select('*').neq('push_status', 'Sent').order('created_at', { ascending: false });
-        cache.handoverList = (handData || []).map(item => ({
-          rowIndex: item.id, type: item.type, targetDate: item.target_date || '無', content: item.content, from: item.from_staff, to: item.to_staff, pushStatus: item.push_status, pushTime: item.delay_time,
-          info: `📥 ${item.to_staff} | 📌 ${item.content.substring(0, 15)}...`
-        }));
-
-        const del = document.getElementById('hDelSelect'); 
-        del.innerHTML = '<option value="">- 選擇要刪交接 -</option>'; 
-        cache.handoverList.forEach(it => del.add(new Option(it.info, it.rowIndex))); 
-        renderHandoverList(); 
-      } catch (err) { console.error("載入出錯:", err); }
+    
+    async function startScan(inputId, readerId) { 
+      const fileInput = document.getElementById('qr-input-file'); 
+      fileInput.onchange = async (e) => { 
+        if (e.target.files.length === 0) return; 
+        const overlay = document.getElementById('loadingOverlay'); 
+        overlay.style.display = 'flex'; 
+        document.getElementById('loadingText').innerText = "🔍 強化辨識中..."; 
+        const image = await createImageBitmap(e.target.files[0]); 
+        const canvas = document.createElement('canvas'); 
+        const ctx = canvas.getContext('2d'); 
+        const size = Math.min(image.width, image.height) * 0.8; 
+        canvas.width = 1200; canvas.height = 1200; 
+        ctx.filter = 'contrast(300%) grayscale(1) brightness(90%)'; 
+        ctx.drawImage(image, (image.width-size)/2, (image.height-size)/2, size, size, 0, 0, 1200, 1200); 
+        const html5QrCode = new Html5Qrcode(readerId); 
+        const dataUrl = canvas.toDataURL('image/jpeg', 1.0); 
+        try { 
+          let barcodeResult = await html5QrCode.scanFile(dataUrl, false); 
+          if (inputId === 'cControlID') { 
+            const childMatch = barcodeResult.match(/[A-Za-z]\d{5}/); 
+            if (!childMatch) throw new Error("Not child ID"); 
+            barcodeResult = childMatch[0].toUpperCase(); 
+          } else { 
+            if (/^[A-Za-z][1,2]\d{8}$/.test(barcodeResult)) throw new Error("ID"); 
+            if (barcodeResult.length === 8 && !barcodeResult.includes('-')) barcodeResult = barcodeResult.substring(0, 7) + "-" + barcodeResult.substring(7, 8); 
+          } 
+          document.getElementById(inputId).value = barcodeResult; 
+          overlay.style.display = 'none'; 
+          html5QrCode.clear(); 
+          fileInput.value = ""; 
+        } catch (err) { 
+          try { 
+            const { data: { text } } = await Tesseract.recognize(dataUrl, 'eng', { tessedit_char_whitelist: inputId==='cControlID'?'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':'0123456789-' }); 
+            const match = text.match(inputId==='cControlID'?/[A-Za-z]\d{5}/:/\d{7}-\d{1}/); 
+            if (match) document.getElementById(inputId).value = match[0].toUpperCase(); 
+            else alert("❌ 條碼模糊或格式不符，請重新拍攝。"); 
+          } catch(e) { 
+            alert("辨識引擎異常"); 
+          } finally { 
+            overlay.style.display = 'none'; 
+            fileInput.value = ""; 
+          } 
+        } 
+      }; 
+      fileInput.click(); 
+    }
+    
+    function openSpecialAuth() {
+      document.getElementById('specialPwdInput').value = "";
+      document.getElementById('specialAuthModal').style.display = 'flex';
     }
 
-    // 🔴 ---------------- 新增：裝置防護鎖與系統設定邏輯 ---------------- 🔴
-    
-    // ⚡ 檢查本機瀏覽器深處是否有過往的免死金牌認證
     async function checkDeviceSecurityLock() {
       const isVerified = localStorage.getItem("device_authorized_token");
       const lockModal = document.getElementById('deviceSecurityLockModal');
       
       if (isVerified === "true") {
-        if(lockModal) lockModal.style.display = 'none'; // 鎖直接隱形，免認證
+        if(lockModal) lockModal.style.display = 'none'; 
       } else {
-        if(lockModal) lockModal.style.display = 'flex'; // 跳出阻斷鎖
+        if(lockModal) lockModal.style.display = 'flex'; 
       }
     }
-    // 綁定於網頁載入時立刻執行檢查
     window.addEventListener('DOMContentLoaded', checkDeviceSecurityLock);
 
-    // ⚡ 升級版：個人化裝置防護鎖驗證（依個人密碼解鎖，並自動鎖定身分）
     async function verifyDeviceGlobalPassword() {
       const inputPwd = document.getElementById('deviceGlobalPwdInput').value.trim();
       if(!inputPwd) return alert("請輸入您的個人解鎖密碼！");
@@ -2402,7 +2353,6 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
       document.getElementById('loadingOverlay').style.display = 'flex';
       
       try {
-        // 讀取資料庫中的 line_uid_map
         const { data, error } = await _supabase.from('system_settings').select('value').eq('key', 'line_uid_map').single();
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
@@ -2410,7 +2360,6 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
         const uidMap = data ? data.value : {};
         let authenticatedUser = null;
 
-        // 走訪地圖，尋找密碼相符的員工
         for (const staffName in uidMap) {
           if (uidMap[staffName] && uidMap[staffName].password === inputPwd) {
             authenticatedUser = staffName;
@@ -2419,9 +2368,8 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
         }
         
         if (authenticatedUser) {
-          // 🎉 認證成功！鎖定該員工身分到瀏覽器深處
           localStorage.setItem("device_authorized_token", "true");
-          localStorage.setItem("current_staff_name", authenticatedUser); // 記住他是誰
+          localStorage.setItem("current_staff_name", authenticatedUser); 
           
           alert(`🎉 歡迎【${authenticatedUser}】！裝置授權成功，未來在此裝置發送交接單將自動代入您的身分。`);
           document.getElementById('deviceSecurityLockModal').style.display = 'none';
@@ -2437,33 +2385,28 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
       }
     }
 
-    // ⚡ 安全驗證版：點擊系統設定時先進行密碼驗證
     async function openSystemSettingsModal() {
       const checkPwd = prompt("🔒 請輸入系統核心維護密碼：");
-      if (!checkPwd) return; // 取消或留空就直接跳出
+      if (!checkPwd) return; 
 
       document.getElementById('loadingText').innerText = "安全憑證核對中...";
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
-        // 去資料庫比對 special_password 是否正確
         const { data, error } = await _supabase.from('system_settings').select('value').eq('key', 'special_password').single();
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
         if (data && data.value === checkPwd) {
-          // 🎉 驗證成功，開始撈取最新設定填入輸入框
           document.getElementById('setStaffInput').value = cache.staff.join(',');
           document.getElementById('setDoctorInput').value = cache.doctors.join(',');
           document.getElementById('setTagInput').value = cache.tags.join(',');
           
           const mapObj = cache.lineUidMap || {};
           const mapLines = Object.keys(mapObj).map(name => {
-            // 如果是新架構的物件格式 {"uid":"...", "password":"..."}
             if (typeof mapObj[name] === 'object') {
               return `${name}:${mapObj[name].uid}:${mapObj[name].password}`;
             }
-            // 相容舊字串格式
             return `${name}:${mapObj[name]}`;
           });
           document.getElementById('setUidMapInput').value = mapLines.join('\n');
@@ -2471,9 +2414,8 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
           const maintSelect = document.getElementById('setMaintSelect');
           const dotClass = document.getElementById('sysDot').className;
           maintSelect.value = dotClass.includes('dot-offline') ? "true" : "false";
-          document.getElementById('setPwdInput').value = data.value; // 直接帶入目前密碼
+          document.getElementById('setPwdInput').value = data.value; 
 
-          // 打開設定大彈窗
           document.getElementById('systemSettingsModal').style.display = 'flex';
         } else {
           alert("❌ 密碼錯誤！拒絕存取系統核心設定。");
@@ -2484,7 +2426,6 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
       }
     }
 
-    // ⚡ 升級版儲存：完美打包 姓名、UID 與 個人裝置密碼
     async function submitSystemSettings() {
       const staffArr = document.getElementById('setStaffInput').value.split(',').map(s => s.trim()).filter(s => s);
       const doctorArr = document.getElementById('setDoctorInput').value.split(',').map(d => d.trim()).filter(d => d);
@@ -2492,7 +2433,6 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
       const isMaint = document.getElementById('setMaintSelect').value === "true";
       const newPwd = document.getElementById('setPwdInput').value.trim();
 
-      // 解析多欄位對照表 (支援 姓名:UID:密碼)
       const uidLines = document.getElementById('setUidMapInput').value.split('\n');
       const newUidMap = {};
       uidLines.forEach(line => {
@@ -2500,7 +2440,7 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
           const parts = line.split(':');
           const name = parts[0].trim();
           const uid = parts[1].trim();
-          const pwd = parts[2] ? parts[2].trim() : "123456"; // 若沒填密碼預設給 123456
+          const pwd = parts[2] ? parts[2].trim() : "123456"; 
           
           if (name && uid) {
             newUidMap[name] = { "uid": uid, "password": pwd };
@@ -2531,19 +2471,7 @@ if (pStatus === 'Pending' && pTime && pTime !== '無') {
         alert("❌ 設定儲存失敗: " + e.message);
       }
     }
-    // 🔴 ---------------- 結束：裝置防護鎖與系統設定邏輯 ---------------- 🔴
 
-   // 1. 打開編輯彈窗並填入舊資料
-    function openEditCustomerModal(rowIndex, name, birthday, phone) {
-      document.getElementById('editRowIndex').value = rowIndex;
-      document.getElementById('editName').value = name;
-      document.getElementById('editBirth').value = birthday;
-      document.getElementById('editPhone').value = (phone === 'null' || !phone) ? '' : phone;
-      
-      document.getElementById('editCustomerModal').style.display = 'flex';
-    }
-
-    // 2. 關閉編輯彈窗
     function closeEditCustomerModal() {
       document.getElementById('editCustomerModal').style.display = 'none';
     }
