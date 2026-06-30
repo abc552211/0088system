@@ -37,7 +37,7 @@
       --font-color-main: #4a4e69;      /* 莫蘭迪深鐵灰 */
       --font-color-muted: #8e9aaf;     /* 莫蘭迪霧藍灰 */
       
-      /* 功能按鈕專屬莫蘭迪色（全數微調，確保層次感） */
+      /* 功能按鈕專屬莫蘭迪色 */
       --btn-consult: #93a285;   /* 霧感灰綠 */
       --btn-appoint: #a3b2a6;   /* 灰藍綠 */
       --btn-handover: #a89a9f;  /* 煙燻藕粉 */
@@ -101,8 +101,8 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    /* 🛠️ 修正：移除通配的白字，改由各按鈕類型單獨控制文字顏色，防止標籤文字不見 */
-    .btn { border-radius: 12px; font-weight: 600; padding: 12px; transition: all 0.2s ease; border: none; }
+    /* 🛠️ 核心修正：還原基礎 .btn 屬性，確保所有點擊事件、active 縮放行為不被 pointer-events 阻擋 */
+    .btn { border-radius: 12px; font-weight: 600; padding: 12px; transition: all 0.2s ease; border: none; pointer-events: auto !important; }
     
     /* 深色系按鈕配白字 */
     .btn-primary { background-color: var(--btn-consult) !important; color: #ffffff !important; }
@@ -110,7 +110,7 @@
     .btn-info { background-color: var(--btn-handover) !important; color: #ffffff !important; }
     .btn-dark { background-color: var(--btn-search) !important; color: #ffffff !important; }
     
-    /* 淺色/粉色系按鈕配深灰字，確保清晰度 */
+    /* 淺色/功能性按鈕配色，強制覆蓋背景與文字，確保按鈕事件絕對正常 */
     .btn-warning { background-color: var(--btn-children) !important; color: #4a4e69 !important; }
     .btn-light { background-color: rgba(74, 78, 105, 0.08) !important; color: var(--font-color-main) !important; }
     .btn-outline-danger { background-color: transparent !important; border: 1px solid #e5989b !important; color: #e5989b !important; }
@@ -156,12 +156,10 @@
     .sub-filter-scroll::-webkit-scrollbar { display: none; }
     #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 78, 105, 0.4); backdrop-filter: blur(4px); display: none; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
     
-    /* 🛠️ 修正：分類快速按鈕（Tab）因為權限重疊導致白字被遮蔽的問題，強制使用深灰字與白底 */
     .nav-tabs-custom { display: flex; background: rgba(142, 154, 175, 0.12); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
     .nav-tabs-custom div { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; color: var(--font-color-main) !important; opacity: 0.5; }
     .nav-tabs-custom .active-tab { background: #ffffff !important; color: var(--font-color-main) !important; box-shadow: 0 2px 8px rgba(74, 78, 105, 0.08); opacity: 1 !important; }
     
-    /* 🛠️ 修正：卡片過濾滾動條按鈕文字顏色控制（解決被遮蔽問題） */
     .sub-filter-scroll .btn-outline-secondary { background-color: #ffffff !important; color: var(--font-color-main) !important; border: 1px solid rgba(142, 154, 175, 0.25) !important; }
     .sub-filter-scroll .btn-primary { background-color: var(--btn-search) !important; color: #ffffff !important; }
     #handoverListView .sub-filter-scroll .btn-primary { background-color: var(--btn-consult) !important; color: #ffffff !important; }
@@ -415,15 +413,9 @@
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
     <div class="card p-4" style="background: rgba(255, 250, 240, 0.98) !important;">
       <h4 class="mb-4">📝 客戶今日預約處理</h4>
-      <div class="nav-tabs-custom mb-3">
-        <div id="tabApp1" class="active-tab" onclick="switchAppTab(1)">諮詢預約</div>
-        <div id="tabApp2" onclick="switchAppTab(2)">交接提醒預約</div>
-      </div>
       
-      <!-- 卡片牆容器 -->
       <div id="appCardsContainer" class="mt-2"></div>
 
-      <!-- 點擊小卡後才彈出的動態處理抽屜 (原本的處理表單) -->
       <div id="appDetail" style="display:none;" class="mt-4 pt-3 border-top border-secondary border-opacity-25">
         <div class="alert alert-info border-0 shadow-sm" style="background-color: rgba(132, 165, 157, 0.15); color: #3e2723;" id="appInfo"></div>
         <div class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
