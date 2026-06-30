@@ -2211,7 +2211,23 @@
     function handleCareSwitches(t) { const a = document.getElementById('careIsAppoint'), r = document.getElementById('careIsRefuse'), d = document.getElementById('careIsDeal'), s = document.getElementById('careIsSpecial'), td = document.getElementById('careTimeDiv'), dd = document.getElementById('careDealDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); d.checked = (t === 'deal' && d.checked); s.checked = (t === 'special' && s.checked); td.style.display = a.checked ? 'block' : 'none'; dd.style.display = d.checked ? 'block' : 'none'; }
     function clearLostSearch(id) { document.getElementById(id).value = ''; renderLostTabs(); }
     function handleLostSwitches(t) { const a = document.getElementById('lostIsApp'), r = document.getElementById('lostIsRefuse'), n = document.getElementById('lostIsNoAnswer'), td = document.getElementById('lostTimeDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); n.checked = (t === 'noAnswer' && n.checked); td.style.display = a.checked ? 'block' : 'none'; }
-    function showLostCarePage() { document.getElementById('loadingOverlay').style.display = 'flex'; currentLostFilter = '未關懷'; document.querySelectorAll('.lost-filter-btn').forEach(b => { b.className = b.innerText.includes('未關懷') ? 'btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill' : 'btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'; }); showPage('lostCarePage'); const s = document.getElementById('searchLostStaff'); s.innerHTML = '<option value="">👤 所有服務人員</option>'; fillStaffOptions(s); loadLostData(); }
+    function showLostCarePage() { 
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      currentLostFilter = '未關懷'; 
+      document.querySelectorAll('.lost-filter-btn').forEach(b => { 
+        b.className = b.innerText.includes('未關懷') ? 'btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill' : 'btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'; 
+      }); 
+      showPage('lostCarePage'); 
+      
+      // 🛠️ 修正：搜尋欄的員工下拉選單，直接從快取的 staff_list (JSONB 陣列) 載入
+      const s = document.getElementById('searchLostStaff'); 
+      s.innerHTML = '<option value="">👤 所有服務人員</option>'; 
+      if (cache.staff && cache.staff.length > 0) {
+        cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); });
+      }
+      
+      loadLostData(); 
+    }
     function fillStaffOptions(s) { if (cache.staff) cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); }); }
     async function loadLostData() { document.getElementById('loadingOverlay').style.display = 'flex'; try { const { data } = await _supabase.from('lost_care').select('*'); document.getElementById('loadingOverlay').style.display = 'none'; allLostData = data || []; renderLostTabs(); } catch(e) { alert(e.message); } }
     
@@ -2320,7 +2336,37 @@
       document.getElementById('lostCareResults').innerHTML = h; 
     }
     
-    function openLostModal(row, name) { document.getElementById('lostRowIndex').value = row; document.getElementById('lostTargetName').value = name; document.getElementById('lostNote').value = ""; document.getElementById('lostIsApp').checked = false; document.getElementById('lostIsRefuse').checked = false; document.getElementById('lostIsNoAnswer').checked = false; document.getElementById('lostTimeDiv').style.display = 'none'; const s = document.getElementById('lostStaff'); s.innerHTML = '<option value="">- 請選擇服務人 -</option>'; cache.staff.forEach(p => s.add(new Option(p, p))); document.getElementById('lostModal').style.display = 'flex'; }
+    function openLostModal(row, name) { 
+      document.getElementById('lostRowIndex').value = row; 
+      document.getElementById('lostTargetName').value = name; 
+      document.getElementById('lostNote').value = ""; 
+      document.getElementById('lostIsApp').checked = false; 
+      document.getElementById('lostIsRefuse').checked = false; 
+      document.getElementById('lostIsNoAnswer').checked = false; 
+      document.getElementById('lostTimeDiv').style.display = 'none'; 
+      
+      // 🛠️ 1. 修正：開啟 Modal 時立即初始化年月日與時間選單
+      initSelectors(); 
+
+      // 🛠️ 2. 修正：從快取 (cache.staff) 撈取最新員工清單
+      const s = document.getElementById('lostStaff'); 
+      s.innerHTML = '<option value="">- 請選擇服務人 -</option>'; 
+      if (cache.staff && cache.staff.length > 0) {
+        cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); });
+      } else {
+        // 備用防呆：如果快取尚未載入，嘗試從本地儲存代入
+        const localStaff = localStorage.getItem("current_staff_name");
+        if (localStaff) s.add(new Option(localStaff, localStaff));
+      }
+      
+      // 自動帶入目前登入此裝置的員工姓名（優化體驗）
+      const currentStaff = localStorage.getItem("current_staff_name");
+      if (currentStaff && cache.staff.includes(currentStaff)) {
+        s.value = currentStaff;
+      }
+
+      document.getElementById('lostModal').style.display = 'flex'; 
+    }
     
     function renderSpecialList() { 
       specialUnreachedData = allLostData.filter(d => d.raw_status === '未接通'); 
