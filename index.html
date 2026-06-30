@@ -1391,8 +1391,7 @@
           <div class="d-flex justify-content-between align-items-center mt-2">
             <div>
               <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); window.getSelection().removeAllRanges();">🗑️ 刪除</button>
-              // 建議將 renderNextBatch() 內的編輯按鈕這行改為：
-<button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone || ''}'); window.getSelection().removeAllRanges(); this.blur();">✏️ 編輯</button>
+              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone || ''}'); window.getSelection().removeAllRanges(); this.blur();">✏️ 編輯</button>
               <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); window.getSelection().removeAllRanges();">❤️ 關懷</button>
             </div>
             ${imgHtml}
