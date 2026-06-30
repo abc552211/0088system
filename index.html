@@ -1384,7 +1384,12 @@
       }
       if(id === 'handover') {
         switchHandTab(1);
-        loadData(); // ✨ 修正：進入交接清單時，立即同步最新的交接資料與渲染
+        loadData(); 
+      }
+      // 🛠️ 修正：首次進入預約處理頁面時，強制重新載入選單並重設 Tab
+      if(id === 'appointment') {
+        switchAppTab(1); 
+        loadData(); 
       }
     }
 
@@ -2143,7 +2148,28 @@
     function toggleDelayInput() { const isChecked = document.getElementById('hDelaySwitch').checked; document.getElementById('hDelayArea').style.display = isChecked ? 'block' : 'none'; if (isChecked && !document.getElementById('hDelayTime').value) setDelayTime(9); }
     function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
     function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
-    function renderAppSelect() { const select = document.getElementById('appSelect'); select.innerHTML = '<option value="">-- 請選擇 --</option>'; const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; if (list && list.length > 0) { list.forEach((it, ix) => { const opt = new Option(it.display, ix); if (new Date(it.time) < new Date()) { opt.style.color = '#d9534f'; opt.style.fontWeight = 'bold'; } select.add(opt); }); } }
+    function renderAppSelect() { 
+      const select = document.getElementById('appSelect'); 
+      if (!select) return; // 防呆
+
+      select.innerHTML = '<option value="">-- 請選擇處理名單 --</option>'; 
+      const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
+      
+      if (list && list.length > 0) {
+        list.forEach((it, ix) => { 
+          const opt = new Option(it.display, ix); 
+          if (new Date(it.time) < new Date()) { 
+            opt.style.color = '#d9534f'; 
+            opt.style.fontWeight = 'bold'; 
+          } 
+          select.add(opt); 
+        });
+      }
+      
+      // 🛠️ 確保選單重設回提示字，且隱藏詳細資訊面板
+      select.value = "";
+      document.getElementById('appDetail').style.display = 'none';
+    }
     function filterHandSub(type, btn) { document.querySelectorAll('.hand-sub-btn').forEach(b => { b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill hand-sub-btn'; }); btn.className = 'btn btn-sm btn-primary px-3 rounded-pill hand-sub-btn active'; document.querySelectorAll('.handover-main-card').forEach(card => { const cardType = card.getAttribute('data-type') || ""; const isTimed = cardType.includes("指定"); const targetStr = card.getAttribute('data-date'); const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); let isMatch = (type === '全部') || (type === '指定' && isTimed) || (type === '追蹤' && cardType.includes("追蹤")) || (type === '物流' && cardType.includes("物流")) || (type === '過期' && isOverdue); card.style.display = isMatch ? 'block' : 'none'; }); }
     
     function renderHandoverList() { 
