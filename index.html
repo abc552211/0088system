@@ -1177,18 +1177,29 @@
         }
         cache.statuses = ['待處理', '已關懷', '締結', '其他', '特殊'];
 
-        fillS('cStaff', cache.staff); // 諮詢輸入
-        fillS('hFrom', cache.staff);  // 交接
-        fillS('hTo', cache.staff);    // 交接
-        fillS('cDoctor', cache.doctors); 
-        fillS('appStatus', cache.statuses); 
-        fillS('sStaff', cache.staff); // 諮詢查詢
+        // 核心修正：強制重置與重新填入所有人員清單，避免首次沒加載到
+        const resetAndFill = (id, arr, defaultTxt) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.innerHTML = `<option value="">${defaultTxt}</option>`;
+          arr.forEach(i => { if(i) el.add(new Option(i, i)); });
+        };
+
+        resetAndFill('cStaff', cache.staff, '-請選擇-');
+        resetAndFill('hFrom', cache.staff, '-請選擇-');
+        resetAndFill('hTo', cache.staff, '-請選擇-');
+        resetAndFill('sStaff', cache.staff, '-請選擇-');
+        resetAndFill('searchLostStaff', cache.staff, '👤 所有服務人員');
+        resetAndFill('lostStaff', cache.staff, '-請選擇-');
+
+        // 醫師與狀態處理
+        const docEl = document.getElementById('cDoctor');
+        if (docEl) { docEl.innerHTML = '<option value="">-請選擇-</option>'; cache.doctors.forEach(i => docEl.add(new Option(i, i))); }
+        const statusEl = document.getElementById('appStatus');
+        if (statusEl) { statusEl.innerHTML = '<option value="">-請選擇-</option>'; cache.statuses.forEach(i => statusEl.add(new Option(i, i))); }
+
         renderTagButtons('cTagContainer', cache.tags);
         renderTagButtons('sTagContainer', cache.tags);
-
-        // 🛠️ 整合失聯關懷下拉選單：使其完全共用基礎數據
-        fillS('searchLostStaff', cache.staff); // 失聯搜尋欄
-        fillS('lostStaff', cache.staff);       // 失聯紀錄 Modal
 
         // 讀取預約處理名單
         const { data: appData } = await _supabase.from('consultations')
@@ -1214,7 +1225,7 @@
           .order('app_time', { ascending: true });
 
         cache.lostAppointList = (lostAppData || []).map(item => ({
-          rowIndex: item.row_index,
+          rowIndex: item.id,
           name: item.name,
           phone: item.phone,
           time: item.app_time || '無',
@@ -1244,8 +1255,10 @@
         }));
 
         const del = document.getElementById('hDelSelect'); 
-        del.innerHTML = '<option value="">- 選擇要刪交接 -</option>'; 
-        cache.handoverList.forEach(it => del.add(new Option(it.info, it.rowIndex))); 
+        if (del) {
+          del.innerHTML = '<option value="">- 選擇要刪交接 -</option>'; 
+          cache.handoverList.forEach(it => del.add(new Option(it.info, it.rowIndex))); 
+        }
         renderHandoverList(); 
       } catch (err) {
         console.error("載入 Supabase 快取資料出錯:", err);
@@ -1987,15 +2000,19 @@
       document.getElementById('lostModal').style.display = 'none';
       document.getElementById('loadingOverlay').style.display = 'flex';
 
+      // 🛠️ 嚴格遵循你的核心表頭欄位架構，防止 API 400 結構排斥錯誤
+      const payload = {
+        status: '已關懷',
+        raw_status: xStatus,
+        note: note,
+        staff: staff,
+        is_appoint: isAppoint ? "是" : "否",
+        app_time: appTime,
+        last_care_time: new Date().toLocaleDateString('zh-TW')
+      };
+
       try {
-        const payload = {
-          status: '已關懷',
-          raw_status: xStatus,
-          note: note,
-          staff: staff,
-          app_time: appTime,
-          last_care_time: new Date().toLocaleDateString('zh-TW')
-        };
+        // 修正匹配至主鍵 'id'
         const { error } = await _supabase.from('lost_care').update(payload).eq('id', row);
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
@@ -2249,8 +2266,7 @@
       }); 
       showPage('lostCarePage'); 
       
-      // 🛠️ 完全移除手動 push/forEach 塞人邏輯！
-      // 進入此頁面時直接執行 loadData()，該選單便會直接與「諮詢輸入」共用 staff_list
+      // 直接呼叫統整後的加載，確保所有連動下拉選單一次渲染完畢
       loadData(); 
       loadLostData(); 
     }
