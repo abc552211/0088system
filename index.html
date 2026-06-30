@@ -1406,53 +1406,68 @@ const { data: appData } = await _supabase.from('consultations')
     }
     
     function renderNextBatch() {
-      const container = document.getElementById('searchCardsContainer');
-      if (!container) return;
-      const endIndex = Math.min(currentRenderIndex + BATCH_SIZE, filteredSearchData.length);
-      if (currentRenderIndex >= endIndex) return; 
+  const container = document.getElementById('searchCardsContainer');
+  if (!container) return;
+  const endIndex = Math.min(currentRenderIndex + BATCH_SIZE, filteredSearchData.length);
+  if (currentRenderIndex >= endIndex) return; 
 
-      let h = '';
-      for (let i = currentRenderIndex; i < endIndex; i++) {
-        const r = filteredSearchData[i];
-        const resId = 'scard_' + r.rowIndex; 
-        
-        let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;" alt=""></div>` : ''; 
-        
-        let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
-        let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
-        let colLDisplay = (r.note) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(245, 240, 240, 0.7); border: 1px dashed rgba(181, 131, 141, 0.5); font-size: 0.85rem;"><div class="text-[#5b2a30]" style="white-space: pre-wrap;"><b>📌 附加紀錄:</b> ${r.note}</div></div>` : '';
-        let salesNoteDisplay = (r.salesNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(230, 244, 241, 0.7); border: 1px dashed #84a59d; font-size: 0.85rem;"><div class="text-[#3e2723]" style="white-space: pre-wrap;"><b>🛍️ 消費備註:</b> ${r.salesNote}</div></div>` : '';
-        let statusClass = 'card-pending'; 
-        if (r.status === '已關懷') statusClass = 'card-cared';
-        else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
-        const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
+  let h = '';
+  for (let i = currentRenderIndex; i < endIndex; i++) {
+    const r = filteredSearchData[i];
+    const resId = 'scard_' + r.rowIndex; 
+    
+    let imgHtml = r.imageUrl ? `<div style="flex-shrink:0; margin-left:12px;"><img src="${r.imageUrl}" onclick="openImageViewer('${r.imageUrl}')" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(91,42,48,0.15); cursor:pointer;" alt=""></div>` : ''; 
+    
+    let barcodeDisplay = r.barcode ? `<b>🆔 序號:</b> ${r.barcode}` : `<button class="btn btn-sm btn-warning fw-bold text-dark" onclick="openUpdateModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}')">⚠️ 補登ID</button>`;
+    
+    let careDisplay = (r.careNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(253, 250, 242, 0.7); border: 1px dashed rgba(132, 165, 157, 0.5); font-size: 0.85rem;"><div class="text-muted small"><b>🗓️ 關懷時間:</b> ${r.careTime || '未記錄'}</div><div class="text-dark" style="white-space: pre-wrap;"><b>💬 內容:</b> ${r.careNote}</div></div>` : '';
+    let colLDisplay = (r.note) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(245, 240, 240, 0.7); border: 1px dashed rgba(181, 131, 141, 0.5); font-size: 0.85rem;"><div class="text-[#5b2a30]" style="white-space: pre-wrap;"><b>📌 附加紀錄:</b> ${r.note}</div></div>` : '';
+    let salesNoteDisplay = (r.salesNote) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(230, 244, 241, 0.7); border: 1px dashed #84a59d; font-size: 0.85rem;"><div class="text-[#3e2723]" style="white-space: pre-wrap;"><b>🛍️ 消費備註:</b> ${r.salesNote}</div></div>` : '';
+    
+    // ✨ 新增：獨立顯眼的預約時間顯示區塊 (放在關懷紀錄下方)
+    let appointInfoDisplay = (r.isAppoint === '是' && r.appointTime) ? `<div class="mt-2 p-2 rounded" style="background-color: rgba(132, 165, 157, 0.1); border-left: 4px solid #84a59d; font-size: 0.85rem;"><b class="text-[#3e2723]">⏰ 下次預約:</b> <span class="fw-bold text-[#84a59d]">${r.appointTime}</span></div>` : '';
 
-        // 📝 這裡的 ${r.birthday} 保持原樣輸出，不進行任何前綴補0或格式化
-        h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
-          <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h4 class="fw-bold mb-0" style="color:#5b2a30; font-family:'Noto Serif TC',serif;">${r.name}</h4>
-            <span class="badge ${badgeClass} px-3 py-2">${r.status || '待處理'}</span>
-          </div>
-          <div class="row g-1 mb-2 small"><div class="col-6">${barcodeDisplay}</div><div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-12 text-[#87A96B] fw-bold"><b>📞 電話:</b> ${r.phone}</div></div>
-          <div class="p-2 bg-white bg-opacity-60 rounded small mb-2"><div style="white-space: pre-wrap;">${r.event || '無諮詢內容'}</div></div>
-          <div class="row g-1 mb-2 bg-white bg-opacity-80 p-2 rounded border border-secondary border-opacity-10 small"><div class="col-6"><b>👤 服務人:</b> ${r.staff}</div><div class="col-6"><b>👨‍⚕️ 醫師:</b> ${r.doctor}</div><div class="col-12"><b>⏰ 預約:</b> ${r.isAppoint === '是' ? r.appointTime : '未預留'}</div></div>
-          ${careDisplay} ${colLDisplay}
-          <div class="d-flex justify-content-between align-items-center mt-2">
-            <div>
-              <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); window.getSelection().removeAllRanges();">🗑️ 刪除</button>
-              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone || ''}'); window.getSelection().removeAllRanges(); this.blur();">✏️ 編輯</button>
-              <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); window.getSelection().removeAllRanges();">❤️ 關懷</button>
-            </div>
-            ${imgHtml}
-          </div>
-         <div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
-        </div>`; 
-      }
-      container.insertAdjacentHTML('beforeend', h);
-      currentRenderIndex = endIndex;
-    }
+    // ✨ 新增：右上角的「已預約」視覺標籤
+    const reservedBadge = r.isAppoint === '是' ? '<span class="badge shadow-sm me-1" style="background-color: #84a59d; color: white; letter-spacing: 1px;">📅 已預約</span>' : '';
 
+    let statusClass = 'card-pending'; 
+    if (r.status === '已關懷') statusClass = 'card-cared';
+    else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
+    
+    const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
+
+    h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
+      <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="fw-bold mb-0" style="color:#5b2a30; font-family:'Noto Serif TC',serif;">${r.name}</h4>
+        <div>
+          ${reservedBadge}
+          <span class="badge ${badgeClass} px-3 py-2">${r.status || '待處理'}</span>
+        </div>
+      </div>
+      <div class="row g-1 mb-2 small"><div class="col-6">${barcodeDisplay}</div><div class="col-6"><b>🎂 生日:</b> ${r.birthday}</div><div class="col-12 text-[#87A96B] fw-bold"><b>📞 電話:</b> ${r.phone}</div></div>
+      <div class="p-2 bg-white bg-opacity-60 rounded small mb-2"><div style="white-space: pre-wrap;">${r.event || '無諮詢內容'}</div></div>
+      <div class="row g-1 mb-2 bg-white bg-opacity-80 p-2 rounded border border-secondary border-opacity-10 small"><div class="col-6"><b>👤 服務人:</b> ${r.staff}</div><div class="col-6"><b>👨‍⚕️ 醫師:</b> ${r.doctor}</div></div>
+      
+      ${salesNoteDisplay}
+      ${careDisplay} 
+      ${colLDisplay}
+      ${appointInfoDisplay} 
+      
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div>
+          <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); window.getSelection().removeAllRanges();">🗑️ 刪除</button>
+          <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone || ''}'); window.getSelection().removeAllRanges(); this.blur();">✏️ 編輯</button>
+          <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); window.getSelection().removeAllRanges();">❤️ 關懷</button>
+        </div>
+        ${imgHtml}
+      </div>
+      <div class="text-end text-muted mt-2 pt-2 border-top border-secondary border-opacity-25" style="font-size: 0.75rem;">🕒 首次建檔: ${r.createdAt}</div>
+    </div>`; 
+  }
+  container.insertAdjacentHTML('beforeend', h);
+  currentRenderIndex = endIndex;
+}
     async function doSearch(keepScroll = false) { 
       const q = { 
         barcode: document.getElementById('sBarcode').value.trim(), 
