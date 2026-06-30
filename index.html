@@ -1249,6 +1249,8 @@
       }
       if(id === 'home') {
         clearAllInputs(); 
+        // ✨ 修正：切回首頁時，確保重新初始化選單
+        initSelectors();
         loadData(); 
         updateSystemStatus(); 
         initScrollAnimations();
@@ -1257,9 +1259,8 @@
         switchHandTab(1);
         loadData(); 
       }
-      // 🛠️ 修正：進入今日預約處理時，確保重設狀態與面板
       if(id === 'appointment') {
-        currentAppTab = 1; // 強制固定為 1 (讀取諮詢預約)
+        currentAppTab = 1; 
         currentSelectedAppIndex = null;
         const detailPanel = document.getElementById('appDetail');
         if (detailPanel) detailPanel.style.display = 'none';
@@ -2257,7 +2258,9 @@
           alert(`🎉 歡迎【${authenticatedUser}】！裝置授權成功，未來在此裝置發送交接單將自動代入您的身分。`);
           document.getElementById('deviceSecurityLockModal').style.display = 'none';
           
-          loadData();
+          // ✨ 修正：解鎖成功瞬間，立即初始化並載入所有人員與醫師選單
+          initSelectors();
+          await loadData();
           updateSystemStatus();
         } else {
           alert("❌ 密碼錯誤！找不到對應的員工授權，請重新輸入。");
