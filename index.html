@@ -135,16 +135,6 @@
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 9999 !important; display: flex; align-items: center; justify-content: center; }
     .modal-body { background: #F5F0E8; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
     .btn-circle { width: 45px; height: 45px; border-radius: 50% !important; display: flex; align-items: center; justify-content: center; padding: 0; }
-    #lostYearTabs { display: flex !important; overflow-x: scroll !important; -webkit-overflow-scrolling: touch; gap: 12px; padding: 10px 5px 20px 5px; white-space: nowrap; border-bottom: 2px solid rgba(91, 42, 48, 0.1); }
-    #lostYearTabs::-webkit-scrollbar { height: 12px !important; display: block !important; }
-    #lostYearTabs::-webkit-scrollbar-track { background: rgba(91, 42, 48, 0.05) !important; border-radius: 10px; }
-    #lostYearTabs::-webkit-scrollbar-thumb { background: rgba(91, 42, 48, 0.2) !important; border-radius: 10px; border: 2px solid #F5F0E8; }
-    
-    #customScrollTrack { position: fixed; right: 5px; top: 10%; height: 80%; width: 20px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-    #customScrollTrack.visible { opacity: 1; pointer-events: auto; }
-    #customScrollTrack::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(91, 42, 48, 0.2); transform: translateX(-50%); border-radius: 2px; }
-    #customScrollThumb { position: absolute; top: 0; left: 0; width: 100%; height: 40px; cursor: pointer; }
-    #customScrollThumb::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #5b2a30; border: 3px solid #F5F0E8; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
     
     html, body { -ms-overflow-style: none; scrollbar-width: none; overflow-y: scroll; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
@@ -195,14 +185,12 @@
       border: 1px solid rgba(91, 42, 48, 0.2) !important;
     }
 
-    /* 相機掃描視窗容器 */
     #interactive {
       position: relative;
       height: 160px; 
       overflow: hidden;
     }
 
-    /* 畫面正中央雷射紅線 */
     #interactive::after, .laser-line {
       content: "";
       position: absolute;
@@ -301,12 +289,12 @@
           <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">專屬兒控配鏡資料檢索，快速掌握鏡片使用週期，守護清晰視界。</p>
         </div>
 
-        <div onclick="showLostCarePage()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
+        <div onclick="window.open('https://your-new-lost-care-url.com', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
           <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
           </div>
           <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
-          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">喚回沉睡的緣分，針對流失客群進行溫度追蹤，重新串接服務橋樑。</p>
+          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">喚回沉睡的緣分，連至外部全新架設之獨立大檔進行專屬溫度關懷。</p>
         </div>
         
         <div onclick="openSpecialAuth()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 lg:col-span-1 group border-[1.5px] hover:border-[#d9534f]/60" style="background-color: rgba(217, 83, 79, 0.15); border-color: rgba(217, 83, 79, 0.3);">
@@ -645,65 +633,6 @@
     </div>
     <div id="childrenSearchResults" class="mt-2"></div>
   </div>
-  
-  <div id="lostCarePage" class="page">
-    <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
-    <div class="card search-box mb-3 p-3 bg-white border rounded shadow-sm">
-      <div class="row g-2">
-        <div class="col-6 position-relative">
-          <input type="text" id="searchLostName" class="form-control form-control-sm" placeholder="🔍 搜姓名">
-          <span class="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="cursor:pointer; z-index:10;" onclick="clearLostSearch('searchLostName')">×</span>
-        </div>
-        <div class="col-6 position-relative">
-          <input type="tel" id="searchLostPhone" class="form-control form-control-sm" placeholder="🔍 搜電話">
-          <span class="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="cursor:pointer; z-index:10;" onclick="clearLostSearch('searchLostPhone')">×</span>
-        </div>
-        <div class="col-12 my-2">
-          <label class="small fw-bold mb-1 text-muted">💰 金額區間: <span id="priceVal" class="text-[#5b2a30]">0</span> 以上</label>
-          <input type="range" id="searchLostPrice" class="form-range" min="0" max="50000" step="500" value="0" oninput="document.getElementById('priceVal').innerText = this.value">
-        </div>
-        <div class="col-12 my-2">
-          <label class="small fw-bold mb-1 text-muted">🎂 年齡區間篩選</label>
-          <div class="d-flex align-items-center gap-2">
-            <select id="searchLostAgeMin" class="form-select form-select-sm" onchange="renderLostTabs()">
-              <option value="0">0歲</option><option value="10">10歲</option><option value="20">20歲</option>
-              <option value="30">30歲</option><option value="40">40歲</option><option value="50">50歲</option>
-              <option value="60">60歲</option>
-            </select>
-            <span class="text-muted fw-bold">至</span>
-            <select id="searchLostAgeMax" class="form-select form-select-sm" onchange="renderLostTabs()">
-              <option value="10">10歲</option><option value="20">20歲</option><option value="40">40歲</option>
-              <option value="60">60歲</option><option value="80">80歲</option><option value="100" selected>100歲</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-12">
-          <select id="searchLostStaff" class="form-select form-select-sm">
-            <option value="">👤 所有服務人員</option>
-          </select>
-        </div>
-        <div class="col-12 mt-2">
-          <button class="btn btn-primary btn-sm w-100 fw-bold" onclick="renderLostTabs()">開始搜尋</button>
-        </div>
-      </div>
-    </div>
-    <div class="card p-3">
-      <h4 class="mb-3 fw-bold" style="color: #e76f51;">🧡 失聯客群關懷</h4>
-      <div class="sub-filter-scroll mb-2">
-        <button class="btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill" onclick="filterLost('未關懷', this)">未關懷</button>
-        <button class="btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill" onclick="filterLost('已關懷', this)">已關懷</button>
-      </div>
-      <div id="lostXFilterRow" class="flex-wrap gap-2 mb-3" style="display:none; padding-bottom: 5px;">
-        <button class="btn btn-sm btn-primary lost-x-btn active px-3 rounded-pill" onclick="filterLostX('全部', this)">全部 <span id="cntXAll" class="badge bg-white text-dark ms-1">0</span></button>
-        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('今日未接通', this)">📅 今日未接 <span id="cntXToday" class="badge bg-secondary text-white ms-1">0</span></button>
-        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('未接通', this)">🔕 未接通 <span id="cntXNoAns" class="badge bg-secondary text-white ms-1">0</span></button>
-        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('待處理', this)">🖋️ 待處理 <span id="cntXPending" class="badge bg-secondary text-white ms-1">0</span></button>
-        <button class="btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill" onclick="filterLostX('結案', this)">☑️ 結案 <span id="cntXClosed" class="badge bg-secondary text-white ms-1">0</span></button>
-      </div>
-      <div id="lostYearTabs" class="d-flex overflow-auto gap-2 mb-3 pb-2" style="scrollbar-width: none;"></div>
-      <div id="lostCareResults"></div>
-    </div>
-  </div>
 
   <div id="specialProcessPage" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
@@ -915,60 +844,6 @@
       </div>
     </div>
   </div>
-
-  <div id="lostModal" class="modal-overlay" style="display:none;">
-    <div class="modal-body">
-      <h5 class="fw-bold mb-3" style="color: #f4a261; font-family: 'Noto Serif TC', serif;">🧡 客戶關懷紀錄</h5>
-      <input type="hidden" id="lostRowIndex"><input type="hidden" id="lostTargetName">
-      <div class="mb-3 p-2 bg-white bg-opacity-70 rounded border border-secondary border-opacity-25 shadow-sm">
-        <div class="row g-1">
-          <div class="col-6">
-            <div class="bg-white border rounded px-2 py-1 d-flex align-items-center" style="min-height: 38px;">
-              <div class="form-check form-switch m-0 d-flex align-items-center" style="font-size: 0.85rem;">
-                <input class="form-check-input me-1" type="checkbox" id="lostIsApp" onchange="handleLostSwitches('appoint')" style="transform: scale(0.8); margin-top: 0;">
-                <label class="form-check-label fw-bold text-dark" for="lostIsApp">下次預約</label>
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="bg-white border rounded px-2 py-1 d-flex align-items-center" style="min-height: 38px;">
-              <div class="form-check form-switch m-0 d-flex align-items-center" style="font-size: 0.85rem;">
-                <input class="form-check-input me-1" type="checkbox" id="lostIsRefuse" onchange="handleLostSwitches('refuse')" style="transform: scale(0.8); margin-top: 0;">
-                <label class="form-check-label fw-bold text-danger" for="lostIsRefuse">其他結案</label>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 mt-1">
-            <div class="bg-white border rounded px-2 py-1 d-flex align-items-center" style="min-height: 38px;">
-              <div class="form-check form-switch m-0 d-flex align-items-center" style="font-size: 0.85rem;">
-                <input class="form-check-input me-1" type="checkbox" id="lostIsNoAnswer" onchange="handleLostSwitches('noAnswer')" style="transform: scale(0.8); margin-top: 0;">
-                <label class="form-check-label fw-bold text-secondary" for="lostIsNoAnswer">未接通 (未結案)</label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="lostTimeDiv" style="display:none;" class="mt-2 pt-2 border-top border-secondary border-opacity-25">
-          <div class="d-flex gap-1 mb-1">
-            <select id="lostY" class="form-select form-select-sm"></select>
-            <select id="lostM" class="form-select form-select-sm"></select>
-            <select id="lostD" class="form-select form-select-sm"></select>
-          </div>
-          <div class="d-flex gap-1">
-            <select id="lostH" class="form-select form-select-sm"></select>
-            <select id="lostMin" class="form-select form-select-sm"></select>
-          </div>
-        </div>
-      </div>
-      <label class="small fw-bold text-muted">關懷對話內容(其他請詳述)</label>
-      <textarea id="lostNote" class="form-control mb-3" rows="3" placeholder="請輸入聯繫內容..."></textarea>
-      <label class="small fw-bold text-muted">服務人員</label>
-      <select id="lostStaff" class="form-select mb-4"></select>
-      <div class="d-grid gap-2">
-        <button class="btn text-white fw-bold shadow-sm" style="background-color: #e76f51;" onclick="submitLostCare()">💾 儲存關懷紀錄</button>
-        <button class="btn btn-light" onclick="document.getElementById('lostModal').style.display='none'">取消</button>
-      </div>
-    </div>
-  </div>
   
   <div id="imageViewerModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.85); z-index: 11000 !important;" onclick="closeImageViewer()">
     <div style="position: relative; max-width: 90%; max-height: 90vh;">
@@ -989,9 +864,6 @@
     let currentRenderIndex = 0; 
     const BATCH_SIZE = 30; 
     let currentActiveFilter = '全部';
-    let currentLostFilter = '未關懷';
-    let currentLostXFilter = '全部';
-    let allLostData = [];
     let cache = { staff: [], doctors: [], tags: [], appointList: [], lostAppointList: [], handoverList: [], lineUidMap: {} }; 
     let specialUnreachedData = [];
 
@@ -1007,7 +879,7 @@
         
         const result = await response.json();
         if (result.status === 'success') {
-          const idColumn = (tableName === 'lost_care') ? 'row_index' : 'id';
+          const idColumn = 'id';
           await _supabase.from(tableName).update({ cal_status: 'Done' }).eq(idColumn, recordId);
           console.log(`✅ [${title}] 已自動寫入日曆！`);
         }
@@ -1157,11 +1029,11 @@
       if (currentH > endHour) currentH = endHour;
       let currentM = Math.floor(now.getMinutes() / 5) * 5;
 
-      ['cAppY', 'hYear', 'careYear', 'appCY', 'lostY'].forEach(id => f(id, y, y + yearRange, y)); 
-      ['cAppM', 'hMonth', 'careMonth', 'appCM', 'lostM'].forEach(id => f(id, 1, 12, now.getMonth()+1)); 
-      ['cAppD', 'hDay', 'careDay', 'appCD', 'lostD'].forEach(id => f(id, 1, 31, now.getDate())); 
-      ['cAppH', 'hHour', 'careHour', 'appCH', 'lostH'].forEach(id => f(id, startHour, endHour, currentH)); 
-      ['cAppMin', 'hMin', 'careMin', 'appCMin', 'lostMin'].forEach(id => f(id, 0, 59, currentM));
+      ['cAppY', 'hYear', 'careYear', 'appCY'].forEach(id => f(id, y, y + yearRange, y)); 
+      ['cAppM', 'hMonth', 'careMonth', 'appCM'].forEach(id => f(id, 1, 12, now.getMonth()+1)); 
+      ['cAppD', 'hDay', 'careDay', 'appCD'].forEach(id => f(id, 1, 31, now.getDate())); 
+      ['cAppH', 'hHour', 'careHour', 'appCH'].forEach(id => f(id, startHour, endHour, currentH)); 
+      ['cAppMin', 'hMin', 'careMin', 'appCMin'].forEach(id => f(id, 0, 59, currentM));
     }
 
     async function loadData() { 
@@ -1177,7 +1049,7 @@
         }
         cache.statuses = ['待處理', '已關懷', '締結', '其他', '特殊'];
 
-        // 核心修正：強制重置與重新填入所有人員清單，避免首次沒加載到
+        // 🛠️ 統整重置與填入所有功能的人員選單
         const resetAndFill = (id, arr, defaultTxt) => {
           const el = document.getElementById(id);
           if (!el) return;
@@ -1189,10 +1061,7 @@
         resetAndFill('hFrom', cache.staff, '-請選擇-');
         resetAndFill('hTo', cache.staff, '-請選擇-');
         resetAndFill('sStaff', cache.staff, '-請選擇-');
-        resetAndFill('searchLostStaff', cache.staff, '👤 所有服務人員');
-        resetAndFill('lostStaff', cache.staff, '-請選擇-');
 
-        // 醫師與狀態處理
         const docEl = document.getElementById('cDoctor');
         if (docEl) { docEl.innerHTML = '<option value="">-請選擇-</option>'; cache.doctors.forEach(i => docEl.add(new Option(i, i))); }
         const statusEl = document.getElementById('appStatus');
@@ -1265,14 +1134,6 @@
       }
     }
 
-    function fillS(id, arr) { 
-      const el = document.getElementById(id); 
-      if (el && el.innerHTML === "") { 
-        el.add(new Option("-請選擇-", "")); 
-        arr.forEach(i => el.add(new Option(i, i))); 
-      } 
-    } 
-  
     function renderTagButtons(containerId, tags) {
       const container = document.getElementById(containerId);
       if (!container) return;
@@ -1368,7 +1229,7 @@
         try {
           await activeScanner.stop();
         } catch (e) { console.log("釋放相機微小錯誤: " + e); }
-        activeScanner = null;
+          activeScanner = null;
       }
       if (activeReaderId) {
         const el = document.getElementById(activeReaderId);
@@ -1399,7 +1260,6 @@
         switchHandTab(1);
         loadData(); 
       }
-      // 🛠️ 修正：首次進入預約處理頁面時，強制重新載入選單並重設 Tab
       if(id === 'appointment') {
         switchAppTab(1); 
         loadData(); 
@@ -1540,18 +1400,6 @@
       }
       container.insertAdjacentHTML('beforeend', h);
       currentRenderIndex = endIndex;
-    }
-
-    function openImageViewer(src) {
-      const viewer = document.getElementById('imageViewerModal');
-      const img = document.getElementById('viewerModalImg');
-      if (viewer && img) {
-        img.src = src;
-        viewer.style.display = 'flex';
-      }
-    }
-    function closeImageViewer() {
-      document.getElementById('imageViewerModal').style.display = 'none';
     }
 
     async function doSearch(keepScroll = false) { 
@@ -1979,57 +1827,6 @@
       }
     }
 
-    async function submitLostCare() {
-      const row = document.getElementById('lostRowIndex').value;
-      const staff = document.getElementById('lostStaff').value;
-      const note = document.getElementById('lostNote').value.trim();
-      if (!staff || !note) { alert("請選擇服務人並輸入內容"); return; }
-
-      const isRefuse = document.getElementById('lostIsRefuse').checked;
-      const isAppoint = document.getElementById('lostIsApp').checked;
-      const isNoAnswer = document.getElementById('lostIsNoAnswer').checked; 
-
-      let xStatus = "待處理"; 
-      if (isRefuse) xStatus = "其他";      
-      else if (isAppoint) xStatus = " ";         
-      else if (isNoAnswer) xStatus = "未接通";    
-
-      const pad = (n) => n.toString().padStart(2, '0');
-      const appTime = isAppoint ? `${document.getElementById('lostY').value}/${pad(document.getElementById('lostM').value)}/${pad(document.getElementById('lostD').value)} ${pad(document.getElementById('lostH').value)}:${pad(document.getElementById('lostMin').value)}` : null;
-
-      document.getElementById('lostModal').style.display = 'none';
-      document.getElementById('loadingOverlay').style.display = 'flex';
-
-      // 🛠️ 嚴格遵循你的核心表頭欄位架構，防止 API 400 結構排斥錯誤
-      const payload = {
-        status: '已關懷',
-        raw_status: xStatus,
-        note: note,
-        staff: staff,
-        is_appoint: isAppoint ? "是" : "否",
-        app_time: appTime,
-        last_care_time: new Date().toLocaleDateString('zh-TW')
-      };
-
-      try {
-        // 修正匹配至主鍵 'id'
-        const { error } = await _supabase.from('lost_care').update(payload).eq('id', row);
-        document.getElementById('loadingOverlay').style.display = 'none';
-        if (error) throw error;
-
-        if (isAppoint && appTime) {
-          const calTime = appTime.replace(/\//g, '-');
-          const title = `[失聯預約]${document.getElementById('lostTargetName').value || '未定義'}-${note}`;
-          autoSyncCalendar('lost_care', row, title, calTime);
-        }
-        alert("🎉 失聯客群關懷同步成功！");
-        loadLostData();
-      } catch(e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("關懷紀錄寫入失敗: " + e.message);
-      }
-    }
-
     async function submitSpecialAuth() {
       const pwd = document.getElementById('specialPwdInput').value;
       if (!pwd) { alert("請輸入密碼"); return; }
@@ -2051,7 +1848,7 @@
           document.getElementById('specialAuthModal').style.display = 'flex';
         }
       } catch(e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
+        document.getElementById('specialOverlay').style.display = 'none';
         alert("驗證系統異常: " + e.message);
       }
     }
@@ -2073,7 +1870,7 @@
             staff: selectedStaff,
             last_care_time: new Date().toLocaleDateString('zh-TW')
           })
-          .in('row_index', rowIndices);
+          .in('id', rowIndices);
         
         if (error) throw error;
         alert(`⚡ 成功大批量修改 ${rowIndices.length} 筆項目為「結案」！`);
@@ -2140,7 +1937,7 @@
             updatePayload.app_time = `${document.getElementById('appCY').value}/${pad(document.getElementById('appCM').value)}/${pad(document.getElementById('appCD').value)} ${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}`;
             updatePayload.status = "未關懷";
           }
-          const { error } = await _supabase.from('lost_care').update(updatePayload).eq('row_index', it.rowIndex);
+          const { error } = await _supabase.from('lost_care').update(updatePayload).eq('id', it.rowIndex);
           if (error) throw error;
         }
         if (isChangeTime && newTime) {
@@ -2165,9 +1962,10 @@
     function toggleDelayInput() { const isChecked = document.getElementById('hDelaySwitch').checked; document.getElementById('hDelayArea').style.display = isChecked ? 'block' : 'none'; if (isChecked && !document.getElementById('hDelayTime').value) setDelayTime(9); }
     function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
     function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
+    
     function renderAppSelect() { 
       const select = document.getElementById('appSelect'); 
-      if (!select) return; // 防呆
+      if (!select) return;
 
       select.innerHTML = '<option value="">-- 請選擇處理名單 --</option>'; 
       const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
@@ -2182,8 +1980,6 @@
           select.add(opt); 
         });
       }
-      
-      // 🛠️ 確保選單重設回提示字，且隱藏詳細資訊面板
       select.value = "";
       document.getElementById('appDetail').style.display = 'none';
     }
@@ -2232,9 +2028,9 @@
                                                
                                                if (targetTime > now) {
                                                  pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
-                                                                <span class="spinner-grow spinner-grow-sm me-2"></span>
-                                                                <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
-                                                              </div>`;
+                                                                 <span class="spinner-grow spinner-grow-sm me-2"></span>
+                                                                 <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
+                                                               </div>`;
                                                }
                                              }
 
@@ -2255,150 +2051,6 @@
       listDiv.innerHTML = h; 
     }
 
-    function handleCareSwitches(t) { const a = document.getElementById('careIsAppoint'), r = document.getElementById('careIsRefuse'), d = document.getElementById('careIsDeal'), s = document.getElementById('careIsSpecial'), td = document.getElementById('careTimeDiv'), dd = document.getElementById('careDealDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); d.checked = (t === 'deal' && d.checked); s.checked = (t === 'special' && s.checked); td.style.display = a.checked ? 'block' : 'none'; dd.style.display = d.checked ? 'block' : 'none'; }
-    function clearLostSearch(id) { document.getElementById(id).value = ''; renderLostTabs(); }
-    function handleLostSwitches(t) { const a = document.getElementById('lostIsApp'), r = document.getElementById('lostIsRefuse'), n = document.getElementById('lostIsNoAnswer'), td = document.getElementById('lostTimeDiv'); a.checked = (t === 'appoint' && a.checked); r.checked = (t === 'refuse' && r.checked); n.checked = (t === 'noAnswer' && n.checked); td.style.display = a.checked ? 'block' : 'none'; }
-    function showLostCarePage() { 
-      document.getElementById('loadingOverlay').style.display = 'flex'; 
-      currentLostFilter = '未關懷'; 
-      document.querySelectorAll('.lost-filter-btn').forEach(b => { 
-        b.className = b.innerText.includes('未關懷') ? 'btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill' : 'btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'; 
-      }); 
-      showPage('lostCarePage'); 
-      
-      // 直接呼叫統整後的加載，確保所有連動下拉選單一次渲染完畢
-      loadData(); 
-      loadLostData(); 
-    }
-    function fillStaffOptions(s) { if (cache.staff) cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); }); }
-    async function loadLostData() { document.getElementById('loadingOverlay').style.display = 'flex'; try { const { data } = await _supabase.from('lost_care').select('*'); document.getElementById('loadingOverlay').style.display = 'none'; allLostData = data || []; renderLostTabs(); } catch(e) { alert(e.message); } }
-    
-    function getFilteredLostData() {
-      const qName = document.getElementById('searchLostName').value.trim().toLowerCase();
-      const qPhone = document.getElementById('searchLostPhone').value.trim();
-      const qPrice = parseInt(document.getElementById('searchLostPrice').value) || 0;
-      const qAgeMin = parseInt(document.getElementById('searchLostAgeMin').value) || 0;
-      const qAgeMax = parseInt(document.getElementById('searchLostAgeMax').value) || 100;
-      // 在 getFilteredLostData() 的 return allLostData.filter(d => { ... }) 內部加上：
-      const qStaff = document.getElementById('searchLostStaff').value;
-      if (qStaff && d.staff !== qStaff) return false;
-      const todayStr = new Date().toLocaleDateString('zh-TW');
-
-      let cAll=0, cPending=0, cNoAns=0, cToday=0, cClosed=0;
-      allLostData.forEach(d => {
-        if (d.status === '已關懷') { 
-           cAll++; if (d.raw_status === '待處理') cPending++; else if (d.raw_status === '未接通') { cNoAns++; if (d.last_care_time === todayStr) cToday++; } else cClosed++;
-        }
-      });
-      if(document.getElementById('cntXAll')) { document.getElementById('cntXAll').innerText = cAll; document.getElementById('cntXPending').innerText = cPending; document.getElementById('cntXNoAns').innerText = cNoAns; document.getElementById('cntXToday').innerText = cToday; document.getElementById('cntXClosed').innerText = cClosed; }
-
-      return allLostData.filter(d => {
-        if ((currentLostFilter === '已關懷' && d.status !== '已關懷') || (currentLostFilter === '未關懷' && d.status === '已關懷')) return false;
-        if (qName && (!d.name || !d.name.toLowerCase().includes(qName))) return false;
-        if (qPhone && d.phone !== qPhone) return false;
-        const amt = parseInt(d.amount ? d.amount.replace(/[^0-9]/g, '') : '0') || 0;
-        if (qPrice > 0 && amt < qPrice) return false;
-        
-        // 🛠️ 1. 動態解析 birth (文字格式 yyyy/m/d 或 yyyy-m-d) 計算年齡
-        if (d.birth && typeof d.birth === 'string') {
-          const match = d.birth.match(/^(\d{4})[\/\-]/); // 匹配前四碼數字加斜線或橫線
-          if (match) {
-            const birthYear = parseInt(match[1]);
-            const age = 2026 - birthYear;
-            if (!isNaN(age) && (age < qAgeMin || age > qAgeMax)) return false;
-          } else if (qAgeMin > 0) {
-            return false; // 如果有篩選年齡但格式不符，先排除
-          }
-        } else if (qAgeMin > 0) {
-          return false; // 沒有生日資料且有篩選年齡時排除
-        }
-        
-        if (currentLostFilter === '已關懷') {
-          if (currentLostXFilter === '待處理' && d.raw_status !== '待處理') return false;
-          if (currentLostXFilter === '未接通' && d.raw_status !== '未接通') return false;
-          if (currentLostXFilter === '今日未接通' && (d.raw_status !== '未接通' || d.last_care_time !== todayStr)) return false;
-          if (currentLostXFilter === '結案' && (d.raw_status === '待處理' || d.raw_status === '未接通')) return false;
-        }
-        return true;
-      });
-    }
-    function renderLostTabs() { 
-      const filtered = getFilteredLostData(); 
-      const years = {}; 
-      
-      filtered.forEach(d => { 
-        // 🛠️ 2. 放棄 finish_year，直接從 finish_date (格式如 yyyy/mm/dd 或 yyyy-mm-dd) 提取年份
-        let yearKey = "未分類";
-        if (d.finish_date && typeof d.finish_date === 'string') {
-          const match = d.finish_date.match(/^(\d{4})/); // 抓取最前面的 4 位數字
-          if (match) {
-            yearKey = match[1];
-          }
-        }
-        years[yearKey] = (years[yearKey] || 0) + 1; 
-      }); 
-      
-      const sorted = Object.keys(years).sort((a,b) => {
-        if (a === "未分類") return 1;
-        if (b === "未分類") return -1;
-        return b - a; // 年份由大到小排序
-      }); 
-      
-      let h = ''; 
-      sorted.forEach(y => { 
-        h += `<button class="btn btn-sm btn-outline-dark px-3 text-nowrap" onclick="renderLostCards('${y}')">${y}年 (${years[y]})</button>`; 
-      }); 
-      
-      document.getElementById('lostYearTabs').innerHTML = h; 
-      if(sorted.length > 0) renderLostCards(sorted[0]); 
-      else document.getElementById('lostCareResults').innerHTML = '<div class="text-center text-muted py-5">查無客戶</div>'; 
-    }
-    function filterLost(type, btn) { document.querySelectorAll('.lost-filter-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'); btn.className='btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill'; currentLostFilter = type; document.getElementById('lostXFilterRow').style.display = (type === '已關懷') ? 'flex' : 'none'; renderLostTabs(); }
-    function filterLostX(xType, btn) { document.querySelectorAll('.lost-x-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill'); btn.className='btn btn-sm btn-primary lost-x-btn active px-3 rounded-pill'; currentLostXFilter = xType; renderLostTabs(); }
-    
-    function renderLostCards(year) { 
-      // 🛠️ 3. 卡片過濾也改為動態比對 finish_date 的年份
-      const filtered = getFilteredLostData().filter(d => {
-        let currentYear = "未分類";
-        if (d.finish_date && typeof d.finish_date === 'string') {
-          const match = d.finish_date.match(/^(\d{4})/);
-          if (match) currentYear = match[1];
-        }
-        return currentYear === year;
-      }).sort((a,b) => new Date(a.finish_date) - new Date(b.finish_date)); 
-      
-      let h = ''; 
-      filtered.forEach((r, idx) => { 
-        // 動態計算卡片上要顯示的年齡
-        let ageDisplay = "未知";
-        if (r.birth && typeof r.birth === 'string') {
-          const match = r.birth.match(/^(\d{4})/);
-          if (match) ageDisplay = (2026 - parseInt(match[1])) + "歲";
-        }
-
-        h += `<div class="result-card mb-3" id="lostCard_${idx}" style="border-left: 6px solid #f4a261; position: relative; background: rgba(255,255,255,0.7);"><div onclick="shareCard('lostCard_${idx}', '失聯關懷_${r.name}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:1rem; z-index:5;">📤</div><div class="d-flex justify-content-between align-items-start mb-1"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><div class="text-end" style="margin-right:25px;"><div class="badge bg-warning text-dark mb-1">${r.raw_status}</div><br><span class="badge bg-white text-dark border" style="font-size:0.7rem;">完銷:${r.finish_date}</span></div></div><div class="row g-1 small mb-2"><div class="col-6">🆔 會員編號:<br><small class="fw-bold">${r.id}</small></div><div class="col-6">🎂 生日: ${r.birth}<br><span class="badge bg-white text-dark border">${ageDisplay}</span></div><div class="col-12 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">📄 單號: ${r.order_no}</div><div class="col-6 text-danger fw-bold">💰 金額: ${r.amount}</div><div class="col-12 mt-1 border-top pt-1 text-muted">🕒 最後關懷: ${r.last_care_time || '尚無'}</div></div>${r.status==='已關懷'?`<div class="mt-2 p-2 rounded bg-success bg-opacity-10 border border-success small"><b class="text-success">✅ 已關懷</b> | 👤 ${r.staff}<br>💬 內容: ${r.note}</div>`:''}<button class="btn btn-sm w-100 mt-2 text-white shadow-sm" style="background-color: #e76f51;" onclick="openLostModal(${r.id}, '${r.name}')">❤️ 進行關懷紀錄</button></div>`; 
-      }); 
-      document.getElementById('lostCareResults').innerHTML = h; 
-    }
-    
-    function openLostModal(row, name) { 
-      document.getElementById('lostRowIndex').value = row; 
-      document.getElementById('lostTargetName').value = name; 
-      document.getElementById('lostNote').value = ""; 
-      document.getElementById('lostIsApp').checked = false; 
-      document.getElementById('lostIsRefuse').checked = false; 
-      document.getElementById('lostIsNoAnswer').checked = false; 
-      document.getElementById('lostTimeDiv').style.display = 'none'; 
-      
-      // 初始化時間
-      initSelectors(); 
-
-      // 🛠️ 乾淨整合：選單交給 loadData 全權處理，打開時只需重設為首項
-      document.getElementById('lostStaff').selectedIndex = 0;
-
-      document.getElementById('lostModal').style.display = 'flex'; 
-    }
-    
     function renderSpecialList() { 
       specialUnreachedData = allLostData.filter(d => d.raw_status === '未接通'); 
       document.getElementById('specialTotalCount').innerText = specialUnreachedData.length; 
