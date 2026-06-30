@@ -1277,16 +1277,21 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            canvas.width = 300;
-            canvas.height = 300;
+            // 🚀 畫質優化：從 300 提升至 800，確保看清病歷與細節
+            const targetSize = 800; 
+            canvas.width = targetSize;
+            canvas.height = targetSize;
             
+            // 保持正方形居中裁剪
             let size = Math.min(img.width, img.height);
             let sx = (img.width - size) / 2;
             let sy = (img.height - size) / 2;
             
-            ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
+            // 執行繪製
+            ctx.drawImage(img, sx, sy, size, size, 0, 0, targetSize, targetSize);
             
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+            // 🚀 畫質優化：壓縮率從 0.75 提高到 0.85 (85% 畫質)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
             
             const preview = document.getElementById('photoPreview');
             preview.src = compressedBase64;
