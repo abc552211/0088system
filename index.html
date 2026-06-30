@@ -1391,7 +1391,8 @@
           <div class="d-flex justify-content-between align-items-center mt-2">
             <div>
               <button class="btn btn-outline-danger btn-sm px-3" onclick="confirmDelConsult(${r.rowIndex},'${r.name}'); window.getSelection().removeAllRanges();">🗑️ 刪除</button>
-              <button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, \`${r.name}\`, '${r.birthday}', '${r.phone || ''}'); window.getSelection().removeAllRanges(); this.blur();">✏️ 編輯</button>
+              // 建議將 renderNextBatch() 內的編輯按鈕這行改為：
+<button class="btn btn-outline-primary btn-sm px-3 ms-2 text-[#5b2a30] border-[#5b2a30]" onclick="openEditCustomerModal(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}', '${r.birthday}', '${r.phone || ''}'); window.getSelection().removeAllRanges(); this.blur();">✏️ 編輯</button>
               <button class="btn btn-outline-info btn-sm px-3 ms-2" onclick="confirmCare(${r.rowIndex}, '${r.name.replace(/'/g, "\\'")}'); window.getSelection().removeAllRanges();">❤️ 關懷</button>
             </div>
             ${imgHtml}
@@ -1710,6 +1711,13 @@
         alert("查詢出錯: " + e.message);
       }
     }
+    function openEditCustomerModal(rowIndex, name, birth, phone) {
+  document.getElementById('editRowIndex').value = rowIndex;
+  document.getElementById('editName').value = name;
+  document.getElementById('editBirth').value = birth;
+  document.getElementById('editPhone').value = phone;
+  document.getElementById('editCustomerModal').style.display = 'flex'; // ✨ 顯示視窗
+}
 
     async function submitEditCustomer() {
       const rowIndex = document.getElementById('editRowIndex').value;
@@ -1942,7 +1950,19 @@
     }
 
     function handleAppStatusChange(val) { const d = document.getElementById('appDealDiv'); if(d) d.style.display=(val==='締結')?'block':'none'; }
-    function toggleAppChangeMode(chk) { document.getElementById('appChangeTimeDiv').style.display=chk?'block':'none'; document.getElementById('appStatusLabel').style.display=chk?'none':'block'; document.getElementById('appStatus').style.display=chk?'none':'block'; if(chk){if(document.getElementById('appDealDiv'))document.getElementById('appDealDiv').style.display='none';}else{handleAppStatusChange(document.getElementById('appStatus').value);} const n=document.getElementById('appNote'); if(n) n.placeholder=chk?"改期備註 (選填)":"可輸入備註"; }
+    function toggleAppChangeMode(chk) { 
+  document.getElementById('appChangeTimeDiv').style.display=chk?'block':'none'; 
+  document.getElementById('appStatusLabel').style.display=chk?'none':'block'; 
+  document.getElementById('appStatus').style.display=chk?'none':'block'; 
+  if(chk){
+    if(document.getElementById('appDealDiv')) document.getElementById('appDealDiv').style.display='none';
+    initSelectors(); // ✨ 修正：切換改期時，立即初始化下拉選單內容
+  }else{
+    handleAppStatusChange(document.getElementById('appStatus').value);
+  } 
+  const n=document.getElementById('appNote'); 
+  if(n) n.placeholder=chk?"改期備註 (選填)":"可輸入備註"; 
+}
     let currentAppTab = 1;
     function switchAppTab(tab) { currentAppTab = tab; document.getElementById('tabApp1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabApp2').className = tab === 2 ? 'active-tab' : ''; document.getElementById('appDetail').style.display = 'none'; document.getElementById('appInfo').innerHTML = ''; document.getElementById('appSelect').value = ""; if (document.getElementById('appNoteArea')) document.getElementById('appNoteArea').style.display = tab === 1 ? 'block' : 'none'; const ts = document.getElementById('appChangeTimeSwitch'); if (ts) { ts.checked = false; toggleAppChangeMode(false); } renderAppSelect(); }
     function showAppDetail() { const ix = document.getElementById('appSelect').value; const d = document.getElementById('appDetail'); if(ix === "") { d.style.display='none'; return; } const currentList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; if (!currentList || !currentList[ix]) { d.style.display='none'; return; } const it = currentList[ix]; let timeHtml = it.time; if (new Date(it.time) < new Date()) { timeHtml = `<span style="background-color: #fff3cd; color: #d9534f; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${it.time} (已逾期)</span>`; } let contentHtml = (currentAppTab === 1) ? `📌 <b>待赴約對象：</b>${it.name}<br>⏰ <b>預定時間：</b>${timeHtml}<br>👤 <b>服務人：</b>${it.staff || '未註記'}<br>💬 <b>內容：</b>${it.note || '無'}` : `<span style="color:#e76f51; font-weight:bold;">🧡 失聯回訪對象</span><br>👤 <b>姓名：</b>${it.name}<br>📞 <b>電話：</b>${it.phone}<br>⏰ <b>預約：</b>${timeHtml}<br>💬 <b>內容：</b>${it.note || '無'}`; d.style.display = 'block'; document.getElementById('appInfo').innerHTML = `<div style="position:relative;"><div onclick="shareCard('appInfo', '回報通知_${it.name}')" style="position:absolute; top:-5px; right:-5px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:10;">📤</div>${contentHtml}</div>`; }
