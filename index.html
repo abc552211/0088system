@@ -1378,6 +1378,7 @@
         else if (r.status && r.status !== '待處理') statusClass = 'card-closed'; 
         const badgeClass = r.status === '已關懷' ? 'bg-info' : (r.status && r.status !== '待處理' ? 'bg-success' : 'bg-secondary');
 
+        // 📝 這裡的 ${r.birthday} 保持原樣輸出，不進行任何前綴補0或格式化
         h += `<div class="result-card mb-4 ${statusClass}" id="${resId}" style="position:relative;">
           <div onclick="shareCard('${resId}', '紀錄_${r.name}')" style="position:absolute; top:45px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
           <div class="d-flex justify-content-between align-items-center mb-2">
