@@ -2024,9 +2024,48 @@ const { data: appData } = await _supabase.from('consultations')
   if(n) n.placeholder=chk?"改期備註 (選填)":"可輸入備註"; 
 }
     let currentAppTab = 1;
-    function switchAppTab(tab) { currentAppTab = tab; document.getElementById('tabApp1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabApp2').className = tab === 2 ? 'active-tab' : ''; document.getElementById('appDetail').style.display = 'none'; document.getElementById('appInfo').innerHTML = ''; document.getElementById('appSelect').value = ""; if (document.getElementById('appNoteArea')) document.getElementById('appNoteArea').style.display = tab === 1 ? 'block' : 'none'; const ts = document.getElementById('appChangeTimeSwitch'); if (ts) { ts.checked = false; toggleAppChangeMode(false); } renderAppSelect(); }
-    function showAppDetail() { const ix = document.getElementById('appSelect').value; const d = document.getElementById('appDetail'); if(ix === "") { d.style.display='none'; return; } const currentList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; if (!currentList || !currentList[ix]) { d.style.display='none'; return; } const it = currentList[ix]; let timeHtml = it.time; if (new Date(it.time) < new Date()) { timeHtml = `<span style="background-color: #fff3cd; color: #d9534f; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${it.time} (已逾期)</span>`; } let contentHtml = (currentAppTab === 1) ? `📌 <b>待赴約對象：</b>${it.name}<br>⏰ <b>預定時間：</b>${timeHtml}<br>👤 <b>服務人：</b>${it.staff || '未註記'}<br>💬 <b>內容：</b>${it.note || '無'}` : `<span style="color:#e76f51; font-weight:bold;">🧡 失聯回訪對象</span><br>👤 <b>姓名：</b>${it.name}<br>📞 <b>電話：</b>${it.phone}<br>⏰ <b>預約：</b>${timeHtml}<br>💬 <b>內容：</b>${it.note || '無'}`; d.style.display = 'block'; document.getElementById('appInfo').innerHTML = `<div style="position:relative;"><div onclick="shareCard('appInfo', '回報通知_${it.name}')" style="position:absolute; top:-5px; right:-5px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:10;">📤</div>${contentHtml}</div>`; }
-    function finishVisit(m) { document.getElementById('loadingOverlay').style.display = 'none'; alert(m); document.getElementById('appSelect').value = ""; document.getElementById('appDetail').style.display = 'none'; loadData(); showPage('home'); }
+    function switchAppTab(tab) { 
+  currentAppTab = tab; 
+  document.getElementById('tabApp1').className = tab === 1 ? 'active-tab' : ''; 
+  document.getElementById('tabApp2').className = tab === 2 ? 'active-tab' : ''; 
+  document.getElementById('appDetail').style.display = 'none'; 
+  document.getElementById('appInfo').innerHTML = ''; 
+  
+  // ✨ 修改這裡：加入防呆檢查，找不到元素就不做事，避免報錯
+  const appS = document.getElementById('appSelect');
+  if (appS) { appS.value = ""; }
+  
+  if (document.getElementById('appNoteArea')) 
+    document.getElementById('appNoteArea').style.display = tab === 1 ? 'block' : 'none'; 
+  const ts = document.getElementById('appChangeTimeSwitch'); 
+  if (ts) { ts.checked = false; toggleAppChangeMode(false); } 
+  renderAppSelect(); 
+}
+    
+    function showAppDetail() { 
+      const ix = document.getElementById('appSelect').value; 
+      const d = document.getElementById('appDetail'); 
+      if(ix === "") { d.style.display='none'; return; } 
+      const currentList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
+      if (!currentList || !currentList[ix]) { d.style.display='none'; return; } 
+      const it = currentList[ix]; let timeHtml = it.time; 
+      if (new Date(it.time) < new Date()) { 
+        timeHtml = `<span style="background-color: #fff3cd; color: #d9534f; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${it.time} (已逾期)</span>`; 
+     } 
+      
+      let contentHtml = (currentAppTab === 1) ? `📌 <b>待赴約對象：</b>${it.name}<br>⏰ <b>預定時間：</b>${timeHtml}<br>👤 <b>服務人：</b>${it.staff || '未註記'}<br>💬 <b>內容：</b>${it.note || '無'}` : `<span style="color:#e76f51; font-weight:bold;">🧡 失聯回訪對象</span><br>👤 <b>姓名：</b>${it.name}<br>📞 <b>電話：</b>${it.phone}<br>⏰ <b>預約：</b>${timeHtml}<br>💬 <b>內容：</b>${it.note || '無'}`; d.style.display = 'block'; document.getElementById('appInfo').innerHTML = `<div style="position:relative;"><div onclick="shareCard('appInfo', '回報通知_${it.name}')" style="position:absolute; top:-5px; right:-5px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:10;">📤</div>${contentHtml}</div>`; }
+    function finishVisit(m) { 
+  document.getElementById('loadingOverlay').style.display = 'none'; 
+  alert(m); 
+  
+  // 加入防呆檢查：元素存在才清空
+  const appS = document.getElementById('appSelect');
+  if (appS) { appS.value = ""; }
+  
+  document.getElementById('appDetail').style.display = 'none'; 
+  loadData(); 
+  showPage('home'); 
+}
     function toggleDelayInput() { const isChecked = document.getElementById('hDelaySwitch').checked; document.getElementById('hDelayArea').style.display = isChecked ? 'block' : 'none'; if (isChecked && !document.getElementById('hDelayTime').value) setDelayTime(9); }
     function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
     function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
