@@ -2237,10 +2237,21 @@
         if (qPhone && d.phone !== qPhone) return false;
         const amt = parseInt(d.amount ? d.amount.replace(/[^0-9]/g, '') : '0') || 0;
         if (qPrice > 0 && amt < qPrice) return false;
-        if (d.birth) {
-          const age = 2026 - parseInt(d.birth.substring(0, 4));
-          if (!isNaN(age) && (age < qAgeMin || age > qAgeMax)) return false;
+        
+        // 🛠️ 1. 動態解析 birth (文字格式 yyyy/m/d 或 yyyy-m-d) 計算年齡
+        if (d.birth && typeof d.birth === 'string') {
+          const match = d.birth.match(/^(\d{4})[\/\-]/); // 匹配前四碼數字加斜線或橫線
+          if (match) {
+            const birthYear = parseInt(match[1]);
+            const age = 2026 - birthYear;
+            if (!isNaN(age) && (age < qAgeMin || age > qAgeMax)) return false;
+          } else if (qAgeMin > 0) {
+            return false; // 如果有篩選年齡但格式不符，先排除
+          }
+        } else if (qAgeMin > 0) {
+          return false; // 沒有生日資料且有篩選年齡時排除
         }
+        
         if (currentLostFilter === '已關懷') {
           if (currentLostXFilter === '待處理' && d.raw_status !== '待處理') return false;
           if (currentLostXFilter === '未接通' && d.raw_status !== '未接通') return false;
@@ -2250,16 +2261,61 @@
         return true;
       });
     }
-    
-    function renderLostTabs() { const filtered = getFilteredLostData(); const years = {}; filtered.forEach(d => { years[d.finish_year] = (years[d.finish_year] || 0) + 1; }); const sorted = Object.keys(years).sort((a,b)=>b-a); let h = ''; sorted.forEach(y => { h += `<button class="btn btn-sm btn-outline-dark px-3 text-nowrap" onclick="renderLostCards('${y}')">${y}年 (${years[y]})</button>`; }); document.getElementById('lostYearTabs').innerHTML = h; if(sorted.length > 0) renderLostCards(sorted[0]); else document.getElementById('lostCareResults').innerHTML = '<div class="text-center text-muted py-5">查無客戶</div>'; }
+    function renderLostTabs() { 
+      const filtered = getFilteredLostData(); 
+      const years = {}; 
+      
+      filtered.forEach(d => { 
+        // 🛠️ 2. 放棄 finish_year，直接從 finish_date (格式如 yyyy/mm/dd 或 yyyy-mm-dd) 提取年份
+        let yearKey = "未分類";
+        if (d.finish_date && typeof d.finish_date === 'string') {
+          const match = d.finish_date.match(/^(\d{4})/); // 抓取最前面的 4 位數字
+          if (match) {
+            yearKey = match[1];
+          }
+        }
+        years[yearKey] = (years[yearKey] || 0) + 1; 
+      }); 
+      
+      const sorted = Object.keys(years).sort((a,b) => {
+        if (a === "未分類") return 1;
+        if (b === "未分類") return -1;
+        return b - a; // 年份由大到小排序
+      }); 
+      
+      let h = ''; 
+      sorted.forEach(y => { 
+        h += `<button class="btn btn-sm btn-outline-dark px-3 text-nowrap" onclick="renderLostCards('${y}')">${y}年 (${years[y]})</button>`; 
+      }); 
+      
+      document.getElementById('lostYearTabs').innerHTML = h; 
+      if(sorted.length > 0) renderLostCards(sorted[0]); 
+      else document.getElementById('lostCareResults').innerHTML = '<div class="text-center text-muted py-5">查無客戶</div>'; 
+    }
     function filterLost(type, btn) { document.querySelectorAll('.lost-filter-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-filter-btn px-4 rounded-pill'); btn.className='btn btn-sm btn-primary lost-filter-btn active px-4 rounded-pill'; currentLostFilter = type; document.getElementById('lostXFilterRow').style.display = (type === '已關懷') ? 'flex' : 'none'; renderLostTabs(); }
     function filterLostX(xType, btn) { document.querySelectorAll('.lost-x-btn').forEach(b => b.className='btn btn-sm btn-outline-secondary lost-x-btn px-3 rounded-pill'); btn.className='btn btn-sm btn-primary lost-x-btn active px-3 rounded-pill'; currentLostXFilter = xType; renderLostTabs(); }
     
     function renderLostCards(year) { 
-      const filtered = getFilteredLostData().filter(d => d.finish_year === year).sort((a,b)=>new Date(a.finish_date)-new Date(b.finish_date)); 
+      // 🛠️ 3. 卡片過濾也改為動態比對 finish_date 的年份
+      const filtered = getFilteredLostData().filter(d => {
+        let currentYear = "未分類";
+        if (d.finish_date && typeof d.finish_date === 'string') {
+          const match = d.finish_date.match(/^(\d{4})/);
+          if (match) currentYear = match[1];
+        }
+        return currentYear === year;
+      }).sort((a,b) => new Date(a.finish_date) - new Date(b.finish_date)); 
+      
       let h = ''; 
       filtered.forEach((r, idx) => { 
-        h += `<div class="result-card mb-3" id="lostCard_${idx}" style="border-left: 6px solid #f4a261; position: relative; background: rgba(255,255,255,0.7);"><div onclick="shareCard('lostCard_${idx}', '失聯關懷_${r.name}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:1rem; z-index:5;">📤</div><div class="d-flex justify-content-between align-items-start mb-1"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><div class="text-end" style="margin-right:25px;"><div class="badge bg-warning text-dark mb-1">${r.raw_status}</div><br><span class="badge bg-white text-dark border" style="font-size:0.7rem;">完銷:${r.finish_date}</span></div></div><div class="row g-1 small mb-2"><div class="col-6">🆔 會員編號:<br><small class="fw-bold">${r.id}</small></div><div class="col-6">🎂 生日: ${r.birth}<br><span class="badge bg-white text-dark border">${2026-parseInt(r.birth.substring(0,4))}歲</span></div><div class="col-12 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">📄 單號: ${r.order_no}</div><div class="col-6 text-danger fw-bold">💰 金額: ${r.amount}</div><div class="col-12 mt-1 border-top pt-1 text-muted">🕒 最後關懷: ${r.last_care_time || '尚無'}</div></div>${r.status==='已關懷'?`<div class="mt-2 p-2 rounded bg-success bg-opacity-10 border border-success small"><b class="text-success">✅ 已關懷</b> | 👤 ${r.staff}<br>💬 內容: ${r.note}</div>`:''}<button class="btn btn-sm w-100 mt-2 text-white shadow-sm" style="background-color: #e76f51;" onclick="openLostModal(${r.row_index}, '${r.name}')">❤️ 進行關懷紀錄</button></div>`; 
+        // 動態計算卡片上要顯示的年齡
+        let ageDisplay = "未知";
+        if (r.birth && typeof r.birth === 'string') {
+          const match = r.birth.match(/^(\d{4})/);
+          if (match) ageDisplay = (2026 - parseInt(match[1])) + "歲";
+        }
+
+        h += `<div class="result-card mb-3" id="lostCard_${idx}" style="border-left: 6px solid #f4a261; position: relative; background: rgba(255,255,255,0.7);"><div onclick="shareCard('lostCard_${idx}', '失聯關懷_${r.name}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:1rem; z-index:5;">📤</div><div class="d-flex justify-content-between align-items-start mb-1"><h5 class="fw-bold text-[#5b2a30] mb-0">${r.name}</h5><div class="text-end" style="margin-right:25px;"><div class="badge bg-warning text-dark mb-1">${r.raw_status}</div><br><span class="badge bg-white text-dark border" style="font-size:0.7rem;">完銷:${r.finish_date}</span></div></div><div class="row g-1 small mb-2"><div class="col-6">🆔 會員編號:<br><small class="fw-bold">${r.id}</small></div><div class="col-6">🎂 生日: ${r.birth}<br><span class="badge bg-white text-dark border">${ageDisplay}</span></div><div class="col-12 text-[#87A96B] fw-bold">📞 電話: ${r.phone}</div><div class="col-6">📄 單號: ${r.order_no}</div><div class="col-6 text-danger fw-bold">💰 金額: ${r.amount}</div><div class="col-12 mt-1 border-top pt-1 text-muted">🕒 最後關懷: ${r.last_care_time || '尚無'}</div></div>${r.status==='已關懷'?`<div class="mt-2 p-2 rounded bg-success bg-opacity-10 border border-success small"><b class="text-success">✅ 已關懷</b> | 👤 ${r.staff}<br>💬 內容: ${r.note}</div>`:''}<button class="btn btn-sm w-100 mt-2 text-white shadow-sm" style="background-color: #e76f51;" onclick="openLostModal(${r.row_index}, '${r.name}')">❤️ 進行關懷紀錄</button></div>`; 
       }); 
       document.getElementById('lostCareResults').innerHTML = h; 
     }
