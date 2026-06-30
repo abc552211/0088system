@@ -1237,8 +1237,12 @@
         switchHandTab(1);
         loadData(); 
       }
+      // 🛠️ 修正：進入今日預約處理時，確保重設狀態與面板
       if(id === 'appointment') {
-        switchAppTab(1); 
+        currentAppTab = 1; // 強制固定為 1 (讀取諮詢預約)
+        currentSelectedAppIndex = null;
+        const detailPanel = document.getElementById('appDetail');
+        if (detailPanel) detailPanel.style.display = 'none';
         loadData(); 
       }
     }
@@ -1934,10 +1938,16 @@
       if (!container) return;
 
       container.innerHTML = ''; 
+      
+      // 🛠️ 防呆修正：若變數因拔除頁籤未定義，強制指回 1 (諮詢預約名單)
+      if (typeof currentAppTab === 'undefined') {
+        currentAppTab = 1;
+      }
+
       const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
       
       if (!list || list.length === 0) {
-        container.innerHTML = '<div class="alert alert-light text-center small text-muted">🎉 目前沒有待處理的名單</div>';
+        container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">🎉 目前沒有待處理的今日預約名單</div>';
         return;
       }
       
@@ -1959,14 +1969,14 @@
             <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '${it.name}')">
               <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name}</span>
-                <div>${badgeHtml}<span class="badge bg-secondary">${it.status}</span></div>
+                <div>${badgeHtml}<span class="badge bg-secondary">${it.status || '待處理'}</span></div>
               </div>
               <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr || '未定'}</b></div>
               <div class="small text-dark text-truncate mt-1" style="max-width:400px;">📌 內容：${it.event || '無'}</div>
               <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
             </div>`;
         } else {
-          // 交接預約小卡
+          // 交接提醒預約小卡
           h += `
             <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '交接項目')">
               <div class="d-flex justify-content-between align-items-center">
