@@ -1183,64 +1183,78 @@ const { data: appData } = await _supabase.from('consultations')
     let activeReaderId = null;
 
     async function toggleLiveScan(inputId, readerId) {
-      const readerEl = document.getElementById(readerId);
-      if (!readerEl) return;
+  const readerEl = document.getElementById(readerId);
+  if (!readerEl) return;
 
-      if (activeScanner && activeReaderId === readerId) {
-        await stopGlobalScan();
-        return;
-      }
-      if (activeScanner) {
-        await stopGlobalScan();
-      }
+  if (activeScanner && activeReaderId === readerId) {
+    await stopGlobalScan();
+    return;
+  }
+  if (activeScanner) {
+    await stopGlobalScan();
+  }
 
-      readerEl.style.display = "block";
-      readerEl.innerHTML = '<div class="laser-line"></div>';
+  readerEl.style.display = "block";
+  readerEl.innerHTML = '<div class="laser-line"></div>';
 
-      activeReaderId = readerId;
-      activeScanner = new Html5Qrcode(readerId);
+  activeReaderId = readerId;
+  activeScanner = new Html5Qrcode(readerId);
 
-      const config = { 
-        fps: 20, 
-        qrbox: (width, height) => {
-          return { width: Math.min(width, height) * 0.7, height: Math.min(width, height) * 0.4 }
-        },
-        aspectRatio: 1.0
-      };
-
-      try {
-        await activeScanner.start(
-          { facingMode: "environment" }, 
-          config, 
-          async (decodedText) => {
-            let finalResult = decodedText.trim();
-            const isChildrenPage = (inputId === 'cControlID');
-
-            if (isChildrenPage) {
-              const childMatch = finalResult.match(/[A-Za-z]\d{5}/);
-              if (childMatch) finalResult = childMatch[0].toUpperCase();
-            } else {
-              if (/^[A-Za-z][1,2]\d{8}$/.test(finalResult)) return; 
-              if (finalResult.length === 8 && !finalResult.includes('-')) {
-                finalResult = finalResult.substring(0, 7) + "-" + finalResult.substring(7, 8);
-              }
-            }
-
-            document.getElementById(inputId).value = finalResult;
-            if (navigator.vibrate) navigator.vibrate(50);
-            
-            await stopGlobalScan();
-          },
-          (errorMessage) => {}
-        );
-      } catch (err) {
-        alert("相機啟動失敗: " + err);
-        readerEl.style.display = "none";
-        readerEl.innerHTML = "";
-        activeScanner = null;
-        activeReaderId = null;
-      }
+  // 🛑 核心優化：掃描器參數升級
+  const config = { 
+    fps: 10, // 降低幀率，讓手機相機有足夠時間「自動對焦」
+    qrbox: (videoWidth, videoHeight) => {
+      // 把掃描框改成「長方形」，寬度拉到螢幕的 90%，專門對付長條形病歷條碼
+      return { width: videoWidth * 0.9, height: 150 };
+    },
+    experimentalFeatures: {
+      useBarCodeDetectorIfSupported: true // 啟用手機原生硬體掃碼加速 (大幅提升 iOS/Android 辨識率)
     }
+    // 移除了 aspectRatio: 1.0，讓手機保持正常的直立長寬比
+  };
+
+  try {
+    await activeScanner.start(
+      { 
+        facingMode: "environment",
+        // 強制連續對焦模式 (如果手機支援的話)
+        advanced: [{ focusMode: "continuous" }] 
+      }, 
+      config, 
+      async (decodedText) => {
+        let finalResult = decodedText.trim();
+        const isChildrenPage = (inputId === 'cControlID');
+
+        if (isChildrenPage) {
+          const childMatch = finalResult.match(/[A-Za-z]\d{5}/);
+          if (childMatch) finalResult = childMatch[0].toUpperCase();
+        } else {
+          // 注意：這裡的防呆會把「身分證字號」直接擋掉不輸入
+          if (/^[A-Za-z][1,2]\d{8}$/.test(finalResult)) return; 
+          
+          // 自動幫 8 碼數字補上 dash (例如: 12345678 -> 1234567-8)
+          if (finalResult.length === 8 && !finalResult.includes('-')) {
+            finalResult = finalResult.substring(0, 7) + "-" + finalResult.substring(7, 8);
+          }
+        }
+
+        document.getElementById(inputId).value = finalResult;
+        if (navigator.vibrate) navigator.vibrate(50); // 掃到時震動回饋
+        
+        await stopGlobalScan();
+      },
+      (errorMessage) => {
+        // 忽略掃描過程中的背景報錯，避免洗頻
+      }
+    );
+  } catch (err) {
+    alert("相機啟動失敗，請確認是否給予瀏覽器相機權限！\n錯誤訊息：" + err);
+    readerEl.style.display = "none";
+    readerEl.innerHTML = "";
+    activeScanner = null;
+    activeReaderId = null;
+  }
+}
 
     async function stopGlobalScan() {
       if (activeScanner) {
@@ -1350,19 +1364,27 @@ const { data: appData } = await _supabase.from('consultations')
       const rawEvent = document.getElementById('cEvent').value;
       const finalEvent = activeTags ? `${activeTags} ${rawEvent}` : rawEvent;
 
+      // 處理生日格式 (1000101 -> 100/01/01)
+      const formattedBirth = birthInput.substring(0, 3) + '/' + birthInput.substring(3, 5) + '/' + birthInput.substring(5, 7);
+
+      // 產生 yyyy/mm/dd HH:mm 格式的 created_at
+      const d = new Date();
+      const customCreatedAt = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
       const payload = { 
         barcode: document.getElementById('cBarcode').value || null, 
         name: document.getElementById('cName').value, 
         phone: document.getElementById('cPhone').value || null, 
-        birthday: birthInput, 
+        birthday: formattedBirth, // ✨ 寫入轉換後的生日
         event: finalEvent || null,
         staff: document.getElementById('cStaff').value, 
         doctor: document.getElementById('cDoctor').value, 
         is_appoint: realAppointStatus, 
         appoint_time: formattedTime, 
         image_url: base64Photo || null, 
-        status: '待處理'
-      }; 
+        status: '待處理',
+        created_at: customCreatedAt // ✨ 寫入自訂時間格式
+      };
 
       try {
         const { data, error } = await _supabase.from('consultations').insert([payload]).select();
@@ -1786,11 +1808,18 @@ const { data: appData } = await _supabase.from('consultations')
       const phone = document.getElementById('editPhone').value.trim();
       if (!name) { alert("姓名請勿留空"); return; }
 
+      // 處理編輯時的生日格式轉換 (防呆：如果有斜線就不轉，只有7碼純數字才轉)
+      let formattedBirth = birth;
+      if (birth.length === 7 && !birth.includes('/')) {
+        formattedBirth = birth.substring(0, 3) + '/' + birth.substring(3, 5) + '/' + birth.substring(5, 7);
+      }
+
       if(confirm(`確定要修改 ${name} 的資料嗎？`)) {
         document.getElementById('loadingOverlay').style.display = 'flex';
         closeEditCustomerModal();
         try {
-          const { error } = await _supabase.from('consultations').update({ name, birthday: birth, phone }).eq('id', rowIndex);
+          // ✨ 寫入 formattedBirth
+          const { error } = await _supabase.from('consultations').update({ name, birthday: formattedBirth, phone }).eq('id', rowIndex);
           document.getElementById('loadingOverlay').style.display = 'none';
           if (error) throw error;
           alert("🎉 客戶資料修改成功！");
@@ -2103,11 +2132,16 @@ const { data: appData } = await _supabase.from('consultations')
     const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
 
     if (currentAppTab === 1) {
-      // 算年齡 (擷取前3碼民國年)
+      // 算年齡 (相容 100/01/01 格式與舊版 1000101 格式)
       let ageStr = "未知";
-      if (it.birthday && it.birthday.length === 7 && !isNaN(it.birthday.substring(0, 3))) {
-        const bYear = parseInt(it.birthday.substring(0, 3), 10);
-        ageStr = (currentRocYear - bYear) + "歲";
+      if (it.birthday) {
+        if (it.birthday.includes('/')) {
+          const bYear = parseInt(it.birthday.split('/')[0], 10);
+          if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
+        } else if (it.birthday.length === 7 && !isNaN(it.birthday.substring(0, 3))) {
+          const bYear = parseInt(it.birthday.substring(0, 3), 10);
+          ageStr = (currentRocYear - bYear) + "歲";
+        }
       }
 
       // 諮詢預約小卡
