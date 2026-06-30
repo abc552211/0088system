@@ -1378,7 +1378,10 @@
         updateSystemStatus(); 
         initScrollAnimations();
       }
-      if(id === 'handover') switchHandTab(1); 
+      if(id === 'handover') {
+        switchHandTab(1);
+        loadData(); // ✨ 修正：進入交接清單時，立即同步最新的交接資料與渲染
+      }
     }
 
     function previewImg(input) {
