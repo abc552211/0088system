@@ -1987,7 +1987,7 @@
           app_time: appTime,
           last_care_time: new Date().toLocaleDateString('zh-TW')
         };
-        const { error } = await _supabase.from('lost_care').update(payload).eq('row_index', row);
+        const { error } = await _supabase.from('lost_care').update(payload).eq('id', row);
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
@@ -2345,24 +2345,17 @@
       document.getElementById('lostIsNoAnswer').checked = false; 
       document.getElementById('lostTimeDiv').style.display = 'none'; 
       
-      // 🛠️ 1. 修正：開啟 Modal 時立即初始化年月日與時間選單
+      // 1. 初始化年月日與時間選單
       initSelectors(); 
 
-      // 🛠️ 2. 修正：從快取 (cache.staff) 撈取最新員工清單
+      // 2. 乾淨展開所有人：直接撈取 cache.staff 渲染選單
       const s = document.getElementById('lostStaff'); 
       s.innerHTML = '<option value="">- 請選擇服務人 -</option>'; 
-      if (cache.staff && cache.staff.length > 0) {
-        cache.staff.forEach(p => { if(p) s.add(new Option(p, p)); });
-      } else {
-        // 備用防呆：如果快取尚未載入，嘗試從本地儲存代入
-        const localStaff = localStorage.getItem("current_staff_name");
-        if (localStaff) s.add(new Option(localStaff, localStaff));
-      }
       
-      // 自動帶入目前登入此裝置的員工姓名（優化體驗）
-      const currentStaff = localStorage.getItem("current_staff_name");
-      if (currentStaff && cache.staff.includes(currentStaff)) {
-        s.value = currentStaff;
+      if (cache.staff && cache.staff.length > 0) {
+        cache.staff.forEach(p => { 
+          if(p) s.add(new Option(p, p)); 
+        });
       }
 
       document.getElementById('lostModal').style.display = 'flex'; 
