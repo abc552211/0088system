@@ -28,7 +28,7 @@
 
   <style>
     :root {
-      /* 重新設計：精緻清冷莫蘭迪配色（提高對比度，防遮蔽） */
+      /* 精緻清冷莫蘭迪配色（提高對比度，防遮蔽） */
       --main-bg-start: #f2f2f0; 
       --main-bg-end: #e1e2de;
       --card-bg: rgba(250, 250, 249, 0.85);
@@ -71,6 +71,7 @@
     }
     input[type="number"] { -moz-appearance: textfield; }
     
+    /* 🛠️ 修正：卡片本身調低 z-index 且允許內部穿透 */
     .card { 
       border-radius: 20px; 
       box-shadow: var(--card-shadow) !important; 
@@ -78,8 +79,8 @@
       margin-bottom: 20px; 
       overflow: hidden; 
       background: var(--card-bg) !important;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      position: relative;
+      z-index: 1;
     }
     .card h4, .card h5 {
       color: var(--font-color-main);
@@ -101,8 +102,17 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    /* 🛠️ 核心修正：還原基礎 .btn 屬性，確保所有點擊事件、active 縮放行為不被 pointer-events 阻擋 */
-    .btn { border-radius: 12px; font-weight: 600; padding: 12px; transition: all 0.2s ease; border: none; pointer-events: auto !important; }
+    /* 🛠️ 核心修正：強制按鈕衝到最上層（z-index: 99），防軌道或毛玻璃遮蔽點擊判定 */
+    .btn { 
+      border-radius: 12px; 
+      font-weight: 600; 
+      padding: 12px; 
+      transition: all 0.2s ease; 
+      border: none; 
+      position: relative !important;
+      z-index: 99 !important;
+      pointer-events: auto !important; 
+    }
     
     /* 深色系按鈕配白字 */
     .btn-primary { background-color: var(--btn-consult) !important; color: #ffffff !important; }
@@ -110,9 +120,16 @@
     .btn-info { background-color: var(--btn-handover) !important; color: #ffffff !important; }
     .btn-dark { background-color: var(--btn-search) !important; color: #ffffff !important; }
     
-    /* 淺色/功能性按鈕配色，強制覆蓋背景與文字，確保按鈕事件絕對正常 */
+    /* 淺色/功能性按鈕配色 */
     .btn-warning { background-color: var(--btn-children) !important; color: #4a4e69 !important; }
     .btn-light { background-color: rgba(74, 78, 105, 0.08) !important; color: var(--font-color-main) !important; }
+    
+    /* 🛠️ 修正：卡片內的 刪除/編輯/關懷 按鈕，額外強制拉高 z-index 並移除 Bootstrap 點擊重疊 */
+    .result-card .btn {
+      position: relative !important;
+      z-index: 999 !important;
+      cursor: pointer !important;
+    }
     .btn-outline-danger { background-color: transparent !important; border: 1px solid #e5989b !important; color: #e5989b !important; }
     .btn-outline-primary { background-color: transparent !important; border: 1px solid var(--btn-search) !important; color: var(--btn-search) !important; }
     
@@ -141,7 +158,8 @@
     #reader, #readerSearch, #readerChildren { width: 100%; display: none; border-radius: 15px; overflow: hidden; margin-bottom: 15px; border: 2px solid var(--btn-search); }
     #photoPreview { width: 100%; max-height: 250px; object-fit: contain; display: none; margin-top: 15px; border-radius: 10px; }
     
-    .result-card { border-left: 6px solid var(--btn-search); margin-bottom: 15px; padding: 15px; border-radius: 15px; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(5px); box-shadow: 0 4px 12px rgba(74, 78, 105, 0.03); }
+    /* 🛠️ 修正：卡片移除 backdrop-filter 霧化特效，防止點擊穿透層破壞按鈕點擊 */
+    .result-card { border-left: 6px solid var(--btn-search); margin-bottom: 15px; padding: 15px; border-radius: 15px; background: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 12px rgba(74, 78, 105, 0.03); position: relative; z-index: 5; }
     .badge { padding: 6px 12px; border-radius: 8px; font-weight: 500; }
     .handover-card-timed { background-color: var(--handover-timed-bg) !important; border-left: 6px solid var(--handover-timed-accent) !important; }
     .handover-card-timed .badge { background-color: var(--handover-timed-accent) !important; color: #fff !important; }
@@ -149,7 +167,7 @@
     .handover-card-track .badge { background-color: var(--handover-track-accent) !important; color: #fff !important; }
     .handover-card-logistics { background-color: var(--handover-logistics-bg) !important; border-left: 6px solid var(--handover-logistics-accent) !important; }
     .handover-card-logistics .badge { background-color: var(--handover-logistics-accent) !important; color: #fff !important; }
-    .children-card { border-left: 6px solid var(--btn-children) !important; background: rgba(244, 241, 246, 0.7) !important; }
+    .children-card { border-left: 6px solid var(--btn-children) !important; background: #f4f1f6 !important; }
     .handover-overdue { background-color: #fff1f0 !important; border-left: 6px solid #e8a7a1 !important; border-right: 2px solid #e8a7a1 !important; }
     
     .sub-filter-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 5px 0 15px 0; scrollbar-width: none; }
@@ -163,6 +181,10 @@
     .sub-filter-scroll .btn-outline-secondary { background-color: #ffffff !important; color: var(--font-color-main) !important; border: 1px solid rgba(142, 154, 175, 0.25) !important; }
     .sub-filter-scroll .btn-primary { background-color: var(--btn-search) !important; color: #ffffff !important; }
     #handoverListView .sub-filter-scroll .btn-primary { background-color: var(--btn-consult) !important; color: #ffffff !important; }
+
+    /* 🛠️ 修正：自訂滾動條軌道調低，絕對不可覆蓋卡片按鈕點擊網格 */
+    #customScrollTrack { position: fixed; right: 5px; top: 10%; height: 80%; width: 20px; z-index: 2 !important; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    #customScrollTrack.visible { opacity: 1; pointer-events: auto; }
 
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 78, 105, 0.4); backdrop-filter: blur(6px); z-index: 9999 !important; display: flex; align-items: center; justify-content: center; }
     .modal-body { background: #f2f2f0; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(74, 78, 105, 0.12); border: 1px solid rgba(142, 154, 175, 0.1); color: var(--font-color-main); }
@@ -186,8 +208,6 @@
     
     .glass-vintage-card {
       background: rgba(255, 255, 255, 0.5);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(142, 154, 175, 0.12);
       box-shadow: 0 8px 32px rgba(74, 78, 105, 0.02);
       transition: all 0.2s ease;
