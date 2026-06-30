@@ -2073,64 +2073,72 @@ const { data: appData } = await _supabase.from('consultations')
     let currentSelectedAppIndex = null;
 
     function renderAppSelect() { 
-      const container = document.getElementById('appCardsContainer'); 
-      if (!container) return;
+  const container = document.getElementById('appCardsContainer'); 
+  if (!container) return;
 
-      container.innerHTML = ''; 
-      
-      // 🛠️ 防呆修正：若變數因拔除頁籤未定義，強制指回 1 (諮詢預約名單)
-      if (typeof currentAppTab === 'undefined') {
-        currentAppTab = 1;
+  container.innerHTML = ''; 
+  
+  if (typeof currentAppTab === 'undefined') {
+    currentAppTab = 1;
+  }
+
+  const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
+  
+  if (!list || list.length === 0) {
+    container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">🎉 目前沒有待處理的今日預約名單</div>';
+    return;
+  }
+  
+  let h = '';
+  const now = new Date();
+  const currentRocYear = now.getFullYear() - 1911; // 取得當前民國年
+
+  list.forEach((it, ix) => { 
+    let timeStr = (currentAppTab === 1) ? it.appoint_time : it.target_date;
+    if(timeStr) timeStr = timeStr.replace('T', ' ').substring(0, 16);
+    
+    // 判斷是否逾期
+    const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
+    const cardStyle = isOverdue ? 'card-overdue-flash' : '';
+    const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
+
+    if (currentAppTab === 1) {
+      // 算年齡 (擷取前3碼民國年)
+      let ageStr = "未知";
+      if (it.birthday && it.birthday.length === 7 && !isNaN(it.birthday.substring(0, 3))) {
+        const bYear = parseInt(it.birthday.substring(0, 3), 10);
+        ageStr = (currentRocYear - bYear) + "歲";
       }
 
-      const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
-      
-      if (!list || list.length === 0) {
-        container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">🎉 目前沒有待處理的今日預約名單</div>';
-        return;
-      }
-      
-      let h = '';
-      const now = new Date();
-
-      list.forEach((it, ix) => { 
-        let timeStr = (currentAppTab === 1) ? it.appoint_time : it.target_date;
-        if(timeStr) timeStr = timeStr.replace('T', ' ').substring(0, 16);
-        
-        // 判斷是否逾期
-        const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
-        const cardStyle = isOverdue ? 'card-overdue-flash' : '';
-        const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
-
-        if (currentAppTab === 1) {
-          // 諮詢預約小卡
-          h += `
-            <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '${it.name}')">
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name}</span>
-                <div>${badgeHtml}<span class="badge bg-secondary">${it.status || '待處理'}</span></div>
-              </div>
-              <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr || '未定'}</b></div>
-              <div class="small text-dark text-truncate mt-1" style="max-width:400px;">📌 內容：${it.event || '無'}</div>
-              <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
-            </div>`;
-        } else {
-          // 交接提醒預約小卡
-          h += `
-            <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '交接項目')">
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-md text-[#5b2a30]">📥 接收人：${it.to_staff}</span>
-                <div>${badgeHtml}<span class="badge bg-warning text-dark">交接</span></div>
-              </div>
-              <div class="small text-muted mt-1">⏰ 執行截止：<b>${timeStr || '未定'}</b></div>
-              <div class="small text-dark mt-1" style="white-space: pre-wrap;">📝 待辦：${it.content || '無'}</div>
-              <div class="text-end text-xs text-muted mt-1">📤 交接人：${it.from_staff || '未知'}</div>
-            </div>`;
-        }
-      });
-      
-      container.innerHTML = h;
+      // 諮詢預約小卡
+      h += `
+        <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '${it.name}')">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
+            <div>${badgeHtml}<span class="badge bg-secondary">${it.status || '待處理'}</span></div>
+          </div>
+          <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
+          <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr || '未定'}</b></div>
+          <div class="small text-dark text-truncate mt-1" style="max-width:400px;">📌 內容：${it.event || '無'}</div>
+          <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
+        </div>`;
+    } else {
+      // 交接提醒預約小卡
+      h += `
+        <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '交接項目')">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-md text-[#5b2a30]">📥 接收人：${it.to_staff}</span>
+            <div>${badgeHtml}<span class="badge bg-warning text-dark">交接</span></div>
+          </div>
+          <div class="small text-muted mt-1">⏰ 執行截止：<b>${timeStr || '未定'}</b></div>
+          <div class="small text-dark mt-1" style="white-space: pre-wrap;">📝 待辦：${it.content || '無'}</div>
+          <div class="text-end text-xs text-muted mt-1">📤 交接人：${it.from_staff || '未知'}</div>
+        </div>`;
     }
+  });
+  
+  container.innerHTML = h;
+}
 
     function selectAppCard(index, id, name) {
       currentSelectedAppIndex = index;
