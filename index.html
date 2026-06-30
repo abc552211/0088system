@@ -28,33 +28,33 @@
 
   <style>
     :root {
-      /* 莫蘭迪低飽和度高質感配色 */
-      --main-bg-start: #f4f4f2; 
-      --main-bg-end: #e8e8e4;
-      --card-bg: rgba(248, 249, 250, 0.8);
+      /* 重新設計：精緻清冷莫蘭迪配色（提高對比度，防遮蔽） */
+      --main-bg-start: #f2f2f0; 
+      --main-bg-end: #e1e2de;
+      --card-bg: rgba(250, 250, 249, 0.85);
       --dark-color: #4a4e69;
-      --card-shadow: 0 12px 40px rgba(74, 78, 105, 0.04);
-      --font-color-main: #4a4e69;
+      --card-shadow: 0 12px 40px rgba(74, 78, 105, 0.05);
+      --font-color-main: #4a4e69;      /* 莫蘭迪深鐵灰 */
+      --font-color-muted: #8e9aaf;     /* 莫蘭迪霧藍灰 */
       
-      /* 功能按鈕專屬莫蘭迪色 */
-      --btn-consult: #a3b18a;   /* 鼠尾草綠 */
-      --btn-appoint: #b5c2b7;   /* 霧霾藍綠 */
-      --btn-handover: #b5a6ab;  /* 煙燻藕粉 */
-      --btn-search: #8e9aaf;    /* 莫蘭迪藍 */
-      --btn-children: #cbc0d3;  /* 薰衣草灰 */
-      --btn-settings: #d8e2dc;  /* 亞麻蛋殼白 */
+      /* 功能按鈕專屬莫蘭迪色（全數微調，確保層次感） */
+      --btn-consult: #93a285;   /* 霧感灰綠 */
+      --btn-appoint: #a3b2a6;   /* 灰藍綠 */
+      --btn-handover: #a89a9f;  /* 煙燻藕粉 */
+      --btn-search: #7d8b9e;    /* 莫蘭迪深藍 */
+      --btn-children: #b8adc2;  /* 薰衣草灰 */
+      --btn-settings: #d0dad5;  /* 亞麻蛋殼青 */
       
-      /* 交接清單專屬霧面色 */
+      /* 交接清單與卡片狀態色 */
       --handover-timed-bg: rgba(243, 233, 224, 0.85); --handover-timed-accent: #ddb892;
-      --handover-track-bg: rgba(232, 237, 223, 0.85); --handover-track-accent: #a3b18a;
-      --handover-logistics-bg: rgba(226, 234, 241, 0.85); --handover-logistics-accent: #8e9aaf;
+      --handover-track-bg: rgba(232, 237, 223, 0.85); --handover-track-accent: #93a285;
+      --handover-logistics-bg: rgba(226, 234, 241, 0.85); --handover-logistics-accent: #7d8b9e;
     }
     
     body { 
       margin: 0; 
       padding: 0; 
       min-height: 100vh; 
-      /* 純淨高級的莫蘭迪雙色微漸層，無紋路質感 */
       background: linear-gradient(135deg, var(--main-bg-start), var(--main-bg-end)) !important; 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
       color: var(--font-color-main);
@@ -71,7 +71,6 @@
     }
     input[type="number"] { -moz-appearance: textfield; }
     
-    /* 莫蘭迪微霧半透明卡片 */
     .card { 
       border-radius: 20px; 
       box-shadow: var(--card-shadow) !important; 
@@ -88,74 +87,87 @@
       font-weight: 900;
       letter-spacing: 1px;
     }
-    .text-muted { color: rgba(74, 78, 105, 0.5) !important; }
+    .text-muted { color: var(--font-color-muted) !important; }
     .form-control, .form-select {
-      background-color: rgba(255, 255, 255, 0.5) !important;
-      border: 1px solid rgba(142, 154, 175, 0.2) !important;
+      background-color: rgba(255, 255, 255, 0.6) !important;
+      border: 1px solid rgba(142, 154, 175, 0.25) !important;
       color: var(--font-color-main) !important;
       border-radius: 12px !important;
       transition: all 0.3s ease;
     }
     .form-control:focus, .form-select:focus {
-      box-shadow: 0 0 0 0.25rem rgba(142, 154, 175, 0.1) !important;
-      border-color: rgba(142, 154, 175, 0.4) !important;
-      background-color: rgba(255, 255, 255, 0.85) !important;
+      box-shadow: 0 0 0 0.25rem rgba(142, 154, 175, 0.12) !important;
+      border-color: rgba(142, 154, 175, 0.45) !important;
+      background-color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    .btn { border-radius: 12px; font-weight: 600; padding: 12px; transition: all 0.2s ease; border: none; color: #ffffff !important; }
-    .btn-primary { background-color: var(--btn-consult) !important; }
-    .btn-success { background-color: var(--btn-appoint) !important; }
-    .btn-info { background-color: var(--btn-handover) !important; }
-    .btn-dark { background-color: var(--btn-search) !important; }
-    .btn-warning { background-color: var(--btn-children) !important; color: var(--dark-color) !important; }
+    /* 🛠️ 修正：移除通配的白字，改由各按鈕類型單獨控制文字顏色，防止標籤文字不見 */
+    .btn { border-radius: 12px; font-weight: 600; padding: 12px; transition: all 0.2s ease; border: none; }
+    
+    /* 深色系按鈕配白字 */
+    .btn-primary { background-color: var(--btn-consult) !important; color: #ffffff !important; }
+    .btn-success { background-color: var(--btn-appoint) !important; color: #ffffff !important; }
+    .btn-info { background-color: var(--btn-handover) !important; color: #ffffff !important; }
+    .btn-dark { background-color: var(--btn-search) !important; color: #ffffff !important; }
+    
+    /* 淺色/粉色系按鈕配深灰字，確保清晰度 */
+    .btn-warning { background-color: var(--btn-children) !important; color: #4a4e69 !important; }
+    .btn-light { background-color: rgba(74, 78, 105, 0.08) !important; color: var(--font-color-main) !important; }
+    .btn-outline-danger { background-color: transparent !important; border: 1px solid #e5989b !important; color: #e5989b !important; }
+    .btn-outline-primary { background-color: transparent !important; border: 1px solid var(--btn-search) !important; color: var(--btn-search) !important; }
     
     #hContent::placeholder, #hPhone::placeholder { color: #b5c2b7; opacity: 1; font-size: 0.9rem; }
-    .status-indicator { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 255, 255, 0.8); padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 10px rgba(74, 78, 105, 0.05); display: flex; align-items: center; font-size: 12px; font-weight: bold; pointer-events: none; }
+    .status-indicator { position: fixed; top: 10px; right: 10px; z-index: 9999; background: rgba(255, 255, 255, 0.85); padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 10px rgba(74, 78, 105, 0.05); display: flex; align-items: center; font-size: 12px; font-weight: bold; pointer-events: none; }
     .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 6px; }
-    .dot-online { background-color: #a3b18a; box-shadow: 0 0 8px #a3b18a; animation: pulse-green 2s infinite; }
+    .dot-online { background-color: var(--btn-consult); box-shadow: 0 0 8px var(--btn-consult); animation: pulse-green 2s infinite; }
     .dot-offline { background-color: #e5989b; box-shadow: 0 0 8px #e5989b; }
-    @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(163, 177, 138, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(163, 177, 138, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(163, 177, 138, 0); } }
+    @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(147, 162, 133, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(147, 162, 133, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(147, 162, 133, 0); } }
     
     .clear-wrapper { position: relative; width: 100%; }
     .input-group>.clear-wrapper { flex: 1 1 auto; width: 1%; display: flex; align-items: center; }
     .clear-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #bbb; font-size: 18px; line-height: 1; cursor: pointer; z-index: 5; padding: 5px; transition: color 0.2s; }
     .clear-btn:hover { color: #888; }
     textarea+.clear-btn { top: 25px; transform: none; }
-    .input-group>.clear-wrapper+.btn { width: 48px; height: 48px; border-radius: 50% !important; margin-left: 20px !important; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex: 0 0 auto; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); z-index: 10; }
+    .input-group>.clear-wrapper+.btn { width: 48px; height: 48px; border-radius: 50% !important; margin-left: 20px !important; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex: 0 0 auto; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03); z-index: 10; }
     
     #consultation .input-group>.clear-wrapper+.btn { background-color: var(--btn-consult) !important; color: white !important; }
     #searchPage .input-group>.clear-wrapper+.btn { background-color: var(--btn-search) !important; color: white !important; }
-    #sectionChildrenSearch .input-group>.clear-wrapper+.btn { background-color: var(--btn-children) !important; color: white !important; }
+    #sectionChildrenSearch .input-group>.clear-wrapper+.btn { background-color: var(--btn-children) !important; color: var(--dark-color) !important; }
     .form-switch .form-check-input { width: 3.5rem !important; height: 1.75rem !important; cursor: pointer; }
     .form-check-input:checked { background-color: var(--btn-consult) !important; border-color: var(--btn-consult) !important; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important; }
-    .form-check-input:focus { border-color: var(--btn-consult) !important; box-shadow: 0 0 0 0.25rem rgba(163, 177, 138, 0.15) !important; }
+    .form-check-input:focus { border-color: var(--btn-consult) !important; box-shadow: 0 0 0 0.25rem rgba(147, 162, 133, 0.15) !important; }
     .form-check-label { padding-left: 10px; font-size: 1.1rem; line-height: 1.75rem; color: var(--font-color-main); }
     .date-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
     #reader, #readerSearch, #readerChildren { width: 100%; display: none; border-radius: 15px; overflow: hidden; margin-bottom: 15px; border: 2px solid var(--btn-search); }
     #photoPreview { width: 100%; max-height: 250px; object-fit: contain; display: none; margin-top: 15px; border-radius: 10px; }
     
-    /* 莫蘭迪卡片邊框色 */
     .result-card { border-left: 6px solid var(--btn-search); margin-bottom: 15px; padding: 15px; border-radius: 15px; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(5px); box-shadow: 0 4px 12px rgba(74, 78, 105, 0.03); }
     .badge { padding: 6px 12px; border-radius: 8px; font-weight: 500; }
     .handover-card-timed { background-color: var(--handover-timed-bg) !important; border-left: 6px solid var(--handover-timed-accent) !important; }
-    .handover-card-timed .badge { background-color: var(--handover-timed-accent) !important; color: #fff; }
+    .handover-card-timed .badge { background-color: var(--handover-timed-accent) !important; color: #fff !important; }
     .handover-card-track { background-color: var(--handover-track-bg) !important; border-left: 6px solid var(--handover-track-accent) !important; }
-    .handover-card-track .badge { background-color: var(--handover-track-accent) !important; color: #fff; }
+    .handover-card-track .badge { background-color: var(--handover-track-accent) !important; color: #fff !important; }
     .handover-card-logistics { background-color: var(--handover-logistics-bg) !important; border-left: 6px solid var(--handover-logistics-accent) !important; }
-    .handover-card-logistics .badge { background-color: var(--handover-logistics-accent) !important; color: #fff; }
+    .handover-card-logistics .badge { background-color: var(--handover-logistics-accent) !important; color: #fff !important; }
     .children-card { border-left: 6px solid var(--btn-children) !important; background: rgba(244, 241, 246, 0.7) !important; }
-    .handover-overdue { background-color: #fff1f0 !important; border-left: 6px solid #e5989b !important; border-right: 2px solid #e5989b !important; }
+    .handover-overdue { background-color: #fff1f0 !important; border-left: 6px solid #e8a7a1 !important; border-right: 2px solid #e8a7a1 !important; }
     
     .sub-filter-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 5px 0 15px 0; scrollbar-width: none; }
     .sub-filter-scroll::-webkit-scrollbar { display: none; }
     #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 78, 105, 0.4); backdrop-filter: blur(4px); display: none; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
     
-    .nav-tabs-custom { display: flex; background: rgba(142, 154, 175, 0.1); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-    .nav-tabs-custom div { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; color: var(--font-color-main); opacity: 0.6; }
-    .nav-tabs-custom .active-tab { background: #ffffff; color: var(--font-color-main); box-shadow: 0 2px 8px rgba(74, 78, 105, 0.08); opacity: 1 !important; }
+    /* 🛠️ 修正：分類快速按鈕（Tab）因為權限重疊導致白字被遮蔽的問題，強制使用深灰字與白底 */
+    .nav-tabs-custom { display: flex; background: rgba(142, 154, 175, 0.12); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .nav-tabs-custom div { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 10px; font-weight: bold; transition: 0.3s; color: var(--font-color-main) !important; opacity: 0.5; }
+    .nav-tabs-custom .active-tab { background: #ffffff !important; color: var(--font-color-main) !important; box-shadow: 0 2px 8px rgba(74, 78, 105, 0.08); opacity: 1 !important; }
     
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 78, 105, 0.5); backdrop-filter: blur(6px); z-index: 9999 !important; display: flex; align-items: center; justify-content: center; }
-    .modal-body { background: #f4f4f2; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(74, 78, 105, 0.15); border: 1px solid rgba(142, 154, 175, 0.1); }
+    /* 🛠️ 修正：卡片過濾滾動條按鈕文字顏色控制（解決被遮蔽問題） */
+    .sub-filter-scroll .btn-outline-secondary { background-color: #ffffff !important; color: var(--font-color-main) !important; border: 1px solid rgba(142, 154, 175, 0.25) !important; }
+    .sub-filter-scroll .btn-primary { background-color: var(--btn-search) !important; color: #ffffff !important; }
+    #handoverListView .sub-filter-scroll .btn-primary { background-color: var(--btn-consult) !important; color: #ffffff !important; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 78, 105, 0.4); backdrop-filter: blur(6px); z-index: 9999 !important; display: flex; align-items: center; justify-content: center; }
+    .modal-body { background: #f2f2f0; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(74, 78, 105, 0.12); border: 1px solid rgba(142, 154, 175, 0.1); color: var(--font-color-main); }
     .btn-circle { width: 45px; height: 45px; border-radius: 50% !important; display: flex; align-items: center; justify-content: center; padding: 0; }
     
     html, body { -ms-overflow-style: none; scrollbar-width: none; overflow-y: scroll; }
@@ -163,24 +175,22 @@
     
     #filterTabGroup { justify-content: center; padding: 10px 0; border-bottom: 2px solid rgba(142, 154, 175, 0.1); scrollbar-width: none; }
     #filterTabGroup::-webkit-scrollbar { display: none; }
-    .card-pending { border-left: 6px solid #8e9aaf !important; }
-    .card-cared { border-left: 6px solid #b5c2b7 !important; }
-    .card-closed { border-left: 6px solid #a3b18a !important; }
-    .result-card { transition: transform 0.2s; }
+    .card-pending { border-left: 6px solid var(--font-color-muted) !important; }
+    .card-cared { border-left: 6px solid var(--btn-appoint) !important; }
+    .card-closed { border-left: 6px solid var(--btn-consult) !important; }
+    .result-card { transition: transform 0.2s; color: var(--font-color-main); }
 
     .font-serif-tc { font-family: 'Noto Serif TC', serif; }
     .font-playfair { font-family: 'Playfair Display', serif; }
     
-    /* ⚠️ 舊的紋路覆蓋層直接在樣式中將其隱藏/拔除 */
     .noise-overlay { display: none !important; }
-
     #home.page { max-width: 100% !important; padding: 0 !important; }
     
     .glass-vintage-card {
       background: rgba(255, 255, 255, 0.5);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(142, 154, 175, 0.1);
+      border: 1px solid rgba(142, 154, 175, 0.12);
       box-shadow: 0 8px 32px rgba(74, 78, 105, 0.02);
       transition: all 0.2s ease;
     }
@@ -190,7 +200,7 @@
     }
     @media (hover: hover) {
       .glass-vintage-card:hover {
-        background: rgba(255, 255, 255, 0.75);
+        background: rgba(255, 255, 255, 0.7);
         border: 1px solid rgba(142, 154, 175, 0.3);
         transform: translateY(-4px);
         box-shadow: 0 12px 40px rgba(74, 78, 105, 0.06);
