@@ -529,6 +529,9 @@
           <input type="tel" id="hPhone" class="form-control my-2" placeholder="輸入電話(非必要)">
           <button class="clear-btn" onclick="clearInput('hPhone')">×</button>
         </div>
+        <label class="small fw-bold text-muted mt-2">附加照片 (高壓縮比省空間)</label>
+        <input type="file" id="hImage" class="form-control mb-2" accept="image/*" onchange="compressAndPreview(this, 'hImagePreview')">
+        <img id="hImagePreview" style="max-height: 150px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
         <div class="row">
           <div class="col-6"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
           <div class="col-6"><label class="small text-muted fw-bold">接交人</label><select id="hTo" class="form-select"></select></div>
@@ -872,6 +875,19 @@
       <div style="color: #fff; text-align: center; margin-top: 13px;" class="font-serif-tc text-sm tracking-wider opacity-75">點擊任意處關閉</div>
     </div>
   </div>
+  <div id="closedHandoverModal" class="modal-overlay" style="display:none; z-index: 10500;">
+    <div class="modal-body" style="max-width: 500px; width: 95%; max-height: 85vh; overflow-y: hidden; display: flex; flex-direction: column;">
+      <h5 class="fw-bold mb-3" style="color: #4a4e69;">🗂️ 已結案交接調閱</h5>
+      <div class="input-group mb-3">
+        <input type="text" id="closedSearchInput" class="form-control" placeholder="輸入關鍵字 (內容、人員)...">
+        <button class="btn text-white" style="background-color: #7d8b9e;" onclick="searchClosedHandovers()">搜尋</button>
+      </div>
+      <div id="closedSearchResults" class="mt-2 flex-grow-1" style="overflow-y: auto; padding-right: 5px;"></div>
+      <div class="d-grid mt-3">
+        <button class="btn btn-light" onclick="document.getElementById('closedHandoverModal').style.display='none'">關閉</button>
+      </div>
+    </div>
+  </div>
 
   <input type="file" id="qr-input-file" accept="image/*" capture="camera" style="display:none;">
 
@@ -1124,11 +1140,14 @@ const { data: appData } = await _supabase.from('consultations')
 
         renderAppSelect(); // 渲染卡片牆
 
-        // 讀取未完成的交接工作
+        // 讀取未完成的交接工作與關聯討論串
         const { data: handData } = await _supabase.from('handovers')
           .select('*')
           .neq('push_status', 'Sent')
           .order('created_at', { ascending: false });
+
+        const { data: likesData } = await _supabase.from('handover_likes').select('*');
+        const { data: commentsData } = await _supabase.from('handover_comments').select('*').order('created_at', { ascending: true });
 
         cache.handoverList = (handData || []).map(item => ({
           rowIndex: item.id,
@@ -1139,6 +1158,9 @@ const { data: appData } = await _supabase.from('consultations')
           to: item.to_staff,
           pushStatus: item.push_status,
           pushTime: item.delay_time,
+          imageUrl: item.image_url || null,
+          likes: (likesData || []).filter(l => l.handover_id === item.id),
+          comments: (commentsData || []).filter(c => c.handover_id === item.id),
           info: `📥 ${item.to_staff} | 📌 ${item.content.substring(0, 15)}...`
         }));
 
@@ -1889,6 +1911,9 @@ const { data: appData } = await _supabase.from('consultations')
 
       document.getElementById('loadingOverlay').style.display = 'flex';
 
+      const hImgInput = document.getElementById('hImage');
+      const base64Image = hImgInput ? (hImgInput.dataset.compressed || null) : null;
+
       const payload = {
         type: t,
         target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無',
@@ -1898,7 +1923,8 @@ const { data: appData } = await _supabase.from('consultations')
         is_delay: isDelay,
         delay_time: delayTimeStr,
         is_no_notify: isNoNotify,
-        push_status: finalPushStatus
+        push_status: finalPushStatus,
+        image_url: base64Image
       };
 
       try {
@@ -2258,7 +2284,8 @@ const { data: appData } = await _supabase.from('consultations')
               <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button>
               <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button>
               <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
-              <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button></div>`; 
+              <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button>
+              <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill ms-auto" style="border-color: #a89a9f; color: #a89a9f;" onclick="openClosedHandoverSearch()">🗂️ 已結案</button></div>`;
           sortedList.forEach((it, index) => { const isTimed = it.type.includes("指定"); 
                                              const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
                                              let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
@@ -2280,19 +2307,84 @@ const { data: appData } = await _supabase.from('consultations')
                                                }
                                              }
 
+                                             const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
+                                             const hasLiked = it.likes.some(l => l.staff_name === currentUser);
+                                             const likeIcon = hasLiked ? '❤️' : '🤍';
+                                             const hImgHtml = it.imageUrl ? `<div class="mt-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 120px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
+                                             // 整理按讚名單字串
+                                             const likedNames = it.likes.map(l => l.staff_name).join(', ');
+                                             const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
+                                             // 5. 留言數顯眼化
+                                             const commentCountHtml = it.comments.length > 0 
+                                                ? `<span class="fw-bold" style="color: #d9534f; font-size: 0.95rem;">${it.comments.length}</span>` 
+                                                : `<span>0</span>`;
+
+                                             let commentsHtml = it.comments.map(c => {
+                                                // 3. 處理時間格式 yyyy/mm/dd HH:mm
+                                                const cTime = new Date(c.created_at);
+                                                const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+                                                
+                                                return `
+                                                <div class="mb-2 p-2 bg-white rounded border border-secondary border-opacity-10 small" id="comment_${c.id}">
+                                                  <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span>
+                                                    <span class="text-muted" style="font-size: 0.7rem;">${formattedTime} ${c.is_edited ? '(已編輯)' : ''}</span>
+                                                  </div>
+                                                  <div style="white-space: pre-wrap; font-size: 0.85rem;">${c.content}</div>
+                                                  ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 80px; border-radius: 5px; margin-top: 5px; cursor: pointer; border: 1px solid #eee;">` : ''}
+                                                  ${c.commenter === currentUser ? `
+                                                    <div class="text-end mt-1">
+                                                      <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment(${c.id}, '${c.content.replace(/'/g, "\\'")}')">編輯</button>
+                                                      <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment(${c.id})">刪除</button>
+                                                    </div>
+                                                  ` : ''}
+                                                </div>
+                                                `;
+                                             }).join('');
+
                                              h += `
                                              <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
                                                <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+                                               
                                                <div class="d-flex justify-content-start align-items-center mb-2">
-                                                 <span onclick="confirmDelHandFromCard(${it.rowIndex}, '${it.content.substring(0,10).replace(/'/g, "\\'")}')" style="cursor:pointer; color:#d9534f; margin-right: 10px; font-weight:bold; font-size:0.8rem;">✖</span>
-                                               <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
-                                                 <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small></div>
-                                               <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}</div>${pushBadge}
-                                             <div class="row g-0 small text-muted border-top pt-2">
-                                             <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}
-                                             </div>
-                                             </div>
-                                             </div>`; 
+                                                 <!-- 1. 移除了左上角的紅色 X -->
+                                                 <button class="btn btn-sm btn-outline-success py-0 px-2 me-2 shadow-sm" style="font-size: 0.75rem; border-color: #84a59d; color: #84a59d;" onclick="closeHandoverCase(${it.rowIndex})">✅ 結案</button>
+                                                 <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
+                                                 <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small>
+                                               </div>
+                                               
+                                               <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}${hImgHtml}</div>${pushBadge}
+                                               
+                                               <div class="row g-0 small text-muted pt-1">
+                                                 <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}</div>
+                                               </div>
+
+                                               <!-- 2. 具有美觀底色與簡化展開按鈕的操作列 -->
+                                               <div class="d-flex justify-content-between align-items-center mt-2 p-2 rounded" style="background-color: rgba(168, 154, 159, 0.12);">
+                                                 <div>
+                                                   <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span></button>
+                                                   <span class="text-muted small ms-2 fw-bold">💬 ${commentCountHtml} 則</span>
+                                                 </div>
+                                                 <span style="cursor: pointer; font-size: 0.8rem; font-weight: bold; color: #7d8b9e; user-select: none;" onclick="toggleHandoverComments(${it.rowIndex})">展開討論 🔽</span>
+                                               </div>
+
+                                               <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
+                                                 <div id="comments_list_${it.rowIndex}" style="max-height: 280px; overflow-y: auto;" class="mb-2 pe-1">
+                                                    ${commentsHtml || '<div class="text-center small text-muted py-2">目前尚無討論紀錄</div>'}
+                                                 </div>
+                                                 <div class="d-flex flex-column gap-2 p-2 rounded" style="background: rgba(142, 154, 175, 0.08);">
+                                                    <textarea id="new_cmt_${it.rowIndex}" class="form-control form-control-sm border-0 shadow-sm" rows="2" placeholder="以 [${currentUser}] 身份留言..."></textarea>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                      <div class="d-flex align-items-center">
+                                                        <label for="cmt_img_${it.rowIndex}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2 me-2">📎 附圖</label>
+                                                        <input type="file" id="cmt_img_${it.rowIndex}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.rowIndex}')">
+                                                        <img id="cmt_preview_${it.rowIndex}" style="height: 25px; display: none; border-radius: 4px; border: 1px solid #ccc;">
+                                                      </div>
+                                                      <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverComment(${it.rowIndex})">送出留言</button>
+                                                    </div>
+                                                 </div>
+                                               </div>
+                                             </div>`;
                                            }); 
       listDiv.innerHTML = h; 
     }
@@ -2547,6 +2639,184 @@ const { data: appData } = await _supabase.from('consultations')
 
     function closeEditCustomerModal() {
       document.getElementById('editCustomerModal').style.display = 'none';
+    }
+    // ================= 新增：交接討論串、按讚與照片壓縮功能 =================
+
+    function compressAndPreview(input, previewId) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const maxW = 500; // 統一壓縮尺寸省空間
+            const scale = Math.min(maxW / img.width, 1);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.65);
+            
+            const preview = document.getElementById(previewId);
+            if (preview) {
+              preview.src = compressed;
+              preview.style.display = 'block';
+            }
+            input.dataset.compressed = compressed;
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function toggleHandoverComments(id) {
+      const el = document.getElementById(`thread_${id}`);
+      el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    async function toggleHandoverLike(handoverId) {
+      const staff = localStorage.getItem("current_staff_name");
+      if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
+      
+      try {
+        const { data: existing } = await _supabase.from('handover_likes').select('id').eq('handover_id', handoverId).eq('staff_name', staff).single();
+        if (existing) {
+          await _supabase.from('handover_likes').delete().eq('id', existing.id);
+        } else {
+          await _supabase.from('handover_likes').insert([{ handover_id: handoverId, staff_name: staff }]);
+        }
+        loadData(); 
+      } catch (e) { alert("操作失敗: " + e.message); }
+    }
+
+    async function submitHandoverComment(handoverId) {
+      const staff = localStorage.getItem("current_staff_name");
+      if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
+      
+      const content = document.getElementById(`new_cmt_${handoverId}`).value.trim();
+      const imgInput = document.getElementById(`cmt_img_${handoverId}`);
+      const imageUrl = imgInput ? (imgInput.dataset.compressed || null) : null;
+      
+      if (!content && !imageUrl) return alert("請輸入留言內容或附上照片！");
+      
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      
+      const pad = (n) => n.toString().padStart(2, '0');
+      const d = new Date();
+      const timeStr = `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+      try {
+        await _supabase.from('handover_comments').insert([{
+          handover_id: handoverId,
+          commenter: staff,
+          content: content,
+          image_url: imageUrl,
+          created_at: timeStr,
+          is_edited: false
+        }]);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        loadData();
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("留言失敗: " + e.message);
+      }
+    }
+
+    async function editComment(commentId, oldContent) {
+      const newContent = prompt("編輯留言內容：", oldContent);
+      if (newContent === null || newContent.trim() === oldContent) return;
+      
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        await _supabase.from('handover_comments').update({ content: newContent.trim(), is_edited: true }).eq('id', commentId);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        loadData();
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("編輯失敗: " + e.message);
+      }
+    }
+
+    async function deleteComment(commentId) {
+      if (!confirm("確定要刪除這則留言嗎？")) return;
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        await _supabase.from('handover_comments').delete().eq('id', commentId);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        loadData();
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("刪除失敗: " + e.message);
+      }
+    }
+
+    async function closeHandoverCase(handoverId) {
+      if (!confirm("確定將此交接結案歸檔嗎？結案後將留存供未來調閱。")) return;
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        await _supabase.from('handovers').update({ push_status: 'Sent' }).eq('id', handoverId);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("✅ 交接已結案並封存！");
+        loadData();
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("結案失敗: " + e.message);
+      }
+    }
+    function openClosedHandoverSearch() {
+      document.getElementById('closedSearchInput').value = '';
+      document.getElementById('closedSearchResults').innerHTML = '<div class="text-center text-muted small py-3">請輸入關鍵字進行模糊搜尋 (不可編輯)</div>';
+      document.getElementById('closedHandoverModal').style.display = 'flex';
+    }
+
+    async function searchClosedHandovers() {
+      const kw = document.getElementById('closedSearchInput').value.trim();
+      if (!kw) return alert("請輸入搜尋關鍵字");
+      
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      const resDiv = document.getElementById('closedSearchResults');
+      resDiv.innerHTML = '<div class="text-center py-3">🔍 搜尋中...</div>';
+      
+      try {
+        // 模糊搜尋已結案的交接 (Sent)
+        const { data, error } = await _supabase.from('handovers')
+          .select('*')
+          .eq('push_status', 'Sent')
+          .or(`content.ilike.%${kw}%,from_staff.ilike.%${kw}%,to_staff.ilike.%${kw}%`)
+          .order('created_at', { ascending: false })
+          .limit(30);
+          
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+          resDiv.innerHTML = '<div class="alert alert-warning small text-center">查無相關已結案紀錄</div>';
+          return;
+        }
+        
+        let html = '';
+        data.forEach(it => {
+          const dTime = it.target_date || '無';
+          const imgHtml = it.image_url ? `<div class="mt-2"><img src="${it.image_url}" onclick="openImageViewer('${it.image_url}')" style="max-height: 80px; border-radius: 5px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
+          html += `
+            <div class="p-3 mb-2 bg-white rounded border shadow-sm small" style="border-left: 5px solid #a89a9f !important;">
+              <div class="d-flex justify-content-between text-muted mb-2">
+                <span class="badge bg-secondary text-white">${it.type}</span>
+                <span>預計: ${dTime}</span>
+              </div>
+              <div style="white-space: pre-wrap; color: #4a4e69; font-size: 0.9rem;">${it.content}</div>
+              ${imgHtml}
+              <div class="text-end text-muted mt-2 border-top pt-1" style="font-size: 0.75rem;">📤 交接: ${it.from_staff} ➡️ 📥 接收: ${it.to_staff}</div>
+            </div>
+          `;
+        });
+        resDiv.innerHTML = html;
+        
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("調閱失敗: " + e.message);
+      }
     }
   </script>
 </body>
