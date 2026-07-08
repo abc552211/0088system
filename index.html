@@ -2334,8 +2334,8 @@ const { data: appData } = await _supabase.from('consultations')
                                                   ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 80px; border-radius: 5px; margin-top: 5px; cursor: pointer; border: 1px solid #eee;">` : ''}
                                                   ${c.commenter === currentUser ? `
                                                     <div class="text-end mt-1">
-                                                      <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment(${c.id}, '${c.content.replace(/'/g, "\\'")}')">編輯</button>
-                                                      <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment(${c.id})">刪除</button>
+                                                      <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment('${c.id}', '${c.content.replace(/'/g, "\\'")}')">編輯</button>
+                                                      <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment('${c.id}')">刪除</button>
                                                     </div>
                                                   ` : ''}
                                                 </div>
@@ -2702,24 +2702,29 @@ const { data: appData } = await _supabase.from('consultations')
       
       document.getElementById('loadingOverlay').style.display = 'flex';
       
-      const pad = (n) => n.toString().padStart(2, '0');
+      // 🚀 終極防呆解法：強迫轉換成標準 ISO 格式並明確保明這是「台灣時區 (+08:00)」
       const d = new Date();
-      const timeStr = `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const pad = (n) => n.toString().padStart(2, '0');
+      const taiwanTimeStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00+08:00`;
 
       try {
-        await _supabase.from('handover_comments').insert([{
+        const { error } = await _supabase.from('handover_comments').insert([{
           handover_id: handoverId,
           commenter: staff,
           content: content,
           image_url: imageUrl,
-          created_at: timeStr,
+          created_at: taiwanTimeStr, // 送出精準的時區字串
           is_edited: false
         }]);
+        
         document.getElementById('loadingOverlay').style.display = 'none';
+        
+        if (error) throw error; // 確保有問題能報錯
+        
         loadData();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert("留言失敗: " + e.message);
+        alert("留言失敗: " + (e.message || JSON.stringify(e)));
       }
     }
 
@@ -2729,12 +2734,15 @@ const { data: appData } = await _supabase.from('consultations')
       
       document.getElementById('loadingOverlay').style.display = 'flex';
       try {
-        await _supabase.from('handover_comments').update({ content: newContent.trim(), is_edited: true }).eq('id', commentId);
+        const { error } = await _supabase.from('handover_comments').update({ content: newContent.trim(), is_edited: true }).eq('id', commentId);
         document.getElementById('loadingOverlay').style.display = 'none';
+        
+        if (error) throw error; // 🛑 補上攔截，遇到問題會直接跳到 catch 報錯
+        
         loadData();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert("編輯失敗: " + e.message);
+        alert("編輯失敗: " + (e.message || JSON.stringify(e)));
       }
     }
 
@@ -2742,12 +2750,15 @@ const { data: appData } = await _supabase.from('consultations')
       if (!confirm("確定要刪除這則留言嗎？")) return;
       document.getElementById('loadingOverlay').style.display = 'flex';
       try {
-        await _supabase.from('handover_comments').delete().eq('id', commentId);
+        const { error } = await _supabase.from('handover_comments').delete().eq('id', commentId);
         document.getElementById('loadingOverlay').style.display = 'none';
+        
+        if (error) throw error; // 🛑 補上攔截
+        
         loadData();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert("刪除失敗: " + e.message);
+        alert("刪除失敗: " + (e.message || JSON.stringify(e)));
       }
     }
 
