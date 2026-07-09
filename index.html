@@ -2361,11 +2361,11 @@ const { data: appData } = await _supabase.from('consultations')
 
                                                <!-- 2. 具有美觀底色與簡化展開按鈕的操作列 -->
                                                <div class="d-flex justify-content-between align-items-center mt-2 p-2 rounded" style="background-color: rgba(168, 154, 159, 0.12);">
-                                                 <div>
+                                                 <div class="d-flex align-items-center flex-nowrap" style="white-space: nowrap; min-width: max-content;">
                                                    <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span></button>
                                                    <span class="text-muted small ms-2 fw-bold">💬 ${commentCountHtml} 則</span>
                                                  </div>
-                                                 <span style="cursor: pointer; font-size: 0.8rem; font-weight: bold; color: #7d8b9e; user-select: none;" onclick="toggleHandoverComments(${it.rowIndex})">展開討論 🔽</span>
+                                                 <span style="cursor: pointer; font-size: 0.8rem; font-weight: bold; color: #7d8b9e; user-select: none; white-space: nowrap;" onclick="toggleHandoverComments(${it.rowIndex})">展開討論 🔽</span>
                                                </div>
 
                                                <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
@@ -2435,7 +2435,56 @@ const { data: appData } = await _supabase.from('consultations')
     
     function exportSpecialPhones() { if (specialUnreachedData.length === 0) return alert('沒有資料可匯出'); const phoneList = specialUnreachedData.map(d => d.phone).filter(p => p).join('\n'); const blob = new Blob([phoneList], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `多次未接電話匯出_${new Date().getTime()}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
     function openSpecialBatchModal() { if (specialUnreachedData.length === 0) return alert('沒有可修改的資料'); const sel = document.getElementById('specialBatchStaff'); sel.innerHTML = '<option value="">--請選擇--</option>'; cache.staff.forEach(s => { if(s) sel.add(new Option(s, s)); }); document.getElementById('specialBatchModal').style.display = 'flex'; }
-    async function shareCard(elementId, fileName) { const element = document.getElementById(elementId); if (!element) return; document.getElementById('loadingOverlay').style.display = 'flex'; try { const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: null, logging: false }); canvas.toBlob(async (blob) => { const file = new File([blob], `${fileName}.png`, { type: 'image/png' }); document.getElementById('loadingOverlay').style.display = 'none'; if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); } else { const link = document.createElement('a'); link.download = `${fileName}.png`; link.href = canvas.toDataURL(); link.click(); alert("圖片已成功下載至您的裝置。"); } }, 'image/png'); } catch (e) { document.getElementById('loadingOverlay').style.display = 'none'; alert("分享失敗: " + e.toString()); } }
+    async function shareCard(elementId, fileName) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      // 截圖前：尋找底下的留言區並強制展開、解除捲軸高度限制
+      const thread = element.querySelector('[id^="thread_"]');
+      const commentsList = element.querySelector('[id^="comments_list_"]');
+      let origThreadDisplay = '';
+      let origListMaxHeight = '';
+
+      if (thread && commentsList) {
+        origThreadDisplay = thread.style.display;
+        origListMaxHeight = commentsList.style.maxHeight;
+        thread.style.display = 'block';      // 強制顯示
+        commentsList.style.maxHeight = 'none'; // 移除捲軸，讓全內容撐開
+      }
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      
+      // 稍微等待 50 毫秒讓 DOM 撐開渲染完畢
+      await new Promise(r => setTimeout(r, 50));
+
+      try {
+        const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f2f2f0', logging: false });
+        
+        // 截圖完成：立刻把留言區的狀態恢復原樣
+        if (thread && commentsList) {
+          thread.style.display = origThreadDisplay;
+          commentsList.style.maxHeight = origListMaxHeight;
+        }
+
+        canvas.toBlob(async (blob) => {
+          const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
+          document.getElementById('loadingOverlay').style.display = 'none';
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] });
+          } else {
+            const link = document.createElement('a');
+            link.download = `${fileName}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            alert("圖片已成功下載至您的裝置。");
+          }
+        }, 'image/png');
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("分享失敗: " + e.toString());
+      }
+    }
     
     async function startScan(inputId, readerId) { 
       const fileInput = document.getElementById('qr-input-file'); 
@@ -2790,35 +2839,67 @@ const { data: appData } = await _supabase.from('consultations')
       resDiv.innerHTML = '<div class="text-center py-3">🔍 搜尋中...</div>';
       
       try {
-        // 模糊搜尋已結案的交接 (Sent)
-        const { data, error } = await _supabase.from('handovers')
+        // 1. 先抓取相符的結案交接
+        const { data: handoversData, error } = await _supabase.from('handovers')
           .select('*')
           .eq('push_status', 'Sent')
           .or(`content.ilike.%${kw}%,from_staff.ilike.%${kw}%,to_staff.ilike.%${kw}%`)
           .order('created_at', { ascending: false })
           .limit(30);
           
-        document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
         
-        if (!data || data.length === 0) {
+        if (!handoversData || handoversData.length === 0) {
+          document.getElementById('loadingOverlay').style.display = 'none';
           resDiv.innerHTML = '<div class="alert alert-warning small text-center">查無相關已結案紀錄</div>';
           return;
         }
+
+        // 2. 批次抓取這些交接單底下的所有留言
+        const handoverIds = handoversData.map(h => h.id);
+        const { data: commentsData } = await _supabase.from('handover_comments')
+          .select('*')
+          .in('handover_id', handoverIds)
+          .order('created_at', { ascending: true });
+
+        document.getElementById('loadingOverlay').style.display = 'none';
         
+        // 3. 組裝歷史卡片與留言 HTML
         let html = '';
-        data.forEach(it => {
+        handoversData.forEach(it => {
           const dTime = it.target_date || '無';
           const imgHtml = it.image_url ? `<div class="mt-2"><img src="${it.image_url}" onclick="openImageViewer('${it.image_url}')" style="max-height: 80px; border-radius: 5px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
+          
+          // 過濾出屬於這張交接單的留言
+          const cardComments = (commentsData || []).filter(c => c.handover_id === it.id);
+          let commentsHtml = '';
+          if (cardComments.length > 0) {
+            commentsHtml = `<div class="mt-2 pt-2 border-top" style="background-color: rgba(142, 154, 175, 0.05); padding: 8px; border-radius: 6px;">
+              <div class="fw-bold text-muted small mb-2">💬 歷史討論 (${cardComments.length})</div>`;
+            
+            cardComments.forEach(c => {
+              const cTime = new Date(c.created_at);
+              const fTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+              commentsHtml += `
+                <div class="mb-2 pb-1 small border-bottom border-secondary border-opacity-10">
+                  <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span> <span class="text-muted" style="font-size:0.7rem;">${fTime}</span>
+                  <div style="white-space: pre-wrap; font-size:0.85rem; color:#4a4e69;">${c.content}</div>
+                  ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 60px; margin-top:4px; border-radius:4px; border:1px solid #ccc; cursor:pointer;">` : ''}
+                </div>`;
+            });
+            commentsHtml += `</div>`;
+          }
+
           html += `
-            <div class="p-3 mb-2 bg-white rounded border shadow-sm small" style="border-left: 5px solid #a89a9f !important;">
+            <div class="p-3 mb-3 bg-white rounded border shadow-sm small" style="border-left: 5px solid #a89a9f !important;">
               <div class="d-flex justify-content-between text-muted mb-2">
                 <span class="badge bg-secondary text-white">${it.type}</span>
                 <span>預計: ${dTime}</span>
               </div>
-              <div style="white-space: pre-wrap; color: #4a4e69; font-size: 0.9rem;">${it.content}</div>
+              <div style="white-space: pre-wrap; color: #4a4e69; font-size: 0.95rem; font-weight: bold;">${it.content}</div>
               ${imgHtml}
-              <div class="text-end text-muted mt-2 border-top pt-1" style="font-size: 0.75rem;">📤 交接: ${it.from_staff} ➡️ 📥 接收: ${it.to_staff}</div>
+              ${commentsHtml}
+              <div class="text-end text-muted mt-2 border-top pt-2" style="font-size: 0.75rem;">📤 交接: ${it.from_staff} ➡️ 📥 接收: ${it.to_staff}</div>
             </div>
           `;
         });
