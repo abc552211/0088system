@@ -2359,13 +2359,14 @@ const { data: appData } = await _supabase.from('consultations')
                                                  <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}</div>
                                                </div>
 
-                                               <!-- 2. 具有美觀底色與簡化展開按鈕的操作列 -->
-                                               <div class="d-flex justify-content-between align-items-center mt-2 p-2 rounded" style="background-color: rgba(168, 154, 159, 0.12);">
-                                                 <div class="d-flex align-items-center flex-nowrap" style="white-space: nowrap; min-width: max-content;">
-                                                   <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span></button>
-                                                   <span class="text-muted small ms-2 fw-bold">💬 ${commentCountHtml} 則</span>
-                                                 </div>
-                                                 <span style="cursor: pointer; font-size: 0.8rem; font-weight: bold; color: #7d8b9e; user-select: none; white-space: nowrap;" onclick="toggleHandoverComments(${it.rowIndex})">展開討論 🔽</span>
+                                               <div class="d-flex justify-content-start align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
+                                                 <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">
+                                                   ${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span>
+                                                 </button>
+                                                 
+                                                 <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.8rem;">
+                                                   💬 <span class="mx-1">${commentCountHtml}</span> 則 <span class="ms-1" style="font-size: 0.7rem; color: #7d8b9e;">🔽</span>
+                                                 </button>
                                                </div>
 
                                                <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
