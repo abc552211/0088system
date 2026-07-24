@@ -289,7 +289,12 @@
           <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">任何諮詢客人來這邊新增，大姐頭仔說必須留紀錄。</p>
         </div>
 
-        <div onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
+        <div onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
+          <!-- ✨ 修正：往左邊與下方縮進 (right-2 top-2)，防止超出邊界 -->
+          <div id="homeOverdueBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">
+            逾期 0
+          </div>
+          
           <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
           </div>
@@ -436,9 +441,15 @@
       <h4 class="mb-4">📝 客戶預約狀態處理</h4>
       
       <div id="appCardsContainer" class="mt-2"></div>
+    </div>
 
-      <div id="appDetail" style="display:none;" class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+    <!-- ✨ 改造：改為滿版置中彈出視窗 (Modal) -->
+    <div id="appDetailModal" class="modal-overlay" style="display:none; z-index: 10000 !important;">
+      <div class="modal-body" style="max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto;">
+        <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">⚙️ 處理預約狀態</h5>
+        
         <div class="alert alert-info border-0 shadow-sm" style="background-color: rgba(132, 165, 157, 0.15); color: #3e2723;" id="appInfo"></div>
+        
         <div class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
           <div class="d-flex align-items-center">
             <div class="form-check form-switch m-0 p-0">
@@ -481,7 +492,11 @@
           <label class="small fw-bold text-muted">備註</label>
           <div class="clear-wrapper"><input type="text" id="appNote" class="form-control mb-4" placeholder="可輸入備註"></div>
         </div>
-        <button class="btn btn-success w-100 shadow" id="btnApp" onclick="submitVisit()">更新紀錄</button>
+
+        <div class="d-grid gap-2">
+          <button class="btn btn-success w-100 shadow" id="btnApp" onclick="submitVisit()">確認更新紀錄</button>
+          <button class="btn btn-light w-100" onclick="closeAppDetailModal()">取消返回</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1098,7 +1113,6 @@
         }
         cache.statuses = [ '締結', '其他', '爽約'];
 
-        // 🛠️ 統整重置與填入所有功能的人員選單
         const resetAndFill = (id, arr, defaultTxt) => {
           const el = document.getElementById(id);
           if (!el) return;
@@ -1120,14 +1134,57 @@
         renderTagButtons('sTagContainer', cache.tags);
 
         // 讀取預約處理名單 (來自 consultations)
-const { data: appData } = await _supabase.from('consultations')
-  .select('*')
-  .eq('is_appoint', '是')
-  // 涵蓋：待處理、已關懷、null(空值) 以及 空字串
-  .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.')
-  .order('appoint_time', { ascending: true });
+        const { data: appData } = await _supabase.from('consultations')
+          .select('*')
+          .eq('is_appoint', '是')
+          .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.')
+          .order('appoint_time', { ascending: true });
         
         cache.appointList = appData || [];
+
+        // ✨ 萬無一失的時間解析與逾期計算邏輯
+        const now = new Date();
+        let overdueCount = 0;
+
+        cache.appointList.forEach(it => {
+          if (it.appoint_time) {
+            // 強制將 '2026-07-24 18:30' 或 '2026-07-24T18:30:00' 統一轉為標準 ISO 格式
+            let formattedTimeStr = String(it.appoint_time).trim().replace(' ', 'T');
+            let appTime = new Date(formattedTimeStr);
+            
+            // 防呆：如果 Date 依然無效，嘗試用手動切字串的方式組裝 Date
+            if (isNaN(appTime.getTime())) {
+              const cleanStr = String(it.appoint_time).replace(/[^\d]/g, ''); // 搞出純數字 202607241830
+              if (cleanStr.length >= 12) {
+                const y = parseInt(cleanStr.substring(0, 4));
+                const m = parseInt(cleanStr.substring(4, 6)) - 1;
+                const d = parseInt(cleanStr.substring(6, 8));
+                const h = parseInt(cleanStr.substring(8, 10));
+                const min = parseInt(cleanStr.substring(10, 12));
+                appTime = new Date(y, m, d, h, min);
+              }
+            }
+
+            const currentStatus = (it.status || '').trim();
+            const isUnfinished = (currentStatus === '' || currentStatus === '待處理' || currentStatus === '已關懷');
+
+            // 只要時間小於現在，且狀態是未結案，就計入逾期
+            if (!isNaN(appTime.getTime()) && appTime < now && isUnfinished) {
+              overdueCount++;
+            }
+          }
+        });
+
+        // ✨ 即時更新首頁 [預約狀態更新] 磚塊右上角的 Badge
+        const badgeEl = document.getElementById('homeOverdueBadge');
+        if (badgeEl) {
+          if (overdueCount > 0) {
+            badgeEl.innerText = `🚨 逾期 ${overdueCount}`;
+            badgeEl.style.setProperty('display', 'inline-block', 'important'); // 強制顯示，防 CSS 被覆蓋
+          } else {
+            badgeEl.style.setProperty('display', 'none', 'important');
+          }
+        }
 
         // 讀取未完成且屬於指定時間的交接提醒預約 (來自 handovers)
         const { data: handDataForApp } = await _supabase.from('handovers')
@@ -1136,7 +1193,7 @@ const { data: appData } = await _supabase.from('consultations')
           .ilike('type', '%指定時間%')
           .order('target_date', { ascending: true });
 
-        cache.lostAppointList = handDataForApp || []; // 借用此快取位儲存交接類排程
+        cache.lostAppointList = handDataForApp || []; 
 
         renderAppSelect(); // 渲染卡片牆
 
@@ -1299,7 +1356,6 @@ const { data: appData } = await _supabase.from('consultations')
       }
       if(id === 'home') {
         clearAllInputs(); 
-        // ✨ 修正：切回首頁時，確保重新初始化選單
         initSelectors();
         loadData(); 
         updateSystemStatus(); 
@@ -1312,8 +1368,7 @@ const { data: appData } = await _supabase.from('consultations')
       if(id === 'appointment') {
         currentAppTab = 1; 
         currentSelectedAppIndex = null;
-        const detailPanel = document.getElementById('appDetail');
-        if (detailPanel) detailPanel.style.display = 'none';
+        closeAppDetailModal();
         loadData(); 
       }
     }
@@ -2140,17 +2195,16 @@ const { data: appData } = await _supabase.from('consultations')
       
       let contentHtml = (currentAppTab === 1) ? `📌 <b>待赴約對象：</b>${it.name}<br>⏰ <b>預定時間：</b>${timeHtml}<br>👤 <b>服務人：</b>${it.staff || '未註記'}<br>💬 <b>內容：</b>${it.note || '無'}` : `<span style="color:#e76f51; font-weight:bold;">🧡 失聯回訪對象</span><br>👤 <b>姓名：</b>${it.name}<br>📞 <b>電話：</b>${it.phone}<br>⏰ <b>預約：</b>${timeHtml}<br>💬 <b>內容：</b>${it.note || '無'}`; d.style.display = 'block'; document.getElementById('appInfo').innerHTML = `<div style="position:relative;"><div onclick="shareCard('appInfo', '回報通知_${it.name}')" style="position:absolute; top:-5px; right:-5px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:10;">📤</div>${contentHtml}</div>`; }
     function finishVisit(m) { 
-  document.getElementById('loadingOverlay').style.display = 'none'; 
-  alert(m); 
-  
-  // 加入防呆檢查：元素存在才清空
-  const appS = document.getElementById('appSelect');
-  if (appS) { appS.value = ""; }
-  
-  document.getElementById('appDetail').style.display = 'none'; 
-  loadData(); 
-  showPage('home'); 
-}
+      document.getElementById('loadingOverlay').style.display = 'none'; 
+      alert(m); 
+      
+      const appS = document.getElementById('appSelect');
+      if (appS) { appS.value = ""; }
+      
+      closeAppDetailModal(); // ✨ 完成後關閉彈窗
+      loadData(); 
+      showPage('home'); 
+    }
     function toggleDelayInput() { const isChecked = document.getElementById('hDelaySwitch').checked; document.getElementById('hDelayArea').style.display = isChecked ? 'block' : 'none'; if (isChecked && !document.getElementById('hDelayTime').value) setDelayTime(9); }
     function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
     function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
@@ -2245,15 +2299,18 @@ const { data: appData } = await _supabase.from('consultations')
       const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
       const it = list[index];
       
-      document.getElementById('appDetail').style.display = 'block';
       let contentHtml = (currentAppTab === 1) 
         ? `🎯 <b>正處理諮詢對象：</b> ${name}<br>💬 <b>原登記需求：</b> ${it.event || '無'}`
         : `⚙️ <b>正更新內部交接項目</b><br>📥 <b>接手同仁：</b> ${it.to_staff}<br>📝 <b>交付工作：</b> ${it.content}`;
       
       document.getElementById('appInfo').innerHTML = contentHtml;
       
-      // 自動滾動至下方表單處理區
-      document.getElementById('appDetail').scrollIntoView({ behavior: 'smooth' });
+      // ✨ 點擊後開啟彈出視窗
+      document.getElementById('appDetailModal').style.display = 'flex';
+    }
+    function closeAppDetailModal() {
+      document.getElementById('appDetailModal').style.display = 'none';
+      currentSelectedAppIndex = null;
     }
     function filterHandSub(type, btn) { document.querySelectorAll('.hand-sub-btn').forEach(b => { b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill hand-sub-btn'; }); btn.className = 'btn btn-sm btn-primary px-3 rounded-pill hand-sub-btn active'; document.querySelectorAll('.handover-main-card').forEach(card => { const cardType = card.getAttribute('data-type') || ""; const isTimed = cardType.includes("指定"); const targetStr = card.getAttribute('data-date'); const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); let isMatch = (type === '全部') || (type === '指定' && isTimed) || (type === '追蹤' && cardType.includes("追蹤")) || (type === '物流' && cardType.includes("物流")) || (type === '過期' && isOverdue); card.style.display = isMatch ? 'block' : 'none'; }); }
     
@@ -2752,7 +2809,6 @@ const { data: appData } = await _supabase.from('consultations')
       
       document.getElementById('loadingOverlay').style.display = 'flex';
       
-      // 🚀 終極防呆解法：強迫轉換成標準 ISO 格式並明確保明這是「台灣時區 (+08:00)」
       const d = new Date();
       const pad = (n) => n.toString().padStart(2, '0');
       const taiwanTimeStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00+08:00`;
@@ -2763,15 +2819,22 @@ const { data: appData } = await _supabase.from('consultations')
           commenter: staff,
           content: content,
           image_url: imageUrl,
-          created_at: taiwanTimeStr, // 送出精準的時區字串
+          created_at: taiwanTimeStr,
           is_edited: false
         }]);
         
+        if (error) throw error;
+        
+        // 重新載入最新資料
+        await loadData();
+        
+        // 重新載入後，自動將剛剛留言的卡片討論區保持展開狀態
+        const targetThread = document.getElementById(`thread_${handoverId}`);
+        if (targetThread) {
+          targetThread.style.display = 'block';
+        }
+
         document.getElementById('loadingOverlay').style.display = 'none';
-        
-        if (error) throw error; // 確保有問題能報錯
-        
-        loadData();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("留言失敗: " + (e.message || JSON.stringify(e)));
