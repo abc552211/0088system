@@ -2974,6 +2974,23 @@
         alert("調閱失敗: " + e.message);
       }
     }
+	// ================= 圖片放大預覽功能 =================
+    function openImageViewer(url) {
+      if (!url) return;
+      const modal = document.getElementById('imageViewerModal');
+      const img = document.getElementById('viewerModalImg');
+      if (modal && img) {
+        img.src = url;
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeImageViewer() {
+      const modal = document.getElementById('imageViewerModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
   </script>
 </body>
 </html>
