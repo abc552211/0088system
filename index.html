@@ -925,22 +925,21 @@
   <div class="card p-3 md:p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h4 class="mb-0 fw-bold font-serif-tc" style="font-size: 1.25rem;">📖 工作注意事項 & SOP</h4>
-      <button class="btn text-white fw-bold shadow-sm btn-sm px-3" style="background-color: #84a59d; border-radius: 10px;" onclick="openSopModal()">➕ 新增 SOP</button>
+      <button class="btn text-white fw-bold shadow-sm btn-sm px-3" style="background-color: #84a59d; border-radius: 10px;" onclick="openSopModal()">＋ 新增 SOP</button>
     </div>
 
-    <!-- 搜尋條件輸入區（修正：按鈕改方形，防止字體過大超出） -->
-    <label class="fw-bold text-muted mb-1" style="font-size: 0.8rem;">🔍 關鍵字搜尋 (多條件用 % 隔開，例: 開機%清潔)</label>
-    <div class="d-flex gap-2 mb-2">
+    <!-- 搜尋條件輸入區 -->
+    <label class="fw-bold text-muted mb-1" style="font-size: 0.8rem;">關鍵字搜尋 (多條件用 % 隔開，例: 開機%清潔)</label>
+    <div class="d-flex gap-2 mb-3">
       <div class="clear-wrapper flex-grow-1">
         <input type="text" id="sopSearchInput" class="form-control form-control-sm" style="font-size: 0.9rem;" placeholder="輸入主旨、關鍵字、分類或內文...">
-        <button class="clear-btn" onclick="clearInput('sopSearchInput')">×</button>
+        <button class="clear-btn" onclick="clearInput('sopSearchInput'); searchSops();">×</button>
       </div>
-      <!-- 方形按鈕，不使用預設全圓角或圓形 -->
-      <button class="btn btn-dark fw-bold px-3 py-1 flex-shrink-0" style="border-radius: 10px !important; font-size: 0.85rem; width: auto; height: auto;" onclick="searchSops()">搜尋</button>
+      <button class="btn btn-dark fw-bold px-3 py-1 flex-shrink-0" style="border-radius: 10px !important; font-size: 0.85rem;" onclick="searchSops()">搜尋</button>
     </div>
     
-    <!-- 分類快速過濾按鈕 -->
-    <div id="sopCategoryFilter" class="d-flex flex-wrap gap-2 mt-2"></div>
+    <!-- 分類快速過濾按鈕 (支援 iOS 風格紅圈 Badge) -->
+    <div id="sopCategoryFilter" class="d-flex flex-wrap gap-2 pt-1" style="padding-top: 6px !important;"></div>
   </div>
 
   <!-- 搜尋與卡片列表展示區 -->
@@ -3526,18 +3525,145 @@
       }
     }
 
-    // 6. 渲染 SOP 卡片列表 (以橫向滾動縮圖列呈現多圖)
+    
+
+    // 2. 搜尋與自動生成極簡分類按鈕
+    let currentSopCategoryFilter = '全部';
+
+    // 1. 搜尋 SOP (連動快篩數量與動態計算)
+    async function searchSops(filterCategory = null) {
+      if (filterCategory !== null) {
+        currentSopCategoryFilter = filterCategory;
+      }
+
+      const rawSearch = document.getElementById('sopSearchInput').value.trim();
+      document.getElementById('loadingText').innerText = "載入 SOP 知識庫中...";
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      try {
+        let query = _supabase.from('sops')
+          .select('*')
+          .order('is_pinned', { ascending: false })
+          .order('updated_at', { ascending: false });
+
+        if (rawSearch) {
+          const terms = rawSearch.split('%').map(t => t.trim()).filter(t => t);
+          terms.forEach(term => {
+            query = query.or(`title.ilike.%${term}%,keywords.ilike.%${term}%,category.ilike.%${term}%,content.ilike.%${term}%`);
+          });
+        }
+
+        const { data: sopData, error } = await query;
+        if (error) throw error;
+
+        const { data: likesData } = await _supabase.from('sop_likes').select('*');
+
+        document.getElementById('loadingOverlay').style.display = 'none';
+
+        const combinedData = (sopData || []).map(sop => ({
+          ...sop,
+          likes: (likesData || []).filter(l => l.sop_id === sop.id)
+        }));
+
+        // ✨ 核心修正：動態依照「目前搜尋結果」重新渲染快篩按鈕與計算符合數量
+        renderSopCategoryFilters(combinedData);
+
+        // 若切換至特定分類，進行過濾
+        let filteredData = combinedData;
+        if (currentSopCategoryFilter !== '全部') {
+          filteredData = combinedData.filter(item => item.category === currentSopCategoryFilter);
+          
+          // 防呆：若搜尋後當前分類無符合資料，自動切回「全部」
+          if (filteredData.length === 0 && combinedData.length > 0) {
+            currentSopCategoryFilter = '全部';
+            filteredData = combinedData;
+            renderSopCategoryFilters(combinedData);
+          }
+        }
+
+        renderSopList(filteredData, rawSearch);
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("搜尋 SOP 發生錯誤: " + e.message);
+      }
+    }
+
+    // ✨ 動態渲染快篩按鈕 (正圓形小紅圈 + opacity: 0.85)
+    function renderSopCategoryFilters(sopList) {
+      const container = document.getElementById('sopCategoryFilter');
+      if (!container) return;
+
+      const now = new Date();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+      const isNewSop = (sop) => {
+        if (!sop.updated_at) return false;
+        const updateTime = new Date(sop.updated_at);
+        return (now - updateTime) <= sevenDaysMs;
+      };
+
+      const newCountAll = sopList.filter(isNewSop).length;
+      
+      // ✨ 關鍵修正：加上 aspect-ratio: 1 / 1 與 p-0，強制 100% 正圓形，並設定 opacity: 0.85
+      const allBadgeHtml = newCountAll > 0 
+        ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                 style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${newCountAll}</span>` 
+        : '';
+
+      const categories = Array.from(new Set(sopList.map(item => item.category).filter(c => c)));
+
+      let btnHtml = `
+        <div class="d-inline-block me-2 mb-2" style="position: relative !important; overflow: visible !important;">
+          <button class="btn btn-sm px-3 py-1 rounded-pill filter-sop-cat-btn ${currentSopCategoryFilter === '全部' ? 'btn-primary active' : 'btn-outline-secondary bg-white'}" 
+                  style="font-size: 0.75rem; position: relative; z-index: 1;" onclick="searchSops('全部')">
+            全部 (${sopList.length})
+          </button>
+          ${allBadgeHtml}
+        </div>
+      `;
+
+      categories.forEach(cat => {
+        const catSops = sopList.filter(item => item.category === cat);
+        const count = catSops.length;
+        const newCountInCat = catSops.filter(isNewSop).length;
+
+        // ✨ 正圓形小紅圈 Badge (1:1 比例約束 + opacity: 0.85)
+        const catBadgeHtml = newCountInCat > 0 
+          ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                   style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${newCountInCat}</span>` 
+          : '';
+
+        const isActive = (currentSopCategoryFilter === cat);
+        const btnClass = isActive ? 'btn-primary active' : 'btn-outline-secondary bg-white';
+
+        btnHtml += `
+          <div class="d-inline-block me-2 mb-2" style="position: relative !important; overflow: visible !important;">
+            <button class="btn btn-sm px-3 py-1 rounded-pill filter-sop-cat-btn ${btnClass}" 
+                    style="font-size: 0.75rem; position: relative; z-index: 1;" onclick="searchSops('${cat}')">
+              ${cat} (${count})
+            </button>
+            ${catBadgeHtml}
+          </div>
+        `;
+      });
+
+      container.innerHTML = btnHtml;
+    }
+
+    // ✨ 2. 渲染 SOP 卡片列表 (關鍵字自動 Highlight 高亮)
     function renderSopList(sopList, searchKeyword) {
       const container = document.getElementById('sopListContainer');
       if (!container) return;
 
       if (sopList.length === 0) {
-        container.innerHTML = '<div class="alert alert-warning text-center">查無符合條件的 SOP 項目。</div>';
+        container.innerHTML = '<div class="alert alert-warning text-center small">查無符合條件的 SOP 項目。</div>';
         return;
       }
 
       let html = '';
       const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
+      const now = new Date();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
       sopList.forEach((sop) => {
         const cardId = `sop_card_${sop.id}`;
@@ -3550,7 +3676,33 @@
 
         const updatedTime = new Date(sop.updated_at).toLocaleString('zh-TW', { hour12: false });
         
-        // 解析多圖陣列
+        let isNewRelease = false;
+        if (sop.updated_at) {
+          const updateTime = new Date(sop.updated_at);
+          if ((now - updateTime) <= sevenDaysMs) {
+            isNewRelease = true;
+          }
+        }
+
+        const newBadgeHtml = isNewRelease 
+          ? `<span class="badge bg-danger text-white px-2 py-1 me-1 shadow-sm" style="font-size:0.75rem;">最新</span>` 
+          : '';
+
+        const isPinned = !!sop.is_pinned;
+        const pinIcon = isPinned ? '📌 已置頂' : '📌 置頂';
+        const pinBtnClass = isPinned ? 'text-danger fw-bold' : 'text-muted';
+        const borderStyle = isPinned 
+          ? 'border-left: 6px solid #d9534f !important; background-color: rgba(255, 250, 245, 0.95);' 
+          : 'border-left: 6px solid #84a59d !important;';
+
+        // ✨ 關鍵字高亮處理 (標題、內文與關鍵字標籤)
+        const highlightedTitle = highlightSopText(sop.title, searchKeyword);
+        const highlightedContent = highlightSopText(sop.content, searchKeyword);
+        const highlightedCategory = highlightSopText(sop.category, searchKeyword);
+        const highlightedKeywords = sop.keywords 
+          ? sop.keywords.split(/[\s,]+/).map(k => `<span class="badge bg-light text-dark border me-1">${highlightSopText(k, searchKeyword)}</span>`).join('') 
+          : '無';
+
         let imgList = [];
         if (sop.image_url) {
           try {
@@ -3564,7 +3716,6 @@
           }
         }
 
-        // 生成多圖橫向滑動縮圖列
         let imgHtml = '';
         if (imgList.length > 0) {
           let imgsGroup = imgList.map(url => `
@@ -3575,28 +3726,31 @@
         }
 
         html += `
-          <div class="result-card mb-4 bg-white p-3" id="${cardId}" style="border-left: 6px solid #84a59d; position: relative;">
+          <div class="result-card mb-4 bg-white p-3 shadow-sm" id="${cardId}" style="${borderStyle} position: relative;">
             <div onclick="shareCard('${cardId}', 'SOP_${sop.title}')" style="position:absolute; top:12px; right:12px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:5;" title="截圖分享">📤</div>
 
             <div class="d-flex justify-content-between align-items-center mb-2 pe-4">
-              <h4 class="fw-bold mb-0 text-[#3e2723] font-serif-tc" style="font-size: 1.15rem;">${sop.title}</h4>
-              <span class="badge text-white px-2 py-1" style="background-color: #84a59d; font-size: 0.75rem;">${sop.category}</span>
+              <div class="d-flex align-items-center flex-wrap gap-1">
+                ${newBadgeHtml}
+                <h4 class="fw-bold mb-0 text-[#3e2723] font-serif-tc" style="font-size: 1.15rem;">${highlightedTitle}</h4>
+              </div>
+              <span class="badge text-white px-2 py-1" style="background-color: #84a59d; font-size: 0.75rem;">${highlightedCategory}</span>
             </div>
 
             <div class="small text-muted mb-2" style="font-size: 0.8rem;">
-              <b>🏷️ 關鍵字:</b> ${sop.keywords ? sop.keywords.split(/[\s,]+/).map(k => `<span class="badge bg-light text-dark border me-1">${k}</span>`).join('') : '無'}
+              <b>關鍵字:</b> ${highlightedKeywords}
             </div>
 
-            <!-- 富文本詳細內文區 -->
-            <div class="p-3 bg-light rounded border mb-2 text-dark" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">${sop.content}</div>
+            <!-- 富文本詳細內文區 (支援高亮) -->
+            <div class="p-3 bg-light rounded border mb-2 text-dark" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">${highlightedContent}</div>
 
             ${imgHtml}
 
-            <!-- 底部操作列與按讚已閱紀錄 -->
             <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25 gap-2">
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick='openSopModal(${JSON.stringify(sop).replace(/'/g, "&apos;")})' style="font-size: 0.85rem;">✏️</button>
-                <button class="btn btn-sm p-1 border-0 text-danger bg-transparent fw-bold" title="刪除" onclick="deleteSopWithGlobalAuth(${sop.id}, '${sop.title.replace(/'/g, "\\'")}')" style="font-size: 0.85rem;">🗑️</button>
+                <button class="btn btn-sm p-1 border-0 bg-transparent ${pinBtnClass}" title="切換置頂" onclick="toggleSopPin(${sop.id}, ${isPinned})" style="font-size: 0.85rem;">${pinIcon}</button>
+                <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick='openSopModal(${JSON.stringify(sop).replace(/'/g, "&apos;")})' style="font-size: 0.85rem;">✏️ 編輯</button>
+                <button class="btn btn-sm p-1 border-0 text-danger bg-transparent fw-bold" title="刪除" onclick="deleteSopWithGlobalAuth(${sop.id}, '${sop.title.replace(/'/g, "\\'")}')" style="font-size: 0.85rem;">🗑️ 刪除</button>
 
                 <button class="btn btn-sm bg-light border py-0 px-2 fw-bold text-[#d9534f] rounded-pill shadow-sm d-flex align-items-center" style="font-size: 0.75rem;" title="${likeTooltip}" onclick="toggleSopLike(${sop.id})">
                   ${likeIcon} <span class="ms-1">${likesArr.length} 人已閱</span>
@@ -3604,7 +3758,7 @@
               </div>
 
               <div class="text-end text-muted small ms-auto" style="font-size: 0.75rem; white-space: nowrap;">
-                🕒 ${updatedTime} | ✍️ <span class="fw-bold text-[#5b2a30]">${sop.last_edited_by || '系統'}</span>
+                🕒 ${updatedTime} | 編輯人: <span class="fw-bold text-[#5b2a30]">${sop.last_edited_by || '系統'}</span>
               </div>
             </div>
           </div>
@@ -3614,109 +3768,23 @@
       container.innerHTML = html;
     }
 
-    // 2. 搜尋與自動生成極簡分類按鈕
-    let currentSopCategoryFilter = '全部';
-
-    async function searchSops(filterCategory = null) {
-      if (filterCategory !== null) {
-        currentSopCategoryFilter = filterCategory;
-      }
-
-      const rawSearch = document.getElementById('sopSearchInput').value.trim();
-      document.getElementById('loadingText').innerText = "🔍 載入 SOP 知識庫中...";
+    // ✨ 4. SOP 釘選置頂切換功能
+    async function toggleSopPin(sopId, currentPinnedState) {
+      document.getElementById('loadingText').innerText = "📌 切換置頂狀態中...";
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
-        let query = _supabase.from('sops').select('*').order('updated_at', { ascending: false });
+        const { error } = await _supabase.from('sops')
+          .update({ is_pinned: !currentPinnedState })
+          .eq('id', sopId);
 
-        if (rawSearch) {
-          const terms = rawSearch.split('%').map(t => t.trim()).filter(t => t);
-          terms.forEach(term => {
-            query = query.or(`title.ilike.%${term}%,keywords.ilike.%${term}%,category.ilike.%${term}%,content.ilike.%${term}%`);
-          });
-        }
-
-        const { data: sopData, error } = await query;
+        document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
-        // 批次抓取按讚紀錄
-        const { data: likesData } = await _supabase.from('sop_likes').select('*');
-
-        document.getElementById('loadingOverlay').style.display = 'none';
-
-        const combinedData = (sopData || []).map(sop => ({
-          ...sop,
-          likes: (likesData || []).filter(l => l.sop_id === sop.id)
-        }));
-
-        // 動態生成分類按鈕
-        renderSopCategoryFilters(combinedData);
-
-        // 依目前選擇的分類過濾
-        let filteredData = combinedData;
-        if (currentSopCategoryFilter !== '全部') {
-          filteredData = combinedData.filter(item => item.category === currentSopCategoryFilter);
-        }
-
-        renderSopList(filteredData, rawSearch);
+        searchSops(); // 重新搜尋更新排序
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert("搜尋 SOP 發生錯誤: " + e.message);
-      }
-    }
-
-    // ✨ 3. 動態渲染極簡美麗的分類過濾按鈕
-    function renderSopCategoryFilters(sopList) {
-      const container = document.getElementById('sopCategoryFilter');
-      if (!container) return;
-
-      // 收集所有出現過的分類（不重複）
-      const categories = Array.from(new Set(sopList.map(item => item.category).filter(c => c)));
-
-      let btnHtml = `
-        <button class="btn btn-sm px-2 py-1 rounded-pill filter-sop-cat-btn ${currentSopCategoryFilter === '全部' ? 'btn-primary active' : 'btn-outline-secondary'}" 
-                style="font-size: 0.75rem;" onclick="searchSops('全部')">
-          全部 (${sopList.length})
-        </button>
-      `;
-
-      categories.forEach(cat => {
-        const count = sopList.filter(item => item.category === cat).length;
-        const isActive = (currentSopCategoryFilter === cat);
-        const btnClass = isActive ? 'btn-primary active' : 'btn-outline-secondary bg-white';
-
-        btnHtml += `
-          <button class="btn btn-sm px-2 py-1 rounded-pill filter-sop-cat-btn ${btnClass}" 
-                  style="font-size: 0.75rem;" onclick="searchSops('${cat}')">
-            ${cat} (${count})
-          </button>
-        `;
-      });
-
-      container.innerHTML = btnHtml;
-    }
-
-    
-
-    // 3. SOP 按讚 / 取消按讚 (紀錄閱讀狀態)
-    async function toggleSopLike(sopId) {
-      const currentUser = localStorage.getItem("current_staff_name");
-      if (!currentUser) return alert("無法識別身分，請確認裝置已解鎖授權！");
-
-      try {
-        const { data: existing } = await _supabase.from('sop_likes').select('id').eq('sop_id', sopId).eq('staff_name', currentUser).single();
-        
-        if (existing) {
-          // 已按讚則取消
-          await _supabase.from('sop_likes').delete().eq('id', existing.id);
-        } else {
-          // 未按讚則新增
-          await _supabase.from('sop_likes').insert([{ sop_id: sopId, staff_name: currentUser }]);
-        }
-
-        searchSops(); // 刷心按讚人數與名單
-      } catch (e) {
-        alert("按讚操作失敗: " + e.message);
+        alert("置頂操作失敗: " + e.message);
       }
     }
 
@@ -3747,6 +3815,24 @@
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("刪除失敗: " + e.message);
       }
+    }
+    // ✨ 高亮關鍵字輔助函式 (支援多條件 % 切割)
+    function highlightSopText(text, searchKeyword) {
+      if (!text || !searchKeyword) return text || '';
+      
+      // 將 % 符號切割出多個關鍵字，並排除空白
+      const terms = searchKeyword.split('%').map(t => t.trim()).filter(t => t);
+      if (terms.length === 0) return text;
+
+      let highlighted = text;
+      terms.forEach(term => {
+        // 使用正則表達式，全域且不區分大小寫替換為黃底標記
+        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+        highlighted = highlighted.replace(regex, '<mark style="background-color: #fff3cd; color: #3e2723; padding: 0 2px; border-radius: 3px; font-weight: bold;">$1</mark>');
+      });
+
+      return highlighted;
     }
   </script>
 </body>
