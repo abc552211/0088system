@@ -241,6 +241,137 @@
       animation: flash-red 1s infinite alternate;
       border: 2px solid #e5989b !important;
     }
+    /* ✨ 日曆模式：月/週模式差異化高度樣式 */
+    .cal-grid-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      color: var(--font-color-muted);
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(142, 154, 175, 0.2);
+    }
+    .cal-grid-body {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      background-color: rgba(142, 154, 175, 0.15);
+      margin-top: 4px;
+    }
+    /* 月模式：鎖定 75px */
+    .cal-day-cell {
+      background-color: #ffffff;
+      height: 75px !important;
+      max-height: 75px !important;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      overflow: hidden !important;
+      box-sizing: border-box;
+      transition: background-color 0.2s;
+    }
+    /* ✨ 關鍵升級：週模式下格子高度提升 3 倍 (220px)，並可滾動/顯示多筆預約 */
+    .cal-submode-week .cal-day-cell {
+      height: 220px !important;
+      max-height: 220px !important;
+      overflow-y: auto !important;
+      scrollbar-width: none; /* 隱藏捲軸保持美觀 */
+    }
+    .cal-submode-week .cal-day-cell::-webkit-scrollbar {
+      display: none;
+    }
+    .cal-day-cell:hover {
+      background-color: #fdfbf7;
+    }
+    .cal-day-cell.other-month {
+      background-color: #f8f8f8;
+      opacity: 0.4;
+    }
+    .cal-day-cell.today {
+      background-color: rgba(243, 233, 224, 0.5);
+      border: 1.5px solid var(--handover-timed-accent);
+    }
+    .cal-day-cell.has-overdue {
+      background-color: #fff1f0 !important;
+      border: 1px solid #e5989b !important;
+    }
+    .cal-day-num {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--font-color-main);
+      margin-bottom: 2px;
+      line-height: 1;
+    }
+    /* ✨ 關鍵修正：單行文字強制截斷 (text-overflow: ellipsis + max-width: 100%) */
+    .cal-event-tag {
+      font-size: 0.65rem;
+      padding: 1px 3px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 100% !important;
+      display: block !important;
+      font-weight: 600;
+      line-height: 1.3;
+      box-sizing: border-box;
+    }
+    .cal-event-tag.tag-appoint { 
+      background-color: #84a59d; 
+      color: #ffffff; 
+    }
+    .cal-event-tag.tag-overdue { 
+      background-color: #e5989b; 
+      color: #ffffff; 
+    }
+    .cal-event-more {
+      font-size: 0.6rem;
+      color: var(--font-color-muted);
+      font-weight: bold;
+      text-align: center;
+      line-height: 1;
+      margin-top: auto;
+    }
+    /* 當天包含逾期預約時的淡紅格子底色 */
+    .cal-day-cell.has-overdue {
+      background-color: #fff1f0 !important;
+      border: 1px solid #e5989b !important;
+    }
+    .cal-day-num {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--font-color-main);
+      margin-bottom: 2px;
+    }
+    .cal-event-tag {
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+    /* 正常預約：莫蘭迪綠底白字 */
+    .cal-event-tag.tag-appoint { 
+      background-color: #84a59d; 
+      color: #ffffff; 
+    }
+    /* ✨ 逾期預約：莫蘭迪乾燥玫瑰紅底白字 (純色塊區分，不帶 emoji) */
+    .cal-event-tag.tag-overdue { 
+      background-color: #e5989b; 
+      color: #ffffff; 
+    }
+    .cal-event-more {
+      font-size: 0.6rem;
+      color: var(--font-color-muted);
+      font-weight: bold;
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -444,13 +575,58 @@
 
   <div id="appointment" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
+    
     <div class="card p-4" style="background: rgba(255, 250, 240, 0.98) !important;">
-      <h4 class="mb-4">📝 客戶預約狀態處理</h4>
-      
-      <div id="appCardsContainer" class="mt-2"></div>
+      <h4 class="mb-3">📝 客戶預約狀態處理</h4>
+
+      <!-- ✨ 模式切換頁籤：清單模式 vs 日曆模式 -->
+      <div class="nav-tabs-custom mb-3">
+        <div id="appModeTabList" class="active-tab" onclick="switchAppViewMode('list')">📋 清單模式</div>
+        <div id="appModeTabCal" onclick="switchAppViewMode('calendar')">📅 日曆模式</div>
+      </div>
+
+      <!-- 1. 現有的清單模式容器 -->
+      <div id="appListView">
+        <div id="appCardsContainer" class="mt-2"></div>
+      </div>
+
+      <!-- 2. ✨ 新增：日曆模式容器 -->
+      <div id="appCalendarView" style="display: none;">
+        <!-- 日曆工具列：切換月份/週、月週模式切換 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn btn-sm btn-outline-secondary px-2" onclick="navigateCalendar(-1)">◀</button>
+            <span id="calTitleDisplay" class="fw-bold font-serif-tc text-[#3e2723]" style="font-size: 1.1rem; min-width: 120px; text-align: center;">2026年 8月</span>
+            <button class="btn btn-sm btn-outline-secondary px-2" onclick="navigateCalendar(1)">▶</button>
+            <button class="btn btn-sm btn-light border ms-1" onclick="jumpToCalendarToday()">今天</button>
+          </div>
+          <!-- 月 / 週 模式切換鈕 -->
+          <div class="btn-group btn-group-sm" role="group">
+            <button id="btnCalMonth" type="button" class="btn btn-primary" onclick="setCalSubMode('month')">月</button>
+            <button id="btnCalWeek" type="button" class="btn btn-outline-primary" onclick="setCalSubMode('week')">週</button>
+          </div>
+        </div>
+
+        <!-- 日曆主體格 -->
+        <div id="calendarGrid" class="bg-white rounded border p-2 shadow-sm"></div>
+      </div>
     </div>
 
-    <!-- ✨ 改造：改為滿版置中彈出視窗 (Modal) -->
+    <!-- ✨ 新增：點擊日曆日期後彈出的「當日預約清單 Modal」 -->
+    <div id="dayAppListModal" class="modal-overlay" style="display:none; z-index: 9999 !important;">
+      <div class="modal-body" style="max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto;">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <h5 class="fw-bold mb-0 font-serif-tc text-[#3e2723]" id="dayAppModalTitle">📅 2026/08/01 當日預約</h5>
+          <button class="btn-close" onclick="closeDayAppListModal()"></button>
+        </div>
+        <div id="dayAppCardsContainer"></div>
+        <div class="d-grid mt-3">
+          <button class="btn btn-light" onclick="closeDayAppListModal()">關閉</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 滿版置中彈出處理視窗 (保留原 Modal) -->
     <div id="appDetailModal" class="modal-overlay" style="display:none; z-index: 10000 !important;">
       <div class="modal-body" style="max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto;">
         <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">⚙️ 處理預約狀態</h5>
@@ -1452,6 +1628,7 @@
       }
     }
 
+    // 1. showPage 頁面切換：切換到 appointment 頁面時預設直接開啟「日曆模式」
     function showPage(id) { 
       stopGlobalScan();
 
@@ -1472,13 +1649,13 @@
         switchHandTab(1);
         loadData(); 
       }
+      // ✨ 核心修改：開啟預約頁面時，預設直接進日曆模式
       if(id === 'appointment') {
-        currentAppTab = 1; 
         currentSelectedAppIndex = null;
         closeAppDetailModal();
         loadData(); 
+        switchAppViewMode('calendar'); // 預設切換為日曆模式
       }
-      // ✨ 新增：開啟 SOP 頁面時自動載入已有 SOP 列表
       if(id === 'sopPage') {
         if (document.getElementById('sopSearchInput')) {
           document.getElementById('sopSearchInput').value = '';
@@ -3833,6 +4010,250 @@
       });
 
       return highlighted;
+    }
+    // ================= 預約處理：日曆模式 (TimeTree 風格) 全域變數與邏輯 =================
+    let currentAppViewMode = 'list';  // 'list' | 'calendar'
+    let calSubMode = 'month';          // 'month' | 'week'
+    let calCurrentDate = new Date();   // 目前日曆切換視角時間
+
+    // 1. 切換 清單 / 日曆 主視圖
+    function switchAppViewMode(mode) {
+      currentAppViewMode = mode;
+      document.getElementById('appModeTabList').className = mode === 'list' ? 'active-tab' : '';
+      document.getElementById('appModeTabCal').className = mode === 'calendar' ? 'active-tab' : '';
+
+      document.getElementById('appListView').style.display = mode === 'list' ? 'block' : 'none';
+      document.getElementById('appCalendarView').style.display = mode === 'calendar' ? 'block' : 'none';
+
+      if (mode === 'calendar') {
+        renderCalendarView();
+      }
+    }
+
+    // 2. 切換 月 / 週 子視圖
+    function setCalSubMode(subMode) {
+      calSubMode = subMode;
+      document.getElementById('btnCalMonth').className = subMode === 'month' ? 'btn btn-primary' : 'btn btn-outline-primary';
+      document.getElementById('btnCalWeek').className = subMode === 'week' ? 'btn btn-primary' : 'btn btn-outline-primary';
+      renderCalendarView();
+    }
+
+    // 3. 上下翻頁 (上一個月/週 或 下一個月/週)
+    function navigateCalendar(direction) {
+      if (calSubMode === 'month') {
+        calCurrentDate.setMonth(calCurrentDate.getMonth() + direction);
+      } else {
+        calCurrentDate.setDate(calCurrentDate.getDate() + (direction * 7));
+      }
+      renderCalendarView();
+    }
+
+    // 4. 跳回今天
+    function jumpToCalendarToday() {
+      calCurrentDate = new Date();
+      renderCalendarView();
+    }
+
+    // ✨ 週模式高度拉高 3 倍與多筆呈現版
+    function renderCalendarView() {
+      const gridContainer = document.getElementById('calendarGrid');
+      const titleDisplay = document.getElementById('calTitleDisplay');
+      if (!gridContainer) return;
+
+      const year = calCurrentDate.getFullYear();
+      const month = calCurrentDate.getMonth();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      titleDisplay.innerText = `${year}年 ${month + 1}月`;
+
+      const eventsMap = {};
+      const allAppList = cache.appointList || [];
+
+      allAppList.forEach((it, idx) => {
+        if (it.appoint_time) {
+          const dateStr = String(it.appoint_time).trim().replace('T', ' ').substring(0, 10);
+          if (!eventsMap[dateStr]) eventsMap[dateStr] = [];
+          eventsMap[dateStr].push({ ...it, originalIndex: idx });
+        }
+      });
+
+      let daysToRender = [];
+
+      if (calSubMode === 'month') {
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        
+        let startDayOfWeek = firstDayOfMonth.getDay();
+        const startDate = new Date(firstDayOfMonth);
+        startDate.setDate(startDate.getDate() - startDayOfWeek);
+
+        const totalCells = (startDayOfWeek + lastDayOfMonth.getDate() > 35) ? 42 : 35;
+
+        for (let i = 0; i < totalCells; i++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + i);
+          daysToRender.push(d);
+        }
+      } else {
+        const curr = new Date(calCurrentDate);
+        const dayOfWeek = curr.getDay();
+        const startOfWeek = new Date(curr);
+        startOfWeek.setDate(curr.getDate() - dayOfWeek);
+
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(startOfWeek);
+          d.setDate(d.getDate() + i);
+          daysToRender.push(d);
+        }
+      }
+
+      // ✨ 依子模式加入 cal-submode-week 控制 Class
+      const bodyClass = (calSubMode === 'week') ? 'cal-grid-body cal-submode-week' : 'cal-grid-body';
+
+      let html = `
+        <div class="cal-grid-header">
+          <div class="text-danger">日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div class="text-primary">六</div>
+        </div>
+        <div class="${bodyClass}">
+      `;
+
+      const now = new Date();
+
+      const parseAppTime = (timeStr) => {
+        if (!timeStr) return null;
+        let formatted = String(timeStr).trim().replace(' ', 'T');
+        let d = new Date(formatted);
+        if (isNaN(d.getTime())) {
+          const clean = String(timeStr).replace(/[^\d]/g, '');
+          if (clean.length >= 12) {
+            const y = parseInt(clean.substring(0, 4));
+            const m = parseInt(clean.substring(4, 6)) - 1;
+            const day = parseInt(clean.substring(6, 8));
+            const h = parseInt(clean.substring(8, 10));
+            const min = parseInt(clean.substring(10, 12));
+            d = new Date(y, m, day, h, min);
+          }
+        }
+        return isNaN(d.getTime()) ? null : d;
+      };
+
+      daysToRender.forEach(dateObj => {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        const dateKey = `${y}-${m}-${d}`;
+
+        const isOtherMonth = (calSubMode === 'month' && dateObj.getMonth() !== month);
+        const isToday = (dateKey === todayStr);
+
+        const dayEvents = eventsMap[dateKey] || [];
+
+        const hasOverdueInDay = dayEvents.some(ev => {
+          const evTime = parseAppTime(ev.appoint_time);
+          const currentStatus = (ev.status || '').trim();
+          const isUnfinished = (currentStatus === '' || currentStatus === '待處理' || currentStatus === '已關懷');
+          return evTime && evTime < now && isUnfinished;
+        });
+
+        let cellClass = 'cal-day-cell';
+        if (isOtherMonth) cellClass += ' other-month';
+        if (isToday) cellClass += ' today';
+        if (hasOverdueInDay) cellClass += ' has-overdue';
+
+        let eventsHtml = '';
+        // ✨ 週模式下上限提高到 8 筆 (月模式維持 2 筆)
+        const maxTags = (calSubMode === 'week') ? 8 : 2; 
+
+        dayEvents.slice(0, maxTags).forEach(ev => {
+          const evTime = parseAppTime(ev.appoint_time);
+          const currentStatus = (ev.status || '').trim();
+          const isUnfinished = (currentStatus === '' || currentStatus === '待處理' || currentStatus === '已關懷');
+          
+          const isOverdue = evTime && evTime < now && isUnfinished;
+          const tagClass = isOverdue ? 'tag-overdue' : 'tag-appoint';
+          
+          // 週模式下多顯示「HH:mm 時間」，例如 "14:00 張采書"
+          let displayTimePrefix = '';
+          if (calSubMode === 'week' && ev.appoint_time) {
+            const timePart = String(ev.appoint_time).trim().replace('T', ' ');
+            if (timePart.length >= 16) {
+              displayTimePrefix = `${timePart.substring(11, 16)} `;
+            }
+          }
+
+          eventsHtml += `<div class="cal-event-tag ${tagClass}" title="${ev.name || '客戶'}">${displayTimePrefix}${ev.name || '客戶'}</div>`;
+        });
+
+        if (dayEvents.length > maxTags) {
+          eventsHtml += `<div class="cal-event-more">+${dayEvents.length - maxTags} 筆預約</div>`;
+        }
+
+        html += `
+          <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
+            <div class="cal-day-num">${dateObj.getDate()}</div>
+            ${eventsHtml}
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      gridContainer.innerHTML = html;
+    }
+
+    // 6. 開啟「當日預約清單 Modal」
+    function openDayAppListModal(dateKey) {
+      const container = document.getElementById('dayAppCardsContainer');
+      const titleEl = document.getElementById('dayAppModalTitle');
+      if (!container) return;
+
+      const dateParts = dateKey.split('-');
+      titleEl.innerText = `📅 ${dateParts[0]}/${dateParts[1]}/${dateParts[2]} 當日預約`;
+
+      const allAppList = cache.appointList || [];
+      const dayEvents = allAppList.filter(it => it.appoint_time && it.appoint_time.startsWith(dateKey));
+
+      if (dayEvents.length === 0) {
+        container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">該日期目前無預約名單</div>';
+      } else {
+        let h = '';
+        const now = new Date();
+        const currentRocYear = now.getFullYear() - 1911;
+
+        dayEvents.forEach((it) => {
+          // 找到它在原本 cache.appointList 中的索引
+          const originalIndex = allAppList.findIndex(item => item.id === it.id);
+
+          let timeStr = it.appoint_time ? it.appoint_time.replace('T', ' ').substring(0, 16) : '';
+          const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
+          const cardStyle = isOverdue ? 'card-overdue-flash' : '';
+          const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
+
+          let ageStr = "未知";
+          if (it.birthday && it.birthday.includes('/')) {
+            const bYear = parseInt(it.birthday.split('/')[0], 10);
+            if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
+          }
+
+          h += `
+            <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer ${cardStyle}" 
+                 onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '${it.name}')">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
+                <div>${badgeHtml}<span class="badge" style="background-color: #84a59d; color: white;">📅 已預約</span></div>
+              </div>
+              <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
+              <div class="small text-muted mt-1">⏰ 時間：<b>${timeStr}</b></div>
+              <div class="small text-dark text-truncate mt-1">📌 內容：${it.event || '無'}</div>
+            </div>`;
+        });
+        container.innerHTML = h;
+      }
+
+      document.getElementById('dayAppListModal').style.display = 'flex';
+    }
+
+    function closeDayAppListModal() {
+      document.getElementById('dayAppListModal').style.display = 'none';
     }
   </script>
 </body>
