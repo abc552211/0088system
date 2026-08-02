@@ -4255,6 +4255,15 @@
     function closeDayAppListModal() {
       document.getElementById('dayAppListModal').style.display = 'none';
     }
+    // 找尋對應人員時，做去空白防呆
+function getStaffData(staffName, staffConfig) {
+  if (!staffName || !staffConfig) return null;
+  const cleanName = staffName.trim();
+
+  // 遍歷 Key 進行 trim 後的比對
+  const matchedKey = Object.keys(staffConfig).find(key => key.trim() === cleanName);
+  return matchedKey ? staffConfig[matchedKey] : null;
+}
   </script>
 </body>
 </html>
