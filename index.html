@@ -4202,7 +4202,7 @@ async function submitSop() {
   }
 }
 
-// 3. 搜尋與計算個人未讀狀態 (更新首頁與快篩按鈕 Badge)
+// 3. 搜尋與計算個人未讀狀態 (加入未讀優先排序)
 async function searchSops(filterCategory = null) {
   if (filterCategory !== null) {
     currentSopCategoryFilter = filterCategory;
@@ -4212,10 +4212,9 @@ async function searchSops(filterCategory = null) {
   const currentUser = localStorage.getItem("current_staff_name") || "";
 
   try {
+    // 這裡維持原來的抓取，因為我們要在前端做更細緻的個人化排序
     let query = _supabase.from('sops')
-      .select('*')
-      .order('is_pinned', { ascending: false })
-      .order('updated_at', { ascending: false });
+      .select('*');
 
     if (rawSearch) {
       const terms = rawSearch.split('%').map(t => t.trim()).filter(t => t);
@@ -4229,10 +4228,28 @@ async function searchSops(filterCategory = null) {
 
     const { data: likesData } = await _supabase.from('sop_likes').select('*');
 
-    const combinedData = (sopData || []).map(sop => ({
+    let combinedData = (sopData || []).map(sop => ({
       ...sop,
       likes: (likesData || []).filter(l => l.sop_id === sop.id)
     }));
+
+    // ✨ 核心升級：加入前端專屬客製化排序 (1.置頂優先 -> 2.未讀優先 -> 3.更新時間新到舊)
+    combinedData.sort((a, b) => {
+      // 第一關：置頂優先
+      const pinA = a.is_pinned ? 1 : 0;
+      const pinB = b.is_pinned ? 1 : 0;
+      if (pinA !== pinB) return pinB - pinA;
+
+      // 第二關：個人未讀優先 (只要當前使用者不在 likes 名單內，就是未讀)
+      const isReadA = a.likes.some(l => l.staff_name === currentUser) ? 1 : 0; // 1代表已讀, 0代表未讀
+      const isReadB = b.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
+      if (isReadA !== isReadB) return isReadA - isReadB; // 讓未讀(0)排在已讀(1)前面
+
+      // 第三關：更新時間 (新到舊)
+      const timeA = new Date(a.updated_at).getTime() || 0;
+      const timeB = new Date(b.updated_at).getTime() || 0;
+      return timeB - timeA;
+    });
 
     // 計算個人未讀數量（只要登入者沒在 likes 裡面就算未讀）
     const totalUnread = combinedData.filter(sop => !sop.likes.some(l => l.staff_name === currentUser)).length;
