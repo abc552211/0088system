@@ -1555,6 +1555,7 @@
       }
       
       await updateHomeConsultBadge();
+      await updateHomeSopBadge(); // ✨ 加入這行，讓 SOP 未讀提示在第一次進系統時就載入！
     }
     // ================= 計算個人未結案諮詢數量並更新首頁 Badge =================
 async function updateHomeConsultBadge() {
@@ -1586,6 +1587,45 @@ async function updateHomeConsultBadge() {
     }
   } catch (e) {
     console.error("計算個人未結案諮詢出錯:", e);
+  }
+}
+// ================= 計算個人未讀 SOP 數量並更新首頁 Badge =================
+async function updateHomeSopBadge() {
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+  const badgeEl = document.getElementById('homeSopUnreadBadge');
+  if (!badgeEl) return;
+
+  // 如果尚未登入/授權，就不顯示
+  if (!currentUser) {
+    badgeEl.style.setProperty('display', 'none', 'important');
+    return;
+  }
+
+  try {
+    // 輕量化抓取：只抓 ID 跟按讚紀錄來比對，不抓龐大的內文，節省效能
+    const { data: sopData, error: sopError } = await _supabase.from('sops').select('id');
+    if (sopError) throw sopError;
+
+    const { data: likesData, error: likesError } = await _supabase.from('sop_likes').select('sop_id, staff_name');
+    if (likesError) throw likesError;
+
+    let unreadCount = 0;
+    if (sopData) {
+      sopData.forEach(sop => {
+        const hasLiked = (likesData || []).some(l => l.sop_id === sop.id && l.staff_name === currentUser);
+        if (!hasLiked) unreadCount++; // 只要沒在按讚名單裡，就算未讀
+      });
+    }
+
+    // 更新首頁小紅圈
+    if (unreadCount > 0) {
+      badgeEl.innerText = `未讀 ${unreadCount}`;
+      badgeEl.style.setProperty('display', 'inline-block', 'important');
+    } else {
+      badgeEl.style.setProperty('display', 'none', 'important');
+    }
+  } catch (e) {
+    console.error("計算SOP未讀出錯:", e);
   }
 }
 
