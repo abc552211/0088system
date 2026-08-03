@@ -618,7 +618,7 @@
     <!-- 替換 #appointment 頁面內的控制列 -->
 <div class="card p-3 md:p-4 mb-4" style="background: rgba(255, 250, 240, 0.98) !important;">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">📝 客戶預約狀態處理</h4>
+    <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">📝 指定時間任務處理</h4>
     
     <!-- 1. 清單 / 日曆 主模式切換 (莫蘭迪微型圖示鈕) -->
     <div class="btn-group btn-group-sm shadow-sm" role="group">
@@ -681,11 +681,11 @@
     <!-- 滿版置中彈出處理視窗 (保留原 Modal) -->
     <div id="appDetailModal" class="modal-overlay" style="display:none; z-index: 10000 !important;">
       <div class="modal-body" style="max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto;">
-        <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">⚙️ 處理預約狀態</h5>
+        <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">⚙️ 處理狀態</h5>
         
         <div class="alert alert-info border-0 shadow-sm" style="background-color: rgba(132, 165, 157, 0.15); color: #3e2723;" id="appInfo"></div>
         
-        <div class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
+        <div id="appChangeTimeWrapper" class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
           <div class="d-flex align-items-center">
             <div class="form-check form-switch m-0 p-0">
               <input class="form-check-input m-0" type="checkbox" id="appChangeTimeSwitch" onchange="toggleAppChangeMode(this.checked)">
@@ -705,8 +705,10 @@
           </div>
         </div>
 
-        <label id="appStatusLabel" class="small fw-bold text-muted">處理結果 (赴約狀態)</label>
-        <select id="appStatus" class="form-select mb-3" onchange="handleAppStatusChange(this.value)"></select>
+        <div id="appStatusWrapper">
+          <label id="appStatusLabel" class="small fw-bold text-muted">處理結果 (赴約狀態)</label>
+          <select id="appStatus" class="form-select mb-3" onchange="handleAppStatusChange(this.value)"></select>
+        </div>
 
         <div id="appDealDiv" style="display:none;" class="mb-3 p-3 border rounded shadow-sm bg-white bg-opacity-50">
           <label class="small text-muted mb-2 fw-bold">💰 締結詳細資訊</label>
@@ -1485,57 +1487,6 @@
         
         cache.appointList = appData || [];
 
-        // ✨ 萬無一失的時間解析與逾期計算邏輯
-        const now = new Date();
-        let overdueCount = 0;
-
-        cache.appointList.forEach(it => {
-          if (it.appoint_time) {
-            // 強制將 '2026-07-24 18:30' 或 '2026-07-24T18:30:00' 統一轉為標準 ISO 格式
-            let formattedTimeStr = String(it.appoint_time).trim().replace(' ', 'T');
-            let appTime = new Date(formattedTimeStr);
-            
-            // 防呆：如果 Date 依然無效，嘗試用手動切字串的方式組裝 Date
-            if (isNaN(appTime.getTime())) {
-              const cleanStr = String(it.appoint_time).replace(/[^\d]/g, ''); // 搞出純數字 202607241830
-              if (cleanStr.length >= 12) {
-                const y = parseInt(cleanStr.substring(0, 4));
-                const m = parseInt(cleanStr.substring(4, 6)) - 1;
-                const d = parseInt(cleanStr.substring(6, 8));
-                const h = parseInt(cleanStr.substring(8, 10));
-                const min = parseInt(cleanStr.substring(10, 12));
-                appTime = new Date(y, m, d, h, min);
-              }
-            }
-
-            const currentStatus = (it.status || '').trim();
-            const isUnfinished = (currentStatus === '' || currentStatus === '待處理' || currentStatus === '已關懷');
-
-            // 只要時間小於現在，且狀態是未結案，就計入逾期
-            if (!isNaN(appTime.getTime()) && appTime < now && isUnfinished) {
-              overdueCount++;
-            }
-          }
-        });
-
-        // ✨ 統計當前登入服務人員的待處理預約筆數
-const badgeEl = document.getElementById('homeOverdueBadge');
-if (badgeEl) {
-  const currentUser = localStorage.getItem("current_staff_name") || "";
-  
-  // 只計算服務人等於登入者的待處理預約
-  const myAppCount = cache.appointList 
-    ? cache.appointList.filter(it => it.staff === currentUser).length 
-    : 0;
-
-  if (myAppCount > 0) {
-    badgeEl.innerText = `我有${myAppCount}筆預約`;
-    badgeEl.style.setProperty('display', 'inline-block', 'important');
-  } else {
-    badgeEl.style.setProperty('display', 'none', 'important');
-  }
-}
-
         // 讀取未完成且屬於指定時間的交接提醒預約 (來自 handovers)
         const { data: handDataForApp } = await _supabase.from('handovers')
           .select('*')
@@ -1544,8 +1495,6 @@ if (badgeEl) {
           .order('target_date', { ascending: true });
 
         cache.lostAppointList = handDataForApp || []; 
-
-        renderAppSelect(); // 渲染卡片牆
 
         // 讀取未完成的交接工作與關聯討論串
         const { data: handData } = await _supabase.from('handovers')
@@ -1558,11 +1507,14 @@ if (badgeEl) {
 
         cache.handoverList = (handData || []).map(item => ({
           rowIndex: item.id,
+          id: item.id,
           type: item.type,
           targetDate: item.target_date || '無',
           content: item.content,
           from: item.from_staff,
           to: item.to_staff,
+          from_staff: item.from_staff, 
+          to_staff: item.to_staff,     
           pushStatus: item.push_status,
           pushTime: item.delay_time,
           imageUrl: item.image_url || null,
@@ -1576,12 +1528,33 @@ if (badgeEl) {
           del.innerHTML = '<option value="">- 選擇要刪交接 -</option>'; 
           cache.handoverList.forEach(it => del.add(new Option(it.info, it.rowIndex))); 
         }
+
+        // ✨ 統計當前登入服務人員的「待處理預約 + 交接」總筆數
+        const badgeEl = document.getElementById('homeOverdueBadge');
+        if (badgeEl) {
+          const currentUser = localStorage.getItem("current_staff_name") || "";
+          
+          // 使用已經寫好的過濾器取得我的全部任務
+          const myAppAndHandoverList = getMergedAppAndHandoverList('mine');
+          const totalCount = myAppAndHandoverList.length;
+
+          if (totalCount > 0) {
+            badgeEl.innerText = `我有${totalCount}筆任務`;
+            badgeEl.style.setProperty('display', 'inline-block', 'important');
+          } else {
+            badgeEl.style.setProperty('display', 'none', 'important');
+          }
+        }
+
+        renderAppSelect();
+        renderCalendarView();
         renderHandoverList(); 
+
       } catch (err) {
         console.error("載入 Supabase 快取資料出錯:", err);
       }
-      // 在 loadData() 結尾處呼叫
-await updateHomeConsultBadge();
+      
+      await updateHomeConsultBadge();
     }
     // ================= 計算個人未結案諮詢數量並更新首頁 Badge =================
 async function updateHomeConsultBadge() {
@@ -2668,79 +2641,103 @@ async function updateHomeConsultBadge() {
     }
 
     async function submitVisit() {
-      if(currentSelectedAppIndex === null) return alert("請先點擊上方小卡選擇處理對象");
-      const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
-      const it = list[currentSelectedAppIndex];
+  if(currentSelectedAppIndex === null) return alert("請先點擊上方小卡選擇處理對象");
 
-      let newTime = null;
-      let finalStatus = document.getElementById('appStatus').value;
-      const isChangeTime = document.getElementById('appChangeTimeSwitch').checked;
-      let orderNo = null; let amount = null; let lutein = null;
+  const list = getMergedAppAndHandoverList(currentAppStaffFilter);
+  const it = list[currentSelectedAppIndex];
 
-      const pad = (n) => n.toString().padStart(2, '0');
-      if (isChangeTime) {
-        newTime = `${document.getElementById('appCY').value}-${pad(document.getElementById('appCM').value)}-${pad(document.getElementById('appCD').value)}T${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}:00`;
-        finalStatus = "待處理"; 
-      } else {
-        if (!finalStatus) return alert("請選擇赴約狀態");
-        if (finalStatus === "締結") {
-          orderNo = document.getElementById('appOrderNo').value.trim();
-          amount = document.getElementById('appAmount').value ? parseFloat(document.getElementById('appAmount').value) : null;
-          lutein = document.getElementById('appLutein').value;
-        }
-      }
+  let newTime = null;
+  let finalStatus = document.getElementById('appStatus').value;
+  const isChangeTime = document.getElementById('appChangeTimeSwitch').checked;
+  let orderNo = null; let amount = null; let lutein = null;
 
-      document.getElementById('loadingOverlay').style.display = 'flex';
-
-      try {
-        if (currentAppTab === 1) {
-          const updatePayload = {
-            status: finalStatus,
-            note: document.getElementById('appNote').value || null,
-            order_no: orderNo,
-            amount: amount,
-            lutein: lutein
-          };
-          if(isChangeTime) {
-            updatePayload.appoint_time = newTime;
-            updatePayload.is_appoint = "是";
-          }
-          const { error } = await _supabase.from('consultations').update(updatePayload).eq('id', it.id);
-          if (error) throw error;
-        } else {
-          // 交接完成，若改期則壓回 Pending 新時間，赴約則結案 Sent
-          const updatePayload = {
-            push_status: isChangeTime ? 'Pending' : 'Sent',
-            content: (document.getElementById('appNote').value) ? `${it.content} (回報: ${document.getElementById('appNote').value})` : it.content
-          };
-          if(isChangeTime) {
-            updatePayload.target_date = `${document.getElementById('appCY').value}/${pad(document.getElementById('appCM').value)}/${pad(document.getElementById('appCD').value)} ${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}`;
-          }
-          const { error } = await _supabase.from('handovers').update(updatePayload).eq('id', it.id);
-          if (error) throw error;
-        }
-        
-        finishVisit("🎉 狀態已更新完成！");
-        currentSelectedAppIndex = null;
-      } catch(e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("更新失敗: " + e.message);
+  const pad = (n) => n.toString().padStart(2, '0');
+  if (isChangeTime) {
+    newTime = `${document.getElementById('appCY').value}-${pad(document.getElementById('appCM').value)}-${pad(document.getElementById('appCD').value)}T${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}:00`;
+    finalStatus = "待處理"; 
+  } else {
+    if (it.itemType === 'consult') {
+      if (!finalStatus) return alert("請選擇赴約狀態");
+      if (finalStatus === "締結") {
+        orderNo = document.getElementById('appOrderNo').value.trim();
+        amount = document.getElementById('appAmount').value ? parseFloat(document.getElementById('appAmount').value) : null;
+        lutein = document.getElementById('appLutein').value;
       }
     }
+  }
+
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  try {
+    if (it.itemType === 'consult') {
+      const updatePayload = {
+        status: finalStatus,
+        note: document.getElementById('appNote').value || null,
+        order_no: orderNo,
+        amount: amount,
+        lutein: lutein
+      };
+      if(isChangeTime) {
+        updatePayload.appoint_time = newTime;
+        updatePayload.is_appoint = "是";
+      }
+      const { error } = await _supabase.from('consultations').update(updatePayload).eq('id', it.id);
+      if (error) throw error;
+      
+      // 同步行事曆
+      if (isChangeTime) {
+        autoSyncCalendar('consultations', it.id, `[改期] ${it.name}`, newTime);
+      }
+    } else {
+      // 交接項目：專屬處理改期邏輯 (只會因啟用了修改指定日期觸發)
+      if (isChangeTime) {
+        const targetDateStr = `${document.getElementById('appCY').value}/${pad(document.getElementById('appCM').value)}/${pad(document.getElementById('appCD').value)} ${pad(document.getElementById('appCH').value)}:${pad(document.getElementById('appCMin').value)}`;
+        const updatePayload = {
+          target_date: targetDateStr
+        };
+        const { error } = await _supabase.from('handovers').update(updatePayload).eq('id', it.id);
+        if (error) throw error;
+        
+        // 同步行事曆
+        const calTime = targetDateStr.replace(/\//g, '-');
+        autoSyncCalendar('handovers', it.id, `[交接改期] ${it.to}`, calTime);
+      }
+    }
+    
+    finishVisit("🎉 狀態已更新完成！");
+    currentSelectedAppIndex = null;
+  } catch(e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("更新失敗: " + e.message);
+  }
+}
 
     function handleAppStatusChange(val) { const d = document.getElementById('appDealDiv'); if(d) d.style.display=(val==='締結')?'block':'none'; }
     function toggleAppChangeMode(chk) { 
-  document.getElementById('appChangeTimeDiv').style.display=chk?'block':'none'; 
-  document.getElementById('appStatusLabel').style.display=chk?'none':'block'; 
-  document.getElementById('appStatus').style.display=chk?'none':'block'; 
-  if(chk){
-    if(document.getElementById('appDealDiv')) document.getElementById('appDealDiv').style.display='none';
-    initSelectors(); // ✨ 修正：切換改期時，立即初始化下拉選單內容
-  }else{
-    handleAppStatusChange(document.getElementById('appStatus').value);
-  } 
-  const n=document.getElementById('appNote'); 
-  if(n) n.placeholder=chk?"改期備註 (選填)":"可輸入備註"; 
+  document.getElementById('appChangeTimeDiv').style.display = chk ? 'block' : 'none'; 
+
+  const list = getMergedAppAndHandoverList(currentAppStaffFilter);
+  const it = currentSelectedAppIndex !== null ? list[currentSelectedAppIndex] : null;
+  const isHandover = it && it.itemType === 'handover';
+
+  if (isHandover) {
+    // 交接模式下，將狀態相關區域皆隱藏，並在未勾選改期時隱藏底部的確認按鈕
+    document.getElementById('appStatusWrapper').style.display = 'none';
+    document.getElementById('btnApp').style.display = chk ? 'block' : 'none';
+  } else {
+    // 一般諮詢模式，正常隱藏或顯示狀態
+    document.getElementById('appStatusWrapper').style.display = chk ? 'none' : 'block';
+    document.getElementById('btnApp').style.display = 'block'; 
+    if(chk){
+      if(document.getElementById('appDealDiv')) document.getElementById('appDealDiv').style.display = 'none';
+      initSelectors();
+    } else {
+      handleAppStatusChange(document.getElementById('appStatus').value);
+    } 
+  }
+  
+  const n = document.getElementById('appNote'); 
+  if(n) n.placeholder = chk ? "改期備註 (選填)" : "可輸入備註"; 
 }
     let currentAppTab = 1;
     function switchAppTab(tab) { 
@@ -2832,110 +2829,363 @@ function switchAppStaffFilter(filterMode) {
   }
 }
 
-   // 修改 renderAppSelect() 內的資料篩選邏輯
+  // ================= 預約狀態處理：雙向相容資料宣告與強制日期格式化 =================
+
+function getMergedAppAndHandoverList(filterMode) {
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  
+  // 1. 諮詢預約列表
+  let rawConsults = (cache.appointList || []).map(it => ({
+    ...it,
+    itemType: 'consult',
+    eventTime: it.appoint_time
+  }));
+
+  // 2. 篩選指定時間交接
+  let rawHandovers = (cache.handoverList || [])
+    .filter(h => h.type && String(h.type).includes('指定') && h.targetDate && h.targetDate !== '無')
+    .filter(h => {
+      const fromS = String(h.from_staff || h.from || '').trim();
+      const toS = String(h.to_staff || h.to || '').trim();
+      
+      const isAll = toS.includes('全員') || toS === 'EMPTY' || toS === '';
+      const isMine = (toS === currentUser) || (fromS === currentUser);
+      
+      return isAll || isMine;
+    })
+    .map(h => {
+      const fromS = String(h.from_staff || h.from || '').trim();
+      const toS = String(h.to_staff || h.to || '').trim();
+      let cleanTimeStr = String(h.targetDate).trim().replace(/\//g, '-').replace('T', ' ');
+      
+      return {
+        ...h,
+        id: h.rowIndex,
+        itemType: 'handover',
+        from: fromS,
+        to: toS,
+        name: `📥 交接：${toS}`,
+        staff: toS,
+        eventTime: cleanTimeStr,
+        event: h.content
+      };
+    });
+
+  // 3. 過濾人員
+  if (filterMode === 'mine' && currentUser) {
+    rawConsults = rawConsults.filter(it => String(it.staff || '').trim() === currentUser);
+    rawHandovers = rawHandovers.filter(h => {
+      const fromS = String(h.from || '').trim();
+      const toS = String(h.to || '').trim();
+      return toS === currentUser || fromS === currentUser || toS.includes('全員');
+    });
+  }
+
+  // 4. 排序
+  return [...rawConsults, ...rawHandovers].sort((a, b) => {
+    const tA = a.eventTime ? new Date(String(a.eventTime).replace(/-/g, '/')) : new Date(0);
+    const tB = b.eventTime ? new Date(String(b.eventTime).replace(/-/g, '/')) : new Date(0);
+    return tA - tB;
+  });
+}
+
+// 升級「清單模式」渲染
 function renderAppSelect() { 
   const container = document.getElementById('appCardsContainer'); 
   if (!container) return;
 
   container.innerHTML = ''; 
-  
-  if (typeof currentAppTab === 'undefined') currentAppTab = 1;
+  const list = getMergedAppAndHandoverList(currentAppStaffFilter);
+  const now = new Date();
+  const currentRocYear = now.getFullYear() - 1911;
 
-  let rawList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
-  const currentUser = localStorage.getItem("current_staff_name") || "";
-
-  // ✨ 根據選擇的過濾模式篩選資料
-  let list = rawList;
-  if (currentAppStaffFilter === 'mine' && currentUser) {
-    list = rawList.filter(it => it.staff === currentUser);
-  }
-  
   if (!list || list.length === 0) {
-    const emptyTxt = currentAppStaffFilter === 'mine' ? '🎉 目前沒有屬您的待處理預約名單' : '🎉 目前沒有待處理的預約名單';
+    const emptyTxt = currentAppStaffFilter === 'mine' ? '🎉 目前沒有屬您的待處理預約與指定時間交接' : '🎉 目前沒有待處理的預約與交接事項';
     container.innerHTML = `<div class="alert alert-light text-center small text-muted py-4">${emptyTxt}</div>`;
     return;
   }
-  
-  let h = '';
-  const now = new Date();
-  const currentRocYear = now.getFullYear() - 1911; // 取得當前民國年
 
-  list.forEach((it, ix) => { 
-    let timeStr = (currentAppTab === 1) ? it.appoint_time : it.target_date;
-    if(timeStr) timeStr = timeStr.replace('T', ' ').substring(0, 16);
-    
-    // 判斷是否逾期
-    const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
+  let h = '';
+  list.forEach((it, ix) => {
+    let timeStr = it.eventTime ? it.eventTime.replace('T', ' ').substring(0, 16) : '未定';
+    const isOverdue = timeStr !== '未定' && (new Date(timeStr.replace(/-/g, '/')) < now);
     const cardStyle = isOverdue ? 'card-overdue-flash' : '';
     const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
 
-    if (currentAppTab === 1) {
-      // 算年齡 (相容 100/01/01 格式與舊版 1000101 格式)
+    if (it.itemType === 'consult') {
       let ageStr = "未知";
-      if (it.birthday) {
-        if (it.birthday.includes('/')) {
-          const bYear = parseInt(it.birthday.split('/')[0], 10);
-          if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
-        } else if (it.birthday.length === 7 && !isNaN(it.birthday.substring(0, 3))) {
-          const bYear = parseInt(it.birthday.substring(0, 3), 10);
-          ageStr = (currentRocYear - bYear) + "歲";
-        }
+      if (it.birthday && it.birthday.includes('/')) {
+        const bYear = parseInt(it.birthday.split('/')[0], 10);
+        if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
       }
 
-      const reservedBadge = '<span class="badge shadow-sm me-1" style="background-color: #84a59d; color: white; letter-spacing: 1px;">📅 已預約</span>';
-      
-      // ✨ 瘦身邏輯：如果是「待處理」或空白就直接隱藏不顯示，避免跑版
-      let currentStatus = it.status || '待處理';
-      let statusBadge = (currentStatus === '待處理') ? '' : `<span class="badge bg-secondary">${currentStatus}</span>`;
-
-      // 諮詢預約小卡
       h += `
-        <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '${it.name}')">
+        <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '${it.name.replace(/'/g, "\\'")}', 'consult')">
           <div class="d-flex justify-content-between align-items-center">
             <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
             <div>
-              ${reservedBadge}
+              <span class="badge me-1" style="background-color: #84a59d; color: white;">📅 諮詢預約</span>
               ${badgeHtml}
-              ${statusBadge}
             </div>
           </div>
           <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
-          <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr || '未定'}</b></div>
+          <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr}</b></div>
           <div class="small text-dark text-truncate mt-1" style="max-width:400px;">📌 內容：${it.event || '無'}</div>
           <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
         </div>`;
     } else {
-      // 交接提醒預約小卡
+      // ✨ 修正交接項目：時間 -> 內容 -> 雙方人員
       h += `
-        <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="selectAppCard(${ix}, ${it.id}, '交接項目')">
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="fw-bold text-md text-[#5b2a30]">📥 接收人：${it.to_staff}</span>
-            <div>${badgeHtml}<span class="badge bg-warning text-dark">交接</span></div>
+        <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" style="border-left: 6px solid #a89a9f !important;" onclick="selectAppCard(${ix}, ${it.id}, '交接項目', 'handover')">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small text-muted">⏰ 時間：<b style="font-size: 1rem; color: #5b2a30;">${timeStr}</b></span>
+            <div>
+              ${badgeHtml}
+              <span class="badge text-white" style="background-color: #a89a9f;">交接</span>
+            </div>
           </div>
-          <div class="small text-muted mt-1">⏰ 執行截止：<b>${timeStr || '未定'}</b></div>
-          <div class="small text-dark mt-1" style="white-space: pre-wrap;">📝 待辦：${it.content || '無'}</div>
-          <div class="text-end text-xs text-muted mt-1">📤 交接人：${it.from_staff || '未知'}</div>
+          <div class="text-dark fw-bold mb-2 text-truncate" style="font-size: 1.05rem; max-width: 100%;">📝 內容：${it.event || '無'}</div>
+          <div class="d-flex justify-content-between align-items-center text-xs text-muted pt-2 border-top border-secondary border-opacity-10">
+            <span>📤 交接：<b>${it.from || '未知'}</b></span>
+            <span>📥 接收：<b class="text-[#5b2a30]">${it.to || '未知'}</b></span>
+          </div>
         </div>`;
     }
   });
-  
+
   container.innerHTML = h;
 }
 
-    function selectAppCard(index, id, name) {
-      currentSelectedAppIndex = index;
-      const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList;
-      const it = list[index];
+// ✨ 日曆模式宣告與渲染修正 (修正單數月份/日期的截斷比對問題)
+function renderCalendarView() {
+  const gridContainer = document.getElementById('calendarGrid');
+  const titleDisplay = document.getElementById('calTitleDisplay');
+  if (!gridContainer) return;
+
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  titleDisplay.innerText = `${year}年 ${month + 1}月`;
+
+  const eventsMap = {};
+  const mergedList = getMergedAppAndHandoverList(currentAppStaffFilter);
+
+  // ✨ 核心修正：精準拆解日期並歸類，解決「2026-8-10 14:00」因 substring 導致長度包含空白的問題
+  mergedList.forEach((it) => {
+    if (it.eventTime) {
+      const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
       
-      let contentHtml = (currentAppTab === 1) 
-        ? `🎯 <b>正處理諮詢對象：</b> ${name}<br>💬 <b>原登記需求：</b> ${it.event || '無'}`
-        : `⚙️ <b>正更新內部交接項目</b><br>📥 <b>接手同仁：</b> ${it.to_staff}<br>📝 <b>交付工作：</b> ${it.content}`;
+      // 使用 split(' ')[0] 確保只取日期部分，不再用寫死的 substring(0,10)
+      const datePart = timeStr.split(' ')[0]; 
+      const parts = datePart.split('-');
       
-      document.getElementById('appInfo').innerHTML = contentHtml;
-      
-      // ✨ 點擊後開啟彈出視窗
-      document.getElementById('appDetailModal').style.display = 'flex';
+      if (parts.length === 3) {
+        const y = parts[0];
+        const m = String(parts[1]).trim().padStart(2, '0');
+        const d = String(parts[2]).trim().padStart(2, '0');
+        const formattedKey = `${y}-${m}-${d}`;
+
+        if (!eventsMap[formattedKey]) eventsMap[formattedKey] = [];
+        eventsMap[formattedKey].push(it);
+      }
     }
+  });
+
+  let daysToRender = [];
+  if (calSubMode === 'month') {
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    let startDayOfWeek = firstDayOfMonth.getDay();
+    const startDate = new Date(firstDayOfMonth);
+    startDate.setDate(startDate.getDate() - startDayOfWeek);
+    const totalCells = (startDayOfWeek + lastDayOfMonth.getDate() > 35) ? 42 : 35;
+
+    for (let i = 0; i < totalCells; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      daysToRender.push(d);
+    }
+  } else {
+    const curr = new Date(calCurrentDate);
+    const dayOfWeek = curr.getDay();
+    const startOfWeek = new Date(curr);
+    startOfWeek.setDate(curr.getDate() - dayOfWeek);
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(d.getDate() + i);
+      daysToRender.push(d);
+    }
+  }
+
+  const bodyClass = (calSubMode === 'week') ? 'cal-grid-body cal-submode-week' : 'cal-grid-body';
+
+  let html = `
+    <div class="cal-grid-header">
+      <div class="text-danger">日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div class="text-primary">六</div>
+    </div>
+    <div class="${bodyClass}">
+  `;
+
+  const now = new Date();
+
+  daysToRender.forEach(dateObj => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    const dateKey = `${y}-${m}-${d}`;
+
+    const isOtherMonth = (calSubMode === 'month' && dateObj.getMonth() !== month);
+    const isToday = (dateKey === todayStr);
+    const dayEvents = eventsMap[dateKey] || [];
+
+    let cellClass = 'cal-day-cell';
+    if (isOtherMonth) cellClass += ' other-month';
+    if (isToday) cellClass += ' today';
+
+    let eventsHtml = '';
+    const maxTags = (calSubMode === 'week') ? 8 : 2;
+
+    dayEvents.slice(0, maxTags).forEach(ev => {
+      const evTime = ev.eventTime ? new Date(String(ev.eventTime).replace(/-/g, '/')) : null;
+      const isOverdue = evTime && evTime < now && (ev.itemType === 'consult' ? (ev.status === '待處理' || ev.status === '已關懷') : true);
+      
+      // ✨ 交接為莫蘭迪煙燻紫灰色(#9a8c98)，且預設 cal-event-tag 已經有文字截斷 (text-overflow: ellipsis)
+      let tagStyle = ev.itemType === 'handover' 
+        ? 'background-color: #9a8c98; color: #fff; border-left: 3px solid #5b2a30;' 
+        : (isOverdue ? 'background-color: #e5989b; color: #fff;' : 'background-color: #84a59d; color: #fff;');
+      
+      let displayPrefix = '';
+      if (calSubMode === 'week' && ev.eventTime) {
+        const timePart = String(ev.eventTime).trim().replace('T', ' ');
+        // 安全抓取時間 (例如 14:00)
+        const timeTokens = timePart.split(' ');
+        if (timeTokens.length > 1) {
+            const timeStr = timeTokens[1];
+            if (timeStr.length >= 5) displayPrefix = `${timeStr.substring(0, 5)} `;
+        }
+      }
+
+      // 抓取 ev.event 顯示內容 (如果是交接，字太長會自動截斷為 ...)
+      const labelTxt = ev.itemType === 'handover' ? ` ${ev.event || '無內容'}` : ev.name;
+      eventsHtml += `<div class="cal-event-tag" style="${tagStyle}" title="${labelTxt}">${displayPrefix}${labelTxt}</div>`;
+    });
+
+    if (dayEvents.length > maxTags) {
+      eventsHtml += `<div class="cal-event-more">+${dayEvents.length - maxTags} 筆</div>`;
+    }
+
+    html += `
+      <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
+        <div class="cal-day-num">${dateObj.getDate()}</div>
+        ${eventsHtml}
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  gridContainer.innerHTML = html;
+}
+
+// 1. 點擊清單卡片彈出處理 Modal
+function selectAppCard(index, id, name, type = 'consult') {
+  const list = getMergedAppAndHandoverList(currentAppStaffFilter);
+  const it = list[index];
+  if (!it) return;
+
+  currentSelectedAppIndex = index; // ✨ 提早設定，讓後續函式可抓取判定
+  const isHandover = (it.itemType === 'handover');
+  const appInfoEl = document.getElementById('appInfo');
+
+  // Reset modal state
+  document.getElementById('appChangeTimeSwitch').checked = false;
+  document.getElementById('appNote').value = "";
+  document.getElementById('appStatus').value = "";
+  document.querySelector('label[for="appChangeTimeSwitch"]').innerHTML = isHandover ? '🔄 修改交接預定時間' : '🔄 客戶要改期';
+
+  // 觸發切換狀態
+  toggleAppChangeMode(false);
+
+  if (!isHandover) {
+    // 諮詢預約處理介面
+    document.getElementById('appNoteArea').style.display = 'block';
+
+    let contentHtml = `🎯 <b>正處理諮詢對象：</b> ${name}<br>💬 <b>原登記需求：</b> ${it.event || '無'}`;
+    appInfoEl.innerHTML = contentHtml;
+  } else {
+    // ⏰ 指定時間交接處理介面：隱藏備註
+    document.getElementById('appNoteArea').style.display = 'none';
+
+    const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
+    const hasLiked = it.likes.some(l => l.staff_name === currentUser);
+    const likeIcon = hasLiked ? '❤️' : '🤍';
+    const likedNames = it.likes.map(l => l.staff_name).join(', ');
+    const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
+
+    let commentsHtml = it.comments.map(c => {
+      const cTime = new Date(c.created_at);
+      const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+      return `
+        <div class="mb-2 p-2 bg-white rounded border border-secondary border-opacity-10 small">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span>
+            <span class="text-muted" style="font-size: 0.7rem;">${formattedTime}</span>
+          </div>
+          <div style="white-space: pre-wrap; font-size: 0.85rem;">${c.content}</div>
+          ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 80px; border-radius: 5px; margin-top: 5px; cursor: pointer;">` : ''}
+          ${c.commenter === currentUser ? `
+            <div class="text-end mt-1">
+              <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment('${c.id}', '${c.content.replace(/'/g, "\\'")}')">編輯</button>
+              <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment('${c.id}')">刪除</button>
+            </div>
+          ` : ''}
+        </div>`;
+    }).join('');
+
+    let cardHtml = `
+      <div class="p-2 mb-2 rounded bg-white" style="border-left: 5px solid #a89a9f;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <button class="btn btn-sm btn-outline-success py-0 px-2 shadow-sm" style="font-size: 0.75rem;" onclick="closeHandoverCase(${it.id}); closeAppDetailModal();">✅ 結案歸檔</button>
+          <span class="badge text-white" style="background-color: #a89a9f;">⏰ ${it.type}</span>
+        </div>
+        <div class="p-2 bg-light rounded mb-2" style="white-space: pre-wrap; font-size: 0.9rem;">${it.content}</div>
+        <div class="row g-0 small text-muted">
+          <div class="col-6">📤 交接: ${it.from}</div>
+          <div class="col-6 text-end">📥 接收: ${it.to}</div>
+        </div>
+        
+        <div class="d-flex align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
+          <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.id})">
+            ${likeIcon} ${it.likes.length}
+          </button>
+          <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill" onclick="toggleHandoverComments(${it.id})">
+            💬 ${it.comments.length} 則留言 🔽
+          </button>
+        </div>
+
+        <div id="thread_${it.id}" class="mt-2 pt-2 border-top" style="display: block;">
+          <div style="max-height: 200px; overflow-y: auto;" class="mb-2 pe-1">
+            ${commentsHtml || '<div class="text-center small text-muted py-2">目前尚無討論紀錄</div>'}
+          </div>
+          <div class="d-flex flex-column gap-2 p-2 rounded" style="background: rgba(142, 154, 175, 0.08);">
+             <textarea id="new_cmt_${it.id}" class="form-control form-control-sm border-0 shadow-sm" rows="2" placeholder="以 [${currentUser}] 身份留言..."></textarea>
+             <div class="d-flex justify-content-between align-items-center">
+               <label for="cmt_img_${it.id}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2">📎 附圖</label>
+               <input type="file" id="cmt_img_${it.id}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.id}')">
+               <img id="cmt_preview_${it.id}" style="height: 25px; display: none;">
+               <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverComment(${it.id})">送出留言</button>
+             </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    appInfoEl.innerHTML = cardHtml;
+  }
+  document.getElementById('appDetailModal').style.display = 'flex';
+}
+
     function closeAppDetailModal() {
       document.getElementById('appDetailModal').style.display = 'none';
       currentSelectedAppIndex = null;
@@ -4296,212 +4546,95 @@ function switchAppViewMode(mode) {
       renderCalendarView();
     }
 
-    // 3. 升級 renderCalendarView() 支援「我的預約」過濾
-function renderCalendarView() {
-  const gridContainer = document.getElementById('calendarGrid');
-  const titleDisplay = document.getElementById('calTitleDisplay');
-  if (!gridContainer) return;
+    
 
-  const year = calCurrentDate.getFullYear();
-  const month = calCurrentDate.getMonth();
-  const todayStr = new Date().toISOString().split('T')[0];
+   // 2. 升級「當日預約清單 Modal」彈窗 (同步清單模式的精美排版與精準日期抓取)
+function openDayAppListModal(dateKey) {
+  const container = document.getElementById('dayAppCardsContainer');
+  const titleEl = document.getElementById('dayAppModalTitle');
+  if (!container) return;
 
-  titleDisplay.innerText = `${year}年 ${month + 1}月`;
+  const dateParts = dateKey.split('-');
+  titleEl.innerText = `📅 ${dateParts[0]}/${dateParts[1]}/${dateParts[2]} 當日事項`;
 
-  const eventsMap = {};
-  const currentUser = localStorage.getItem("current_staff_name") || "";
-  let rawAppList = cache.appointList || [];
-
-  // ✨ 根據設定篩選日曆資料
-  let allAppList = rawAppList;
-  if (currentAppStaffFilter === 'mine' && currentUser) {
-    allAppList = rawAppList.filter(it => it.staff === currentUser);
-  }
-
-  allAppList.forEach((it, idx) => {
-    if (it.appoint_time) {
-      const dateStr = String(it.appoint_time).trim().replace('T', ' ').substring(0, 10);
-      if (!eventsMap[dateStr]) eventsMap[dateStr] = [];
-      eventsMap[dateStr].push({ ...it, originalIndex: idx });
+  const mergedList = getMergedAppAndHandoverList(currentAppStaffFilter);
+  
+  // ✨ 核心修正：精準拆解日期並比較，解決「2026-8-11」與「2026-08-11」比對失敗導致彈窗沒資料的問題
+  const dayEvents = mergedList.filter(it => {
+    if (!it.eventTime) return false;
+    const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
+    const datePart = timeStr.split(' ')[0]; 
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const y = parts[0];
+      const m = String(parts[1]).trim().padStart(2, '0');
+      const d = String(parts[2]).trim().padStart(2, '0');
+      const formattedKey = `${y}-${m}-${d}`;
+      return formattedKey === dateKey;
     }
+    return false;
   });
 
-      let daysToRender = [];
+  if (dayEvents.length === 0) {
+    container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">該日期目前無預約或指定時間交接</div>';
+  } else {
+    let h = '';
+    const now = new Date();
+    const currentRocYear = now.getFullYear() - 1911;
 
-      if (calSubMode === 'month') {
-        const firstDayOfMonth = new Date(year, month, 1);
-        const lastDayOfMonth = new Date(year, month + 1, 0);
-        
-        let startDayOfWeek = firstDayOfMonth.getDay();
-        const startDate = new Date(firstDayOfMonth);
-        startDate.setDate(startDate.getDate() - startDayOfWeek);
+    dayEvents.forEach((it) => {
+      const originalIndex = mergedList.findIndex(item => item.id === it.id && item.itemType === it.itemType);
+      let timeStr = it.eventTime ? it.eventTime.replace('T', ' ').substring(0, 16) : '';
+      const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
+      const cardStyle = isOverdue ? 'card-overdue-flash' : '';
+      const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
 
-        const totalCells = (startDayOfWeek + lastDayOfMonth.getDate() > 35) ? 42 : 35;
-
-        for (let i = 0; i < totalCells; i++) {
-          const d = new Date(startDate);
-          d.setDate(d.getDate() + i);
-          daysToRender.push(d);
+      if (it.itemType === 'consult') {
+        let ageStr = "未知";
+        if (it.birthday && it.birthday.includes('/')) {
+          const bYear = parseInt(it.birthday.split('/')[0], 10);
+          if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
         }
+
+        // 一般諮詢預約小卡
+        h += `
+          <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '${it.name.replace(/'/g, "\\'")}', 'consult')">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
+              <div>
+                <span class="badge me-1" style="background-color: #84a59d; color: white;">📅 諮詢預約</span>
+                ${badgeHtml}
+              </div>
+            </div>
+            <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
+            <div class="small text-muted mt-1">⏰ 預約時間：<b>${timeStr}</b></div>
+            <div class="small text-dark text-truncate mt-1" style="max-width:400px;">📌 內容：${it.event || '無'}</div>
+            <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
+          </div>`;
       } else {
-        const curr = new Date(calCurrentDate);
-        const dayOfWeek = curr.getDay();
-        const startOfWeek = new Date(curr);
-        startOfWeek.setDate(curr.getDate() - dayOfWeek);
-
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(startOfWeek);
-          d.setDate(d.getDate() + i);
-          daysToRender.push(d);
-        }
+        // ✨ 交接項目小卡 (點擊後會觸發 selectAppCard，開啟與清單模式完全相同的處理狀態彈窗)
+        h += `
+          <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" style="border-left: 6px solid #a89a9f !important;" onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '交接項目', 'handover')">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small text-muted">⏰ 時間：<b style="font-size: 1rem; color: #5b2a30;">${timeStr}</b></span>
+              <div>
+                ${badgeHtml}
+                <span class="badge text-white" style="background-color: #a89a9f;">交接</span>
+              </div>
+            </div>
+            <div class="text-dark fw-bold mb-2 text-truncate" style="font-size: 1.05rem; max-width: 100%;">📝 內容：${it.event || '無'}</div>
+            <div class="d-flex justify-content-between align-items-center text-xs text-muted pt-2 border-top border-secondary border-opacity-10">
+              <span>📤 交接：<b>${it.from || '未知'}</b></span>
+              <span>📥 接收：<b class="text-[#5b2a30]">${it.to || '未知'}</b></span>
+            </div>
+          </div>`;
       }
-
-      // ✨ 依子模式加入 cal-submode-week 控制 Class
-      const bodyClass = (calSubMode === 'week') ? 'cal-grid-body cal-submode-week' : 'cal-grid-body';
-
-      let html = `
-        <div class="cal-grid-header">
-          <div class="text-danger">日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div class="text-primary">六</div>
-        </div>
-        <div class="${bodyClass}">
-      `;
-
-      const now = new Date();
-
-      const parseAppTime = (timeStr) => {
-        if (!timeStr) return null;
-        let formatted = String(timeStr).trim().replace(' ', 'T');
-        let d = new Date(formatted);
-        if (isNaN(d.getTime())) {
-          const clean = String(timeStr).replace(/[^\d]/g, '');
-          if (clean.length >= 12) {
-            const y = parseInt(clean.substring(0, 4));
-            const m = parseInt(clean.substring(4, 6)) - 1;
-            const day = parseInt(clean.substring(6, 8));
-            const h = parseInt(clean.substring(8, 10));
-            const min = parseInt(clean.substring(10, 12));
-            d = new Date(y, m, day, h, min);
-          }
-        }
-        return isNaN(d.getTime()) ? null : d;
-      };
-
-      daysToRender.forEach(dateObj => {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const d = String(dateObj.getDate()).padStart(2, '0');
-        const dateKey = `${y}-${m}-${d}`;
-
-        const isOtherMonth = (calSubMode === 'month' && dateObj.getMonth() !== month);
-        const isToday = (dateKey === todayStr);
-
-        const dayEvents = eventsMap[dateKey] || [];
-
-        const hasOverdueInDay = dayEvents.some(ev => {
-          const evTime = parseAppTime(ev.appoint_time);
-          const currentStatus = (ev.status || '').trim();
-          const isUnfinished = (currentStatus === '' || currentStatus === '待處理' || currentStatus === '已關懷');
-          return evTime && evTime < now && isUnfinished;
-        });
-
-        let cellClass = 'cal-day-cell';
-        if (isOtherMonth) cellClass += ' other-month';
-        if (isToday) cellClass += ' today';
-        if (hasOverdueInDay) cellClass += ' has-overdue';
-
-        let eventsHtml = '';
-        // ✨ 週模式下上限提高到 8 筆 (月模式維持 2 筆)
-        const maxTags = (calSubMode === 'week') ? 8 : 2; 
-
-        dayEvents.slice(0, maxTags).forEach(ev => {
-          const evTime = parseAppTime(ev.appoint_time);
-          const currentStatus = (ev.status || '').trim();
-          const isUnfinished = (currentStatus === '' || currentStatus === '待處理' || currentStatus === '已關懷');
-          
-          const isOverdue = evTime && evTime < now && isUnfinished;
-          const tagClass = isOverdue ? 'tag-overdue' : 'tag-appoint';
-          
-          // 週模式下多顯示「HH:mm 時間」，例如 "14:00 張采書"
-          let displayTimePrefix = '';
-          if (calSubMode === 'week' && ev.appoint_time) {
-            const timePart = String(ev.appoint_time).trim().replace('T', ' ');
-            if (timePart.length >= 16) {
-              displayTimePrefix = `${timePart.substring(11, 16)} `;
-            }
-          }
-
-          eventsHtml += `<div class="cal-event-tag ${tagClass}" title="${ev.name || '客戶'}">${displayTimePrefix}${ev.name || '客戶'}</div>`;
-        });
-
-        if (dayEvents.length > maxTags) {
-          eventsHtml += `<div class="cal-event-more">+${dayEvents.length - maxTags} 筆預約</div>`;
-        }
-
-        html += `
-          <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
-            <div class="cal-day-num">${dateObj.getDate()}</div>
-            ${eventsHtml}
-          </div>
-        `;
-      });
-
-      html += `</div>`;
-      gridContainer.innerHTML = html;
-    }
-
-    // 6. 開啟「當日預約清單 Modal」
-    function openDayAppListModal(dateKey) {
-      const container = document.getElementById('dayAppCardsContainer');
-      const titleEl = document.getElementById('dayAppModalTitle');
-      if (!container) return;
-
-      const dateParts = dateKey.split('-');
-      titleEl.innerText = `📅 ${dateParts[0]}/${dateParts[1]}/${dateParts[2]} 當日預約`;
-
-      const allAppList = cache.appointList || [];
-      const dayEvents = allAppList.filter(it => it.appoint_time && it.appoint_time.startsWith(dateKey));
-
-      if (dayEvents.length === 0) {
-        container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">該日期目前無預約名單</div>';
-      } else {
-        let h = '';
-        const now = new Date();
-        const currentRocYear = now.getFullYear() - 1911;
-
-        // 替換 openDayAppListModal 裡面的迴圈產卡邏輯
-dayEvents.forEach((it) => {
-  const originalIndex = allAppList.findIndex(item => item.id === it.id);
-
-  let timeStr = it.appoint_time ? it.appoint_time.replace('T', ' ').substring(0, 16) : '';
-  const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
-  const cardStyle = isOverdue ? 'card-overdue-flash' : '';
-  const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
-
-  let ageStr = "未知";
-  if (it.birthday && it.birthday.includes('/')) {
-    const bYear = parseInt(it.birthday.split('/')[0], 10);
-    if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
+    });
+    container.innerHTML = h;
   }
 
-  h += `
-    <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer ${cardStyle}" 
-         onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '${it.name}')">
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
-        <div>${badgeHtml}<span class="badge" style="background-color: #84a59d; color: white;">📅 已預約</span></div>
-      </div>
-      <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
-      <div class="small text-muted mt-1">⏰ 時間：<b>${timeStr}</b></div>
-      <div class="small text-dark text-truncate mt-1">📌 內容：${it.event || '無'}</div>
-      <!-- ✨ 新增：顯眼展示服務人員 -->
-      <div class="text-end text-xs text-muted mt-1 pt-1 border-top border-secondary border-opacity-10">👤 服務人：<b class="text-[#5b2a30]">${it.staff || '未註記'}</b></div>
-    </div>`;
-});
-        container.innerHTML = h;
-      }
-
-      document.getElementById('dayAppListModal').style.display = 'flex';
-    }
+  document.getElementById('dayAppListModal').style.display = 'flex';
+}
 
     function closeDayAppListModal() {
       document.getElementById('dayAppListModal').style.display = 'none';
