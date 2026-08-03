@@ -139,7 +139,32 @@
     .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 6px; }
     .dot-online { background-color: var(--btn-consult); box-shadow: 0 0 8px var(--btn-consult); animation: pulse-green 2s infinite; }
     .dot-offline { background-color: #e5989b; box-shadow: 0 0 8px #e5989b; }
-    @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(147, 162, 133, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(147, 162, 133, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(147, 162, 133, 0); } }
+    @keyframes pulse-green { 
+      0% { transform: scale(0.95); 
+        box-shadow: 0 0 0 0 rgba(147, 162, 133, 0.7); 
+      } 
+        70% { transform: scale(1); 
+          box-shadow: 0 0 0 6px rgba(147, 162, 133, 0); 
+        } 
+          100% { transform: scale(0.95); 
+            box-shadow: 0 0 0 0 rgba(147, 162, 133, 0); 
+          } 
+        }
+
+      @keyframes pulse-slow {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
     
     .clear-wrapper { position: relative; width: 100%; }
     .input-group>.clear-wrapper { flex: 1 1 auto; width: 1%; display: flex; align-items: center; }
@@ -412,42 +437,52 @@
 
     <section id="sys-grid" class="relative z-10 px-3 md:px-8 max-w-6xl mx-auto -mt-6 md:-mt-8 pb-20">
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8 overflow-hidden pt-2 px-1">
-        <div onclick="showPage('consultation')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(132, 165, 157, 0.4); border-color: rgba(132, 165, 157, 0.4);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:notebook-duotone"></iconify-icon>
-          </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢 / 預約登記</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">任何諮詢客人來這邊新增，大姐頭仔說必須留紀錄。</p>
-        </div>
+        <!-- 替換首頁 諮詢 / 預約登記 按鈕區塊 -->
+<!-- 1. 恢復原本乾淨的「諮詢 / 預約登記」方塊 -->
+<div onclick="showPage('consultation')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(132, 165, 157, 0.4); border-color: rgba(132, 165, 157, 0.4);">
+  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+    <iconify-icon icon="ph:notebook-duotone"></iconify-icon>
+  </div>
+  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢 / 預約登記</h3>
+  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">任何諮詢客人來這邊新增，大姐頭仔說必須留紀錄。</p>
+</div>
 
-        <div onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
-          <!-- ✨ 修正：往左邊與下方縮進 (right-2 top-2)，防止超出邊界 -->
-          <div id="homeOverdueBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">
-            逾期 0
-          </div>
-          
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
-          </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">預約狀態更新</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">更新狀態，留個痕跡。</p>
-        </div>
+        <!-- 替換首頁「預約狀態更新」方塊 -->
+<div onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
+  <div id="homeOverdueBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #84a59d !important; color: #ffffff !important; border: 1px solid #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 9999px; letter-spacing: 0.5px;">
+    0筆預約
+  </div>
+  
+  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+    <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
+  </div>
+  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">預約狀態更新</h3>
+  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">更新狀態，留個痕跡。</p>
+</div>
 
-        <div onclick="showPage('handover')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group" style="background-color: rgba(154, 140, 152, 0.4); border-color: rgba(154, 140, 152, 0.4);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:arrows-left-right-duotone"></iconify-icon>
-          </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作交接清單</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">交接事項必須講好，指定日期/追蹤/物流。</p>
-        </div>
+        <!-- 替換首頁 工作交接清單 按鈕區塊 -->
+<div onclick="showPage('handover')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(154, 140, 152, 0.4); border-color: rgba(154, 140, 152, 0.4);">
+  <div id="homeHandoverUnreadBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">
+    未讀 0
+  </div>
+  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+    <iconify-icon icon="ph:arrows-left-right-duotone"></iconify-icon>
+  </div>
+  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作交接清單</h3>
+  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">交接事項必須講好，指定日期/追蹤/物流。</p>
+</div>
 
-        <div onclick="showPage('searchPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(74, 78, 105, 0.3); border-color: rgba(74, 78, 105, 0.3);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:magnifying-glass-duotone"></iconify-icon>
-          </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢查詢與關懷</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">諮詢記錄這邊查，有空自己要來追蹤更新。</p>
-        </div>
+        <!-- 2. 正確放上個人未結案提示的「諮詢查詢與關懷」方塊 -->
+<div onclick="showPage('searchPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group relative" style="background-color: rgba(74, 78, 105, 0.3); border-color: rgba(74, 78, 105, 0.3);">
+  <div id="homeConsultUnfinishedBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #d6a3a5 !important; color: #ffffff !important; border: 1.5px solid #ffffff; font-size: 0.78rem; font-weight: 800; padding: 4px 8px; border-radius: 9999px; letter-spacing: 1px; animation: pulse-slow 2.5s infinite ease-in-out; box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
+    未結案 0
+  </div>
+  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+    <iconify-icon icon="ph:magnifying-glass-duotone"></iconify-icon>
+  </div>
+  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢查詢與關懷</h3>
+  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">諮詢記錄這邊查，有空自己要來追蹤更新。</p>
+</div>
 
         <div onclick="showPage('sectionChildrenSearch')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(229, 152, 155, 0.4); border-color: rgba(229, 152, 155, 0.4);">
           <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
@@ -456,13 +491,17 @@
           <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">兒控大檔查詢</h3>
           <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">就兒控檔案。</p>
         </div>
-        <div onclick="showPage('sopPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group" style="background-color: rgba(181, 131, 141, 0.35); border-color: rgba(181, 131, 141, 0.4);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:book-bookmark-duotone"></iconify-icon>
-          </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
-        </div>
+        <!-- 替換首頁 SOP 選單按鈕區塊 -->
+<div onclick="showPage('sopPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(181, 131, 141, 0.35); border-color: rgba(181, 131, 141, 0.4);">
+  <div id="homeSopUnreadBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">
+    未讀 0
+  </div>
+  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+    <iconify-icon icon="ph:book-bookmark-duotone"></iconify-icon>
+  </div>
+  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
+  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
+</div>
 
         <div onclick="window.open('https://your-new-lost-care-url.com', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
           <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
@@ -576,41 +615,54 @@
   <div id="appointment" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
     
-    <div class="card p-4" style="background: rgba(255, 250, 240, 0.98) !important;">
-      <h4 class="mb-3">📝 客戶預約狀態處理</h4>
+    <!-- 替換 #appointment 頁面內的控制列 -->
+<div class="card p-3 md:p-4 mb-4" style="background: rgba(255, 250, 240, 0.98) !important;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">📝 客戶預約狀態處理</h4>
+    
+    <!-- 1. 清單 / 日曆 主模式切換 (莫蘭迪微型圖示鈕) -->
+    <div class="btn-group btn-group-sm shadow-sm" role="group">
+      <button id="appModeBtnList" type="button" class="btn btn-primary px-2.5 py-1 fw-bold" onclick="switchAppViewMode('list')" style="font-size: 0.8rem;">📋 清單</button>
+      <button id="appModeBtnCal" type="button" class="btn btn-outline-primary px-2.5 py-1 fw-bold" onclick="switchAppViewMode('calendar')" style="font-size: 0.8rem;">📅 日曆</button>
+    </div>
+  </div>
 
-      <!-- ✨ 模式切換頁籤：清單模式 vs 日曆模式 -->
-      <div class="nav-tabs-custom mb-3">
-        <div id="appModeTabList" class="active-tab" onclick="switchAppViewMode('list')">📋 清單模式</div>
-        <div id="appModeTabCal" onclick="switchAppViewMode('calendar')">📅 日曆模式</div>
+  <!-- 2. 全部預約 vs 我的預約 雙膠囊滑動切換列 -->
+  <div class="d-flex justify-content-center align-items-center p-1 rounded-pill shadow-inner" style="background-color: rgba(142, 154, 175, 0.15);">
+    <button id="btnAppFilterMine" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 transition-all" onclick="switchAppStaffFilter('mine')" style="font-size: 0.85rem; background-color: #ffffff; color: #3e2723; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+      👤 我的預約
+    </button>
+    <button id="btnAppFilterAll" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchAppStaffFilter('all')" style="font-size: 0.85rem; background-color: transparent;">
+      👥 全部預約
+    </button>
+  </div>
+
+  <!-- 1. 清單模式容器 -->
+  <div id="appListView" class="mt-3">
+    <div id="appCardsContainer"></div>
+  </div>
+
+  <!-- 2. 日曆模式容器 -->
+  <div id="appCalendarView" class="mt-3" style="display: none;">
+    <!-- 日曆翻頁工具列 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-1">
+        <button class="btn btn-sm btn-outline-secondary px-2 py-0.5" onclick="navigateCalendar(-1)">◀</button>
+        <span id="calTitleDisplay" class="fw-bold font-serif-tc text-[#3e2723] px-1" style="font-size: 1rem; min-width: 105px; text-align: center;">2026年 8月</span>
+        <button class="btn btn-sm btn-outline-secondary px-2 py-0.5" onclick="navigateCalendar(1)">▶</button>
+        <button class="btn btn-sm btn-light border ms-1 py-0.5" style="font-size: 0.75rem;" onclick="jumpToCalendarToday()">今天</button>
       </div>
-
-      <!-- 1. 現有的清單模式容器 -->
-      <div id="appListView">
-        <div id="appCardsContainer" class="mt-2"></div>
-      </div>
-
-      <!-- 2. ✨ 新增：日曆模式容器 -->
-      <div id="appCalendarView" style="display: none;">
-        <!-- 日曆工具列：切換月份/週、月週模式切換 -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="d-flex align-items-center gap-1">
-            <button class="btn btn-sm btn-outline-secondary px-2" onclick="navigateCalendar(-1)">◀</button>
-            <span id="calTitleDisplay" class="fw-bold font-serif-tc text-[#3e2723]" style="font-size: 1.1rem; min-width: 120px; text-align: center;">2026年 8月</span>
-            <button class="btn btn-sm btn-outline-secondary px-2" onclick="navigateCalendar(1)">▶</button>
-            <button class="btn btn-sm btn-light border ms-1" onclick="jumpToCalendarToday()">今天</button>
-          </div>
-          <!-- 月 / 週 模式切換鈕 -->
-          <div class="btn-group btn-group-sm" role="group">
-            <button id="btnCalMonth" type="button" class="btn btn-primary" onclick="setCalSubMode('month')">月</button>
-            <button id="btnCalWeek" type="button" class="btn btn-outline-primary" onclick="setCalSubMode('week')">週</button>
-          </div>
-        </div>
-
-        <!-- 日曆主體格 -->
-        <div id="calendarGrid" class="bg-white rounded border p-2 shadow-sm"></div>
+      <!-- 月 / 週 模式切換鈕 -->
+      <div class="btn-group btn-group-sm" role="group">
+        <button id="btnCalMonth" type="button" class="btn btn-primary py-0.5 px-2" onclick="setCalSubMode('month')">月</button>
+        <button id="btnCalWeek" type="button" class="btn btn-outline-primary py-0.5 px-2" onclick="setCalSubMode('week')">週</button>
       </div>
     </div>
+
+    <!-- 日曆主體格 -->
+    <div id="calendarGrid" class="bg-white rounded border p-2 shadow-sm"></div>
+  </div>
+</div>
 
     <!-- ✨ 新增：點擊日曆日期後彈出的「當日預約清單 Modal」 -->
     <div id="dayAppListModal" class="modal-overlay" style="display:none; z-index: 9999 !important;">
@@ -1173,7 +1225,15 @@
 
     <!-- 可編輯的 HTML 區域 -->
     <div id="sopEditor" class="form-control mb-3" contenteditable="true" style="min-height: 180px; max-height: 300px; overflow-y: auto; border-top-left-radius:0; border-top-right-radius:0;" placeholder="請在此輸入詳細 SOP 內容..."></div>
-
+    <!-- 替換 sopEditModal 內的表單區域 -->
+<div class="mb-3 p-2 rounded bg-light border" id="sopResetLikesArea" style="display:none;">
+  <div class="form-check form-switch m-0">
+    <input class="form-check-input" type="checkbox" id="sopResetLikesSwitch">
+    <label class="form-check-label fw-bold text-danger small ms-2" for="sopResetLikesSwitch">
+      🔄 重置已閱紀錄，需重新閱讀
+    </label>
+  </div>
+</div>
     <div class="mb-3">
       <label class="small fw-bold text-muted">附件照片 (可多選，最多 5 張，自動高畫質壓縮)</label>
       <!-- 加入 multiple 屬性 -->
@@ -1458,16 +1518,23 @@
           }
         });
 
-        // ✨ 即時更新首頁 [預約狀態更新] 磚塊右上角的 Badge
-        const badgeEl = document.getElementById('homeOverdueBadge');
-        if (badgeEl) {
-          if (overdueCount > 0) {
-            badgeEl.innerText = `🚨 逾期 ${overdueCount}`;
-            badgeEl.style.setProperty('display', 'inline-block', 'important'); // 強制顯示，防 CSS 被覆蓋
-          } else {
-            badgeEl.style.setProperty('display', 'none', 'important');
-          }
-        }
+        // ✨ 統計當前登入服務人員的待處理預約筆數
+const badgeEl = document.getElementById('homeOverdueBadge');
+if (badgeEl) {
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+  
+  // 只計算服務人等於登入者的待處理預約
+  const myAppCount = cache.appointList 
+    ? cache.appointList.filter(it => it.staff === currentUser).length 
+    : 0;
+
+  if (myAppCount > 0) {
+    badgeEl.innerText = `我有${myAppCount}筆預約`;
+    badgeEl.style.setProperty('display', 'inline-block', 'important');
+  } else {
+    badgeEl.style.setProperty('display', 'none', 'important');
+  }
+}
 
         // 讀取未完成且屬於指定時間的交接提醒預約 (來自 handovers)
         const { data: handDataForApp } = await _supabase.from('handovers')
@@ -1513,7 +1580,41 @@
       } catch (err) {
         console.error("載入 Supabase 快取資料出錯:", err);
       }
+      // 在 loadData() 結尾處呼叫
+await updateHomeConsultBadge();
     }
+    // ================= 計算個人未結案諮詢數量並更新首頁 Badge =================
+async function updateHomeConsultBadge() {
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+  const badgeEl = document.getElementById('homeConsultUnfinishedBadge');
+  if (!badgeEl) return;
+
+  if (!currentUser) {
+    badgeEl.style.setProperty('display', 'none', 'important');
+    return;
+  }
+
+  try {
+    // 撈取服務人為當前登入者，且狀態為「待處理」、「已關懷」、或空白/null (未結案) 的紀錄
+    const { data, error } = await _supabase.from('consultations')
+      .select('id, status')
+      .eq('staff', currentUser)
+      .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.');
+
+    if (error) throw error;
+
+    const unfinishedCount = data ? data.length : 0;
+
+    if (unfinishedCount > 0) {
+      badgeEl.innerText = `未結案 ${unfinishedCount}`;
+      badgeEl.style.setProperty('display', 'inline-block', 'important');
+    } else {
+      badgeEl.style.setProperty('display', 'none', 'important');
+    }
+  } catch (e) {
+    console.error("計算個人未結案諮詢出錯:", e);
+  }
+}
 
     function renderTagButtons(containerId, tags) {
       const container = document.getElementById(containerId);
@@ -2689,20 +2790,69 @@
     
     let currentSelectedAppIndex = null;
 
-   function renderAppSelect() { 
+    // 全域切換變數 'all' | 'mine'
+// 全域變數：預設開啟「我的預約」
+let currentAppStaffFilter = 'mine'; 
+
+// 1. 人員過濾切換 (我的預約 vs 全部預約)
+function switchAppStaffFilter(filterMode) {
+  currentAppStaffFilter = filterMode;
+  
+  const btnMine = document.getElementById('btnAppFilterMine');
+  const btnAll = document.getElementById('btnAppFilterAll');
+  
+  if (btnMine && btnAll) {
+    if (filterMode === 'mine') {
+      btnMine.style.backgroundColor = '#ffffff';
+      btnMine.style.color = '#3e2723';
+      btnMine.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+      btnMine.classList.remove('text-muted');
+
+      btnAll.style.backgroundColor = 'transparent';
+      btnAll.style.color = '';
+      btnAll.style.boxShadow = 'none';
+      btnAll.classList.add('text-muted');
+    } else {
+      btnAll.style.backgroundColor = '#ffffff';
+      btnAll.style.color = '#3e2723';
+      btnAll.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+      btnAll.classList.remove('text-muted');
+
+      btnMine.style.backgroundColor = 'transparent';
+      btnMine.style.color = '';
+      btnMine.style.boxShadow = 'none';
+      btnMine.classList.add('text-muted');
+    }
+  }
+
+  // 同時重新渲染「清單」與「日曆」
+  renderAppSelect();
+  if (currentAppViewMode === 'calendar') {
+    renderCalendarView();
+  }
+}
+
+   // 修改 renderAppSelect() 內的資料篩選邏輯
+function renderAppSelect() { 
   const container = document.getElementById('appCardsContainer'); 
   if (!container) return;
 
   container.innerHTML = ''; 
   
-  if (typeof currentAppTab === 'undefined') {
-    currentAppTab = 1;
-  }
+  if (typeof currentAppTab === 'undefined') currentAppTab = 1;
 
-  const list = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
+  let rawList = (currentAppTab === 1) ? cache.appointList : cache.lostAppointList; 
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+
+  // ✨ 根據選擇的過濾模式篩選資料
+  let list = rawList;
+  if (currentAppStaffFilter === 'mine' && currentUser) {
+    list = rawList.filter(it => it.staff === currentUser);
+  }
   
   if (!list || list.length === 0) {
-    container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">🎉 目前沒有待處理的今日預約名單</div>';
+    const emptyTxt = currentAppStaffFilter === 'mine' ? '🎉 目前沒有屬您的待處理預約名單' : '🎉 目前沒有待處理的預約名單';
+    container.innerHTML = `<div class="alert alert-light text-center small text-muted py-4">${emptyTxt}</div>`;
     return;
   }
   
@@ -2792,138 +2942,199 @@
     }
     function filterHandSub(type, btn) { document.querySelectorAll('.hand-sub-btn').forEach(b => { b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill hand-sub-btn'; }); btn.className = 'btn btn-sm btn-primary px-3 rounded-pill hand-sub-btn active'; document.querySelectorAll('.handover-main-card').forEach(card => { const cardType = card.getAttribute('data-type') || ""; const isTimed = cardType.includes("指定"); const targetStr = card.getAttribute('data-date'); const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); let isMatch = (type === '全部') || (type === '指定' && isTimed) || (type === '追蹤' && cardType.includes("追蹤")) || (type === '物流' && cardType.includes("物流")) || (type === '過期' && isOverdue); card.style.display = isMatch ? 'block' : 'none'; }); }
     
-    function renderHandoverList() { 
-      const listDiv = document.getElementById('handoverListView'); 
-      if (!cache.handoverList || cache.handoverList.length === 0) { 
-        listDiv.innerHTML = '<div class="alert alert-light text-center">目前無待辦交接工作</div>'; return; 
-      } 
-      let countAll = cache.handoverList.length; 
-      let countTimed = 0; 
-      let countTrack = 0; 
-      let countLogistics = 0; 
-      let countOverdue = 0; 
-      cache.handoverList.forEach(it => {
-        const isTimed = it.type.includes("指定"); 
-        if (isTimed) { countTimed++; 
-                      if (it.targetDate !== '無' && new Date(it.targetDate) < new Date()) countOverdue++; 
-                     } else if (it.type.includes("物流")) { countLogistics++; 
-                                                                                        } else { countTrack++; } }); 
-      let sortedList = [...cache.handoverList].sort((a, b) => { 
-        const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); 
-        const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); 
-        const isOverB = isTimedB && b.targetDate !== '無' && new Date(b.targetDate) < new Date(); 
-        if (isOverA && !isOverB) return -1; if (!isOverA && isOverB) return 1; if (isTimedA && !isTimedB) return -1; 
-        if (!isTimedA && isTimedB) return 1; if (isTimedA && isTimedB) return new Date(a.targetDate) - new Date(b.targetDate); return 0; });
-      let h = `<div class="sub-filter-scroll mb-2">
-              <button class="btn btn-sm btn-primary hand-sub-btn active px-3 rounded-pill" onclick="filterHandSub('全部', this)">全部 ${countAll}</button>
-              <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button>
-              <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button>
-              <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
-              <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button>
-              <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill ms-auto" style="border-color: #a89a9f; color: #a89a9f;" onclick="openClosedHandoverSearch()">🗂️ 已結案</button></div>`;
-          sortedList.forEach((it, index) => { const isTimed = it.type.includes("指定"); 
-                                             const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
-                                             let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
-                                             if (isOverdue) cardClass += " handover-overdue"; 
-                                             
-                                             let pushBadge = '';
-                                             const pStatus = String(it.pushStatus || '').trim();
-                                             const pTime = String(it.pushTime || '').trim();
+    // ================= 交接清單未讀提示與個人按讚連動 =================
 
-                                             if (pStatus === 'Pending' && pTime && pTime !== '無') {
-                                               const targetTime = new Date(pTime.replace(/-/g, '/'));
-                                               const now = new Date();
-                                               
-                                               if (targetTime > now) {
-                                                 pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
-                                                                 <span class="spinner-grow spinner-grow-sm me-2"></span>
-                                                                 <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
-                                                               </div>`;
-                                               }
-                                             }
+function renderHandoverList() { 
+  const listDiv = document.getElementById('handoverListView'); 
+  if (!cache.handoverList || cache.handoverList.length === 0) { 
+    listDiv.innerHTML = '<div class="alert alert-light text-center">目前無待辦交接工作</div>'; 
+    // 無資料時隱藏首頁未讀 Badge
+    const homeBadge = document.getElementById('homeHandoverUnreadBadge');
+    if (homeBadge) homeBadge.style.setProperty('display', 'none', 'important');
+    return; 
+  } 
 
-                                             const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
-                                             const hasLiked = it.likes.some(l => l.staff_name === currentUser);
-                                             const likeIcon = hasLiked ? '❤️' : '🤍';
-                                             const hImgHtml = it.imageUrl ? `<div class="mt-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 120px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
-                                             // 整理按讚名單字串
-                                             const likedNames = it.likes.map(l => l.staff_name).join(', ');
-                                             const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
-                                             // 5. 留言數顯眼化
-                                             const commentCountHtml = it.comments.length > 0 
-                                                ? `<span class="fw-bold" style="color: #d9534f; font-size: 0.95rem;">${it.comments.length}</span>` 
-                                                : `<span>0</span>`;
+  const currentUser = localStorage.getItem("current_staff_name") || "";
 
-                                             let commentsHtml = it.comments.map(c => {
-                                                // 3. 處理時間格式 yyyy/mm/dd HH:mm
-                                                const cTime = new Date(c.created_at);
-                                                const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
-                                                
-                                                return `
-                                                <div class="mb-2 p-2 bg-white rounded border border-secondary border-opacity-10 small" id="comment_${c.id}">
-                                                  <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span>
-                                                    <span class="text-muted" style="font-size: 0.7rem;">${formattedTime} ${c.is_edited ? '(已編輯)' : ''}</span>
-                                                  </div>
-                                                  <div style="white-space: pre-wrap; font-size: 0.85rem;">${c.content}</div>
-                                                  ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 80px; border-radius: 5px; margin-top: 5px; cursor: pointer; border: 1px solid #eee;">` : ''}
-                                                  ${c.commenter === currentUser ? `
-                                                    <div class="text-end mt-1">
-                                                      <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment('${c.id}', '${c.content.replace(/'/g, "\\'")}')">編輯</button>
-                                                      <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment('${c.id}')">刪除</button>
-                                                    </div>
-                                                  ` : ''}
-                                                </div>
-                                                `;
-                                             }).join('');
+  // 1. 計算當前登入者尚未按讚的交接數量
+  const totalUnread = cache.handoverList.filter(it => !it.likes.some(l => l.staff_name === currentUser)).length;
 
-                                             h += `
-                                             <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
-                                               <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
-                                               
-                                               <div class="d-flex justify-content-start align-items-center mb-2">
-                                                 <!-- 1. 移除了左上角的紅色 X -->
-                                                 <button class="btn btn-sm btn-outline-success py-0 px-2 me-2 shadow-sm" style="font-size: 0.75rem; border-color: #84a59d; color: #84a59d;" onclick="closeHandoverCase(${it.rowIndex})">✅ 結案</button>
-                                                 <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
-                                                 <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small>
-                                               </div>
-                                               
-                                               <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}${hImgHtml}</div>${pushBadge}
-                                               
-                                               <div class="row g-0 small text-muted pt-1">
-                                                 <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}</div>
-                                               </div>
-
-                                               <div class="d-flex justify-content-start align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
-                                                 <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">
-                                                   ${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span>
-                                                 </button>
-                                                 
-                                                 <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.8rem;">
-                                                   💬 <span class="mx-1">${commentCountHtml}</span> 則 <span class="ms-1" style="font-size: 0.7rem; color: #7d8b9e;">🔽</span>
-                                                 </button>
-                                               </div>
-
-                                               <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
-                                                 <div id="comments_list_${it.rowIndex}" style="max-height: 280px; overflow-y: auto;" class="mb-2 pe-1">
-                                                    ${commentsHtml || '<div class="text-center small text-muted py-2">目前尚無討論紀錄</div>'}
-                                                 </div>
-                                                 <div class="d-flex flex-column gap-2 p-2 rounded" style="background: rgba(142, 154, 175, 0.08);">
-                                                    <textarea id="new_cmt_${it.rowIndex}" class="form-control form-control-sm border-0 shadow-sm" rows="2" placeholder="以 [${currentUser}] 身份留言..."></textarea>
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                      <div class="d-flex align-items-center">
-                                                        <label for="cmt_img_${it.rowIndex}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2 me-2">📎 附圖</label>
-                                                        <input type="file" id="cmt_img_${it.rowIndex}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.rowIndex}')">
-                                                        <img id="cmt_preview_${it.rowIndex}" style="height: 25px; display: none; border-radius: 4px; border: 1px solid #ccc;">
-                                                      </div>
-                                                      <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverComment(${it.rowIndex})">送出留言</button>
-                                                    </div>
-                                                 </div>
-                                               </div>
-                                             </div>`;
-                                           }); 
-      listDiv.innerHTML = h; 
+  // 2. 即時更新首頁交接磚塊右上角的小紅圈 Badge
+  const homeBadge = document.getElementById('homeHandoverUnreadBadge');
+  if (homeBadge) {
+    if (totalUnread > 0) {
+      homeBadge.innerText = `未讀 ${totalUnread}`;
+      homeBadge.style.setProperty('display', 'inline-block', 'important');
+    } else {
+      homeBadge.style.setProperty('display', 'none', 'important');
     }
+  }
+
+  let countAll = cache.handoverList.length; 
+  let countTimed = 0; 
+  let countTrack = 0; 
+  let countLogistics = 0; 
+  let countOverdue = 0; 
+
+  cache.handoverList.forEach(it => {
+    const isTimed = it.type.includes("指定"); 
+    if (isTimed) { 
+      countTimed++; 
+      if (it.targetDate !== '無' && new Date(it.targetDate) < new Date()) countOverdue++; 
+    } else if (it.type.includes("物流")) { 
+      countLogistics++; 
+    } else { 
+      countTrack++; 
+    } 
+  }); 
+
+  let sortedList = [...cache.handoverList].sort((a, b) => { 
+    const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); 
+    const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); 
+    const isOverB = isTimedB && b.targetDate !== '無' && new Date(b.targetDate) < new Date(); 
+    if (isOverA && !isOverB) return -1; if (!isOverA && isOverB) return 1; if (isTimedA && !isTimedB) return -1; 
+    if (!isTimedA && isTimedB) return 1; if (isTimedA && isTimedB) return new Date(a.targetDate) - new Date(b.targetDate); return 0; 
+  });
+
+  let h = `<div class="sub-filter-scroll mb-2">
+            <button class="btn btn-sm btn-primary hand-sub-btn active px-3 rounded-pill" onclick="filterHandSub('全部', this)">全部 ${countAll}</button>
+            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button>
+            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button>
+            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
+            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button>
+            <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill ms-auto" style="border-color: #a89a9f; color: #a89a9f;" onclick="openClosedHandoverSearch()">🗂️ 已結案</button></div>`;
+
+  sortedList.forEach((it, index) => { 
+    const isTimed = it.type.includes("指定"); 
+    const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
+    let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
+    if (isOverdue) cardClass += " handover-overdue"; 
+    
+    let pushBadge = '';
+    const pStatus = String(it.pushStatus || '').trim();
+    const pTime = String(it.pushTime || '').trim();
+
+    if (pStatus === 'Pending' && pTime && pTime !== '無') {
+      const targetTime = new Date(pTime.replace(/-/g, '/'));
+      const now = new Date();
+      if (targetTime > now) {
+        pushBadge = `<div class="mt-2 px-2 py-1 rounded small d-flex align-items-center" style="background-color: #fff3cd; border: 1px dashed #ffc107; color: #856404;">
+                       <span class="spinner-grow spinner-grow-sm me-2"></span>
+                       <span>⏳ 預計 <b>${pTime.substring(11,16)}</b> 推播</span>
+                     </div>`;
+      }
+    }
+
+    const hasLiked = it.likes.some(l => l.staff_name === currentUser);
+    const likeIcon = hasLiked ? '❤️' : '🤍';
+    const hImgHtml = it.imageUrl ? `<div class="mt-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 120px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
+    const likedNames = it.likes.map(l => l.staff_name).join(', ');
+    const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
+
+    // 3. 個別卡片未讀標籤：當前登入者若未按讚則顯示 [未讀]
+    // ✨ 升級版：#d6a3a5 煙燻玫瑰粉底色 + 白邊框 + 慢速呼吸柔和閃爍
+const unreadBadgeHtml = !hasLiked 
+  ? `<span class="badge me-2 shadow-sm" 
+           style="background-color: #d6a3a5 !important; 
+                  color: #ffffff !important; 
+                  border: 1.5px solid #ffffff; 
+                  font-size: 0.78rem; 
+                  font-weight: 800; 
+                  padding: 4px 8px; 
+                  letter-spacing: 1px; 
+                  animation: pulse-slow 2.5s infinite ease-in-out;
+                  box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
+       未讀
+     </span>` 
+  : '';
+
+    const commentCountHtml = it.comments.length > 0 
+      ? `<span class="fw-bold" style="color: #d9534f; font-size: 0.95rem;">${it.comments.length}</span>` 
+      : `<span>0</span>`;
+
+    let commentsHtml = it.comments.map(c => {
+      const cTime = new Date(c.created_at);
+      const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+      
+      return `
+      <div class="mb-2 p-2 bg-white rounded border border-secondary border-opacity-10 small" id="comment_${c.id}">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span>
+          <span class="text-muted" style="font-size: 0.7rem;">${formattedTime} ${c.is_edited ? '(已編輯)' : ''}</span>
+        </div>
+        <div style="white-space: pre-wrap; font-size: 0.85rem;">${c.content}</div>
+        ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 80px; border-radius: 5px; margin-top: 5px; cursor: pointer; border: 1px solid #eee;">` : ''}
+        ${c.commenter === currentUser ? `
+          <div class="text-end mt-1">
+            <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment('${c.id}', '${c.content.replace(/'/g, "\\'")}')">編輯</button>
+            <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment('${c.id}')">刪除</button>
+          </div>
+        ` : ''}
+      </div>`;
+    }).join('');
+
+    h += `
+    <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
+      <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+      
+      <div class="d-flex justify-content-start align-items-center mb-2">
+        <button class="btn btn-sm btn-outline-success py-0 px-2 me-2 shadow-sm" style="font-size: 0.75rem; border-color: #84a59d; color: #84a59d;" onclick="closeHandoverCase(${it.rowIndex})">✅ 結案</button>
+        ${unreadBadgeHtml}
+        <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
+        <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.targetDate}</small>
+      </div>
+      
+      <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}${hImgHtml}</div>${pushBadge}
+      
+      <div class="row g-0 small text-muted pt-1">
+        <div class="col-6">📤 交接: ${it.from}</div><div class="col-6 text-end">📥 接收: ${it.to}</div>
+      </div>
+
+      <div class="d-flex justify-content-start align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
+        <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">
+          ${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span>
+        </button>
+        
+        <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.8rem;">
+          💬 <span class="mx-1">${commentCountHtml}</span> 則 <span class="ms-1" style="font-size: 0.7rem; color: #7d8b9e;">🔽</span>
+        </button>
+      </div>
+
+      <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
+        <div id="comments_list_${it.rowIndex}" style="max-height: 280px; overflow-y: auto;" class="mb-2 pe-1">
+           ${commentsHtml || '<div class="text-center small text-muted py-2">目前尚無討論紀錄</div>'}
+        </div>
+        <div class="d-flex flex-column gap-2 p-2 rounded" style="background: rgba(142, 154, 175, 0.08);">
+           <textarea id="new_cmt_${it.rowIndex}" class="form-control form-control-sm border-0 shadow-sm" rows="2" placeholder="以 [${currentUser}] 身份留言..."></textarea>
+           <div class="d-flex justify-content-between align-items-center">
+             <div class="d-flex align-items-center">
+               <label for="cmt_img_${it.rowIndex}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2 me-2">📎 附圖</label>
+               <input type="file" id="cmt_img_${it.rowIndex}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.rowIndex}')">
+               <img id="cmt_preview_${it.rowIndex}" style="height: 25px; display: none; border-radius: 4px; border: 1px solid #ccc;">
+             </div>
+             <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverComment(${it.rowIndex})">送出留言</button>
+           </div>
+        </div>
+      </div>
+    </div>`;
+  }); 
+  listDiv.innerHTML = h; 
+}
+async function toggleHandoverLike(handoverId) {
+  const staff = localStorage.getItem("current_staff_name");
+  if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
+  
+  try {
+    const { data: existing } = await _supabase.from('handover_likes').select('id').eq('handover_id', handoverId).eq('staff_name', staff).single();
+    if (existing) {
+      await _supabase.from('handover_likes').delete().eq('id', existing.id);
+    } else {
+      await _supabase.from('handover_likes').insert([{ handover_id: handoverId, staff_name: staff }]);
+    }
+    // 重新載入資料並更新首頁與交接卡片狀態
+    await loadData(); 
+  } catch (e) { alert("操作失敗: " + e.message); }
+}
 
     async function renderSpecialList() { 
       // 🛠️ 1. 核心變更：不再過濾舊表，直接在 consultations 裡撈出 [待處理/已關懷] 的未結案名單
@@ -3260,20 +3471,6 @@
       el.style.display = (el.style.display === 'none') ? 'block' : 'none';
     }
 
-    async function toggleHandoverLike(handoverId) {
-      const staff = localStorage.getItem("current_staff_name");
-      if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
-      
-      try {
-        const { data: existing } = await _supabase.from('handover_likes').select('id').eq('handover_id', handoverId).eq('staff_name', staff).single();
-        if (existing) {
-          await _supabase.from('handover_likes').delete().eq('id', existing.id);
-        } else {
-          await _supabase.from('handover_likes').insert([{ handover_id: handoverId, staff_name: staff }]);
-        }
-        loadData(); 
-      } catch (e) { alert("操作失敗: " + e.message); }
-    }
 
     async function submitHandoverComment(handoverId) {
       const staff = localStorage.getItem("current_staff_name");
@@ -3615,335 +3812,374 @@
       renderSopModalImagePreviews();
     }
 
-    // 4. 開啟 SOP 編輯彈窗 (解析單圖與多圖相容陣列)
-    function openSopModal(sopData = null) {
-      currentSopImages = [];
+    // ================= 全新個人化 SOP 聯動邏輯 =================
 
-      if (sopData) {
-        document.getElementById('sopModalHeader').innerText = "✏️ 編輯標準作業流程 (SOP)";
-        document.getElementById('sopEditId').value = sopData.id;
-        document.getElementById('sopTitle').value = sopData.title || '';
-        document.getElementById('sopCategory').value = sopData.category || '';
-        document.getElementById('sopKeywords').value = sopData.keywords || '';
-        document.getElementById('sopEditor').innerHTML = sopData.content || '';
-        
-        // 解析圖片：相容舊版單圖字串與新版 JSON 陣列
-        if (sopData.image_url) {
-          try {
-            if (sopData.image_url.startsWith('[')) {
-              currentSopImages = JSON.parse(sopData.image_url);
-            } else {
-              currentSopImages = [sopData.image_url];
-            }
-          } catch (e) {
-            currentSopImages = [sopData.image_url];
-          }
-        }
-      } else {
-        document.getElementById('sopModalHeader').innerText = "➕ 新增標準作業流程 (SOP)";
-        document.getElementById('sopEditId').value = '';
-        document.getElementById('sopTitle').value = '';
-        document.getElementById('sopCategory').value = '';
-        document.getElementById('sopKeywords').value = '';
-        document.getElementById('sopEditor').innerHTML = '';
-      }
+// 1. 開啟 SOP 編輯 Modal (自動判斷新增/編輯並顯示重置開關)
+function openSopModal(sopData = null) {
+  currentSopImages = [];
+  const resetArea = document.getElementById('sopResetLikesArea');
+  const resetSwitch = document.getElementById('sopResetLikesSwitch');
 
-      renderSopModalImagePreviews();
-      document.getElementById('sopEditModal').style.display = 'flex';
-    }
-
-    // 5. 儲存 SOP (將多圖陣列轉為 JSON 字串存庫)
-    async function submitSop() {
-      const id = document.getElementById('sopEditId').value;
-      const title = document.getElementById('sopTitle').value.trim();
-      const category = document.getElementById('sopCategory').value.trim();
-      const keywords = document.getElementById('sopKeywords').value.trim();
-      const content = document.getElementById('sopEditor').innerHTML.trim();
-
-      const currentUser = localStorage.getItem("current_staff_name") || "未署名同仁";
-
-      if (!title) return alert("請輸入 SOP 主旨 / 標題");
-      if (!category) return alert("請輸入或選擇 SOP 分類");
-      if (!content || content === '<br>') return alert("請輸入 SOP 詳細內文");
-
-      document.getElementById('loadingText').innerText = "⚙️ 正在同步 SOP 知識庫...";
-      document.getElementById('loadingOverlay').style.display = 'flex';
-
-      // 序列化圖片陣列
-      const finalImagePayload = currentSopImages.length > 0 ? JSON.stringify(currentSopImages) : null;
-
-      const payload = {
-        title,
-        category,
-        keywords,
-        content,
-        image_url: finalImagePayload,
-        last_edited_by: currentUser,
-        updated_at: new Date().toISOString()
-      };
-
-      try {
-        if (id) {
-          const { error } = await _supabase.from('sops').update(payload).eq('id', id);
-          if (error) throw error;
-          alert("🎉 SOP 內容已成功修改！");
-        } else {
-          const { error } = await _supabase.from('sops').insert([payload]);
-          if (error) throw error;
-          alert("🎉 新 SOP 已成功建檔存庫！");
-        }
-
-        document.getElementById('loadingOverlay').style.display = 'none';
-        closeSopModal();
-        searchSops();
-      } catch (e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("儲存 SOP 失敗: " + e.message);
-      }
-    }
-
+  if (sopData) {
+    document.getElementById('sopModalHeader').innerText = "✏️ 編輯標準作業流程 (SOP)";
+    document.getElementById('sopEditId').value = sopData.id;
+    document.getElementById('sopTitle').value = sopData.title || '';
+    document.getElementById('sopCategory').value = sopData.category || '';
+    document.getElementById('sopKeywords').value = sopData.keywords || '';
+    document.getElementById('sopEditor').innerHTML = sopData.content || '';
     
+    if (resetArea) resetArea.style.display = 'block';
+    if (resetSwitch) resetSwitch.checked = false;
+
+    if (sopData.image_url) {
+      try {
+        if (sopData.image_url.startsWith('[')) {
+          currentSopImages = JSON.parse(sopData.image_url);
+        } else {
+          currentSopImages = [sopData.image_url];
+        }
+      } catch (e) {
+        currentSopImages = [sopData.image_url];
+      }
+    }
+  } else {
+    document.getElementById('sopModalHeader').innerText = "➕ 新增標準作業流程 (SOP)";
+    document.getElementById('sopEditId').value = '';
+    document.getElementById('sopTitle').value = '';
+    document.getElementById('sopCategory').value = '';
+    document.getElementById('sopKeywords').value = '';
+    document.getElementById('sopEditor').innerHTML = '';
+    if (resetArea) resetArea.style.display = 'none';
+    if (resetSwitch) resetSwitch.checked = false;
+  }
+
+  renderSopModalImagePreviews();
+  document.getElementById('sopEditModal').style.display = 'flex';
+}
+
+// 2. 儲存 SOP (支援選擇性重置按讚紀錄)
+async function submitSop() {
+  const id = document.getElementById('sopEditId').value;
+  const title = document.getElementById('sopTitle').value.trim();
+  const category = document.getElementById('sopCategory').value.trim();
+  const keywords = document.getElementById('sopKeywords').value.trim();
+  const content = document.getElementById('sopEditor').innerHTML.trim();
+  const resetLikes = document.getElementById('sopResetLikesSwitch') ? document.getElementById('sopResetLikesSwitch').checked : false;
+
+  const currentUser = localStorage.getItem("current_staff_name") || "未署名同仁";
+
+  if (!title) return alert("請輸入 SOP 主旨 / 標題");
+  if (!category) return alert("請輸入或選擇 SOP 分類");
+  if (!content || content === '<br>') return alert("請輸入 SOP 詳細內文");
+
+  document.getElementById('loadingText').innerText = "⚙️ 正在同步 SOP 知識庫...";
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  const finalImagePayload = currentSopImages.length > 0 ? JSON.stringify(currentSopImages) : null;
+
+  const payload = {
+    title,
+    category,
+    keywords,
+    content,
+    image_url: finalImagePayload,
+    last_edited_by: currentUser,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    if (id) {
+      const { error } = await _supabase.from('sops').update(payload).eq('id', id);
+      if (error) throw error;
+
+      // 如果勾選了重置按讚紀錄，一併清空 sop_likes 表內該 SOP 的紀錄
+      if (resetLikes) {
+        await _supabase.from('sop_likes').delete().eq('sop_id', id);
+      }
+      alert("🎉 SOP 內容已成功修改！" + (resetLikes ? "\n（已重置該條目全員未讀狀態）" : ""));
+    } else {
+      const { error } = await _supabase.from('sops').insert([payload]);
+      if (error) throw error;
+      alert("🎉 新 SOP 已成功建檔存庫！");
+    }
+
+    document.getElementById('loadingOverlay').style.display = 'none';
+    closeSopModal();
+    searchSops();
+  } catch (e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("儲存 SOP 失敗: " + e.message);
+  }
+}
+
+// 3. 搜尋與計算個人未讀狀態 (更新首頁與快篩按鈕 Badge)
+async function searchSops(filterCategory = null) {
+  if (filterCategory !== null) {
+    currentSopCategoryFilter = filterCategory;
+  }
+
+  const rawSearch = document.getElementById('sopSearchInput') ? document.getElementById('sopSearchInput').value.trim() : '';
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+
+  try {
+    let query = _supabase.from('sops')
+      .select('*')
+      .order('is_pinned', { ascending: false })
+      .order('updated_at', { ascending: false });
+
+    if (rawSearch) {
+      const terms = rawSearch.split('%').map(t => t.trim()).filter(t => t);
+      terms.forEach(term => {
+        query = query.or(`title.ilike.%${term}%,keywords.ilike.%${term}%,category.ilike.%${term}%,content.ilike.%${term}%`);
+      });
+    }
+
+    const { data: sopData, error } = await query;
+    if (error) throw error;
+
+    const { data: likesData } = await _supabase.from('sop_likes').select('*');
+
+    const combinedData = (sopData || []).map(sop => ({
+      ...sop,
+      likes: (likesData || []).filter(l => l.sop_id === sop.id)
+    }));
+
+    // 計算個人未讀數量（只要登入者沒在 likes 裡面就算未讀）
+    const totalUnread = combinedData.filter(sop => !sop.likes.some(l => l.staff_name === currentUser)).length;
+
+    // 更新首頁選單上的小紅圈 Badge
+    const homeBadge = document.getElementById('homeSopUnreadBadge');
+    if (homeBadge) {
+      if (totalUnread > 0) {
+        homeBadge.innerText = `未讀 ${totalUnread}`;
+        homeBadge.style.setProperty('display', 'inline-block', 'important');
+      } else {
+        homeBadge.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    renderSopCategoryFilters(combinedData);
+
+    let filteredData = combinedData;
+    if (currentSopCategoryFilter !== '全部') {
+      filteredData = combinedData.filter(item => item.category === currentSopCategoryFilter);
+      if (filteredData.length === 0 && combinedData.length > 0) {
+        currentSopCategoryFilter = '全部';
+        filteredData = combinedData;
+        renderSopCategoryFilters(combinedData);
+      }
+    }
+
+    renderSopList(filteredData, rawSearch);
+  } catch (e) {
+    console.error("搜尋 SOP 發生錯誤:", e);
+  }
+}
+
+// 4. 動態渲染快篩按鈕 (小紅圈提示該分類下登入者的未讀數量)
+function renderSopCategoryFilters(sopList) {
+  const container = document.getElementById('sopCategoryFilter');
+  if (!container) return;
+
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+
+  // 判斷個人是否未讀
+  const isUnread = (sop) => !sop.likes.some(l => l.staff_name === currentUser);
+
+  const unreadCountAll = sopList.filter(isUnread).length;
+
+  const allBadgeHtml = unreadCountAll > 0 
+    ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" 
+             style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${unreadCountAll}</span>` 
+    : '';
+
+  const categories = Array.from(new Set(sopList.map(item => item.category).filter(c => c)));
+
+  let btnHtml = `
+    <div class="d-inline-block me-2 mb-2" style="position: relative !important; overflow: visible !important;">
+      <button class="btn btn-sm px-3 py-1 rounded-pill filter-sop-cat-btn ${currentSopCategoryFilter === '全部' ? 'btn-primary active' : 'btn-outline-secondary bg-white'}" 
+              style="font-size: 0.75rem; position: relative; z-index: 1;" onclick="searchSops('全部')">
+        全部 (${sopList.length})
+      </button>
+      ${allBadgeHtml}
+    </div>
+  `;
+
+  categories.forEach(cat => {
+    const catSops = sopList.filter(item => item.category === cat);
+    const count = catSops.length;
+    const unreadInCat = catSops.filter(isUnread).length;
+
+    const catBadgeHtml = unreadInCat > 0 
+      ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" 
+               style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${unreadInCat}</span>` 
+      : '';
+
+    const isActive = (currentSopCategoryFilter === cat);
+    const btnClass = isActive ? 'btn-primary active' : 'btn-outline-secondary bg-white';
+
+    btnHtml += `
+      <div class="d-inline-block me-2 mb-2" style="position: relative !important; overflow: visible !important;">
+        <button class="btn btn-sm px-3 py-1 rounded-pill filter-sop-cat-btn ${btnClass}" 
+                style="font-size: 0.75rem; position: relative; z-index: 1;" onclick="searchSops('${cat}')">
+          ${cat} (${count})
+        </button>
+        ${catBadgeHtml}
+      </div>
+    `;
+  });
+
+  container.innerHTML = btnHtml;
+}
+
+// 5. 渲染 SOP 卡片列表 (左上顯示 [未讀] 與 [幾人未完成])
+function renderSopList(sopList, searchKeyword) {
+  const container = document.getElementById('sopListContainer');
+  if (!container) return;
+
+  if (sopList.length === 0) {
+    container.innerHTML = '<div class="alert alert-warning text-center small">查無符合條件的 SOP 項目。</div>';
+    return;
+  }
+
+  let html = '';
+  const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
+  const totalStaffCount = (cache.staff && cache.staff.length > 0) ? cache.staff.length : 7; // 總員工數預設
+
+  sopList.forEach((sop) => {
+    const cardId = `sop_card_${sop.id}`;
+    
+    const likesArr = sop.likes || [];
+    const hasLiked = likesArr.some(l => l.staff_name === currentUser);
+    const likeIcon = hasLiked ? '❤️' : '🤍';
+    const likedNames = likesArr.map(l => l.staff_name).join(', ');
+    const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
+
+    const updatedTime = new Date(sop.updated_at).toLocaleString('zh-TW', { hour12: false });
+    
+    // 未讀 / 未完成狀態計算
+    const unreadStaffCount = Math.max(0, totalStaffCount - likesArr.length);
+    let statusBadgeHtml = '';
+
+    // ✨ SOP 小卡升級版：#d6a3a5 煙燻玫瑰粉底色 + 白邊框 + 慢速呼吸柔和閃爍
+if (!hasLiked) {
+  statusBadgeHtml = `<span class="badge me-1 shadow-sm" 
+                           style="background-color: #d6a3a5 !important; 
+                                  color: #ffffff !important; 
+                                  border: 1.5px solid #ffffff; 
+                                  font-size: 0.75rem; 
+                                  font-weight: 800; 
+                                  padding: 4px 8px; 
+                                  letter-spacing: 1px; 
+                                  animation: pulse-slow 2.5s infinite ease-in-out;
+                                  box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
+                       未讀
+                     </span>`;
+} else if (unreadStaffCount > 0) {
+      statusBadgeHtml = `<span class="badge bg-warning text-dark px-2 py-1 me-1 shadow-sm" style="font-size:0.75rem;"> ${unreadStaffCount} 人未讀</span>`;
+    } else {
+      statusBadgeHtml = `<span class="badge bg-success text-white px-2 py-1 me-1 shadow-sm" style="font-size:0.75rem;">全員已閱</span>`;
+    }
+
+    const isPinned = !!sop.is_pinned;
+    const pinIcon = isPinned ? '📌 已置頂' : '📌 置頂';
+    const pinBtnClass = isPinned ? 'text-danger fw-bold' : 'text-muted';
+    const borderStyle = isPinned 
+      ? 'border-left: 6px solid #d9534f !important; background-color: rgba(255, 250, 245, 0.95);' 
+      : 'border-left: 6px solid #84a59d !important;';
+
+    const highlightedTitle = highlightSopText(sop.title, searchKeyword);
+    const highlightedContent = highlightSopText(sop.content, searchKeyword);
+    const highlightedCategory = highlightSopText(sop.category, searchKeyword);
+    const highlightedKeywords = sop.keywords 
+      ? sop.keywords.split(/[\s,]+/).map(k => `<span class="badge bg-light text-dark border me-1">${highlightSopText(k, searchKeyword)}</span>`).join('') 
+      : '無';
+
+    let imgList = [];
+    if (sop.image_url) {
+      try {
+        if (sop.image_url.startsWith('[')) {
+          imgList = JSON.parse(sop.image_url);
+        } else {
+          imgList = [sop.image_url];
+        }
+      } catch (e) {
+        imgList = [sop.image_url];
+      }
+    }
+
+    let imgHtml = '';
+    if (imgList.length > 0) {
+      let imgsGroup = imgList.map(url => `
+        <img src="${url}" onclick="openImageViewer('${url}')" style="height: 90px; width: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid #ccc; flex-shrink: 0;" alt="附件照片">
+      `).join('');
+
+      imgHtml = `<div class="d-flex gap-2 mt-2 overflow-auto pb-1" style="scrollbar-width: none;">${imgsGroup}</div>`;
+    }
+
+    html += `
+      <div class="result-card mb-4 bg-white p-3 shadow-sm" id="${cardId}" style="${borderStyle} position: relative;">
+        <div onclick="shareCard('${cardId}', 'SOP_${sop.title}')" style="position:absolute; top:12px; right:12px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:5;" title="截圖分享">📤</div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2 pe-4">
+          <div class="d-flex align-items-center flex-wrap gap-1">
+            ${statusBadgeHtml}
+            <h4 class="fw-bold mb-0 text-[#3e2723] font-serif-tc" style="font-size: 1.15rem;">${highlightedTitle}</h4>
+          </div>
+          <span class="badge text-white px-2 py-1" style="background-color: #84a59d; font-size: 0.75rem;">${highlightedCategory}</span>
+        </div>
+
+        <div class="small text-muted mb-2" style="font-size: 0.8rem;">
+          <b>關鍵字:</b> ${highlightedKeywords}
+        </div>
+
+        <div class="p-3 bg-light rounded border mb-2 text-dark" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">${highlightedContent}</div>
+
+        ${imgHtml}
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm p-1 border-0 bg-transparent ${pinBtnClass}" title="切換置頂" onclick="toggleSopPin(${sop.id}, ${isPinned})" style="font-size: 0.85rem;">${pinIcon}</button>
+            <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick='openSopModal(${JSON.stringify(sop).replace(/'/g, "&apos;")})' style="font-size: 0.85rem;">✏️ 編輯</button>
+            <button class="btn btn-sm p-1 border-0 text-danger bg-transparent fw-bold" title="刪除" onclick="deleteSopWithGlobalAuth(${sop.id}, '${sop.title.replace(/'/g, "\\'")}')" style="font-size: 0.85rem;">🗑️ 刪除</button>
+
+            <button class="btn btn-sm bg-light border py-0 px-2 fw-bold text-[#d9534f] rounded-pill shadow-sm d-flex align-items-center" style="font-size: 0.75rem;" title="${likeTooltip}" onclick="toggleSopLike(${sop.id})">
+              ${likeIcon} <span class="ms-1">${likesArr.length} 人已閱</span>
+            </button>
+          </div>
+
+          <div class="text-end text-muted small ms-auto" style="font-size: 0.75rem; white-space: nowrap;">
+            🕒 ${updatedTime} | 編輯人: <span class="fw-bold text-[#5b2a30]">${sop.last_edited_by || '系統'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// 6. 按讚切換 (立刻更新狀態並重新計算未讀數)
+async function toggleSopLike(sopId) {
+  const staff = localStorage.getItem("current_staff_name");
+  if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
+  
+  try {
+    const { data: existing } = await _supabase.from('sop_likes').select('id').eq('sop_id', sopId).eq('staff_name', staff).single();
+    if (existing) {
+      await _supabase.from('sop_likes').delete().eq('id', existing.id);
+    } else {
+      await _supabase.from('sop_likes').insert([{ sop_id: sopId, staff_name: staff }]);
+    }
+    searchSops(); // 重新整理狀態
+  } catch (e) {
+    console.error("按讚切換失敗:", e);
+  }
+}
 
     // 2. 搜尋與自動生成極簡分類按鈕
     let currentSopCategoryFilter = '全部';
 
-    // 1. 搜尋 SOP (連動快篩數量與動態計算)
-    async function searchSops(filterCategory = null) {
-      if (filterCategory !== null) {
-        currentSopCategoryFilter = filterCategory;
-      }
-
-      const rawSearch = document.getElementById('sopSearchInput').value.trim();
-      document.getElementById('loadingText').innerText = "載入 SOP 知識庫中...";
-      document.getElementById('loadingOverlay').style.display = 'flex';
-
-      try {
-        let query = _supabase.from('sops')
-          .select('*')
-          .order('is_pinned', { ascending: false })
-          .order('updated_at', { ascending: false });
-
-        if (rawSearch) {
-          const terms = rawSearch.split('%').map(t => t.trim()).filter(t => t);
-          terms.forEach(term => {
-            query = query.or(`title.ilike.%${term}%,keywords.ilike.%${term}%,category.ilike.%${term}%,content.ilike.%${term}%`);
-          });
-        }
-
-        const { data: sopData, error } = await query;
-        if (error) throw error;
-
-        const { data: likesData } = await _supabase.from('sop_likes').select('*');
-
-        document.getElementById('loadingOverlay').style.display = 'none';
-
-        const combinedData = (sopData || []).map(sop => ({
-          ...sop,
-          likes: (likesData || []).filter(l => l.sop_id === sop.id)
-        }));
-
-        // ✨ 核心修正：動態依照「目前搜尋結果」重新渲染快篩按鈕與計算符合數量
-        renderSopCategoryFilters(combinedData);
-
-        // 若切換至特定分類，進行過濾
-        let filteredData = combinedData;
-        if (currentSopCategoryFilter !== '全部') {
-          filteredData = combinedData.filter(item => item.category === currentSopCategoryFilter);
-          
-          // 防呆：若搜尋後當前分類無符合資料，自動切回「全部」
-          if (filteredData.length === 0 && combinedData.length > 0) {
-            currentSopCategoryFilter = '全部';
-            filteredData = combinedData;
-            renderSopCategoryFilters(combinedData);
-          }
-        }
-
-        renderSopList(filteredData, rawSearch);
-      } catch (e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("搜尋 SOP 發生錯誤: " + e.message);
-      }
-    }
-
-    // ✨ 動態渲染快篩按鈕 (正圓形小紅圈 + opacity: 0.85)
-    function renderSopCategoryFilters(sopList) {
-      const container = document.getElementById('sopCategoryFilter');
-      if (!container) return;
-
-      const now = new Date();
-      const sevenDaysMs = 1 * 24 * 60 * 60 * 1000;
-
-      const isNewSop = (sop) => {
-        if (!sop.updated_at) return false;
-        const updateTime = new Date(sop.updated_at);
-        return (now - updateTime) <= sevenDaysMs;
-      };
-
-      const newCountAll = sopList.filter(isNewSop).length;
-      
-      // ✨ 關鍵修正：加上 aspect-ratio: 1 / 1 與 p-0，強制 100% 正圓形，並設定 opacity: 0.85
-      const allBadgeHtml = newCountAll > 0 
-        ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                 style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${newCountAll}</span>` 
-        : '';
-
-      const categories = Array.from(new Set(sopList.map(item => item.category).filter(c => c)));
-
-      let btnHtml = `
-        <div class="d-inline-block me-2 mb-2" style="position: relative !important; overflow: visible !important;">
-          <button class="btn btn-sm px-3 py-1 rounded-pill filter-sop-cat-btn ${currentSopCategoryFilter === '全部' ? 'btn-primary active' : 'btn-outline-secondary bg-white'}" 
-                  style="font-size: 0.75rem; position: relative; z-index: 1;" onclick="searchSops('全部')">
-            全部 (${sopList.length})
-          </button>
-          ${allBadgeHtml}
-        </div>
-      `;
-
-      categories.forEach(cat => {
-        const catSops = sopList.filter(item => item.category === cat);
-        const count = catSops.length;
-        const newCountInCat = catSops.filter(isNewSop).length;
-
-        // ✨ 正圓形小紅圈 Badge (1:1 比例約束 + opacity: 0.85)
-        const catBadgeHtml = newCountInCat > 0 
-          ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" 
-                   style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${newCountInCat}</span>` 
-          : '';
-
-        const isActive = (currentSopCategoryFilter === cat);
-        const btnClass = isActive ? 'btn-primary active' : 'btn-outline-secondary bg-white';
-
-        btnHtml += `
-          <div class="d-inline-block me-2 mb-2" style="position: relative !important; overflow: visible !important;">
-            <button class="btn btn-sm px-3 py-1 rounded-pill filter-sop-cat-btn ${btnClass}" 
-                    style="font-size: 0.75rem; position: relative; z-index: 1;" onclick="searchSops('${cat}')">
-              ${cat} (${count})
-            </button>
-            ${catBadgeHtml}
-          </div>
-        `;
-      });
-
-      container.innerHTML = btnHtml;
-    }
-
-    // ✨ 2. 渲染 SOP 卡片列表 (關鍵字自動 Highlight 高亮)
-    function renderSopList(sopList, searchKeyword) {
-      const container = document.getElementById('sopListContainer');
-      if (!container) return;
-
-      if (sopList.length === 0) {
-        container.innerHTML = '<div class="alert alert-warning text-center small">查無符合條件的 SOP 項目。</div>';
-        return;
-      }
-
-      let html = '';
-      const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
-      const now = new Date();
-      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-
-      sopList.forEach((sop) => {
-        const cardId = `sop_card_${sop.id}`;
-        
-        const likesArr = sop.likes || [];
-        const hasLiked = likesArr.some(l => l.staff_name === currentUser);
-        const likeIcon = hasLiked ? '❤️' : '🤍';
-        const likedNames = likesArr.map(l => l.staff_name).join(', ');
-        const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
-
-        const updatedTime = new Date(sop.updated_at).toLocaleString('zh-TW', { hour12: false });
-        
-        let isNewRelease = false;
-        if (sop.updated_at) {
-          const updateTime = new Date(sop.updated_at);
-          if ((now - updateTime) <= sevenDaysMs) {
-            isNewRelease = true;
-          }
-        }
-
-        const newBadgeHtml = isNewRelease 
-          ? `<span class="badge bg-danger text-white px-2 py-1 me-1 shadow-sm" style="font-size:0.75rem;">最新</span>` 
-          : '';
-
-        const isPinned = !!sop.is_pinned;
-        const pinIcon = isPinned ? '📌 已置頂' : '📌 置頂';
-        const pinBtnClass = isPinned ? 'text-danger fw-bold' : 'text-muted';
-        const borderStyle = isPinned 
-          ? 'border-left: 6px solid #d9534f !important; background-color: rgba(255, 250, 245, 0.95);' 
-          : 'border-left: 6px solid #84a59d !important;';
-
-        // ✨ 關鍵字高亮處理 (標題、內文與關鍵字標籤)
-        const highlightedTitle = highlightSopText(sop.title, searchKeyword);
-        const highlightedContent = highlightSopText(sop.content, searchKeyword);
-        const highlightedCategory = highlightSopText(sop.category, searchKeyword);
-        const highlightedKeywords = sop.keywords 
-          ? sop.keywords.split(/[\s,]+/).map(k => `<span class="badge bg-light text-dark border me-1">${highlightSopText(k, searchKeyword)}</span>`).join('') 
-          : '無';
-
-        let imgList = [];
-        if (sop.image_url) {
-          try {
-            if (sop.image_url.startsWith('[')) {
-              imgList = JSON.parse(sop.image_url);
-            } else {
-              imgList = [sop.image_url];
-            }
-          } catch (e) {
-            imgList = [sop.image_url];
-          }
-        }
-
-        let imgHtml = '';
-        if (imgList.length > 0) {
-          let imgsGroup = imgList.map(url => `
-            <img src="${url}" onclick="openImageViewer('${url}')" style="height: 90px; width: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid #ccc; flex-shrink: 0;" alt="附件照片">
-          `).join('');
-
-          imgHtml = `<div class="d-flex gap-2 mt-2 overflow-auto pb-1" style="scrollbar-width: none;">${imgsGroup}</div>`;
-        }
-
-        html += `
-          <div class="result-card mb-4 bg-white p-3 shadow-sm" id="${cardId}" style="${borderStyle} position: relative;">
-            <div onclick="shareCard('${cardId}', 'SOP_${sop.title}')" style="position:absolute; top:12px; right:12px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:5;" title="截圖分享">📤</div>
-
-            <div class="d-flex justify-content-between align-items-center mb-2 pe-4">
-              <div class="d-flex align-items-center flex-wrap gap-1">
-                ${newBadgeHtml}
-                <h4 class="fw-bold mb-0 text-[#3e2723] font-serif-tc" style="font-size: 1.15rem;">${highlightedTitle}</h4>
-              </div>
-              <span class="badge text-white px-2 py-1" style="background-color: #84a59d; font-size: 0.75rem;">${highlightedCategory}</span>
-            </div>
-
-            <div class="small text-muted mb-2" style="font-size: 0.8rem;">
-              <b>關鍵字:</b> ${highlightedKeywords}
-            </div>
-
-            <!-- 富文本詳細內文區 (支援高亮) -->
-            <div class="p-3 bg-light rounded border mb-2 text-dark" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">${highlightedContent}</div>
-
-            ${imgHtml}
-
-            <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25 gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm p-1 border-0 bg-transparent ${pinBtnClass}" title="切換置頂" onclick="toggleSopPin(${sop.id}, ${isPinned})" style="font-size: 0.85rem;">${pinIcon}</button>
-                <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick='openSopModal(${JSON.stringify(sop).replace(/'/g, "&apos;")})' style="font-size: 0.85rem;">✏️ 編輯</button>
-                <button class="btn btn-sm p-1 border-0 text-danger bg-transparent fw-bold" title="刪除" onclick="deleteSopWithGlobalAuth(${sop.id}, '${sop.title.replace(/'/g, "\\'")}')" style="font-size: 0.85rem;">🗑️ 刪除</button>
-
-                <button class="btn btn-sm bg-light border py-0 px-2 fw-bold text-[#d9534f] rounded-pill shadow-sm d-flex align-items-center" style="font-size: 0.75rem;" title="${likeTooltip}" onclick="toggleSopLike(${sop.id})">
-                  ${likeIcon} <span class="ms-1">${likesArr.length} 人已閱</span>
-                </button>
-              </div>
-
-              <div class="text-end text-muted small ms-auto" style="font-size: 0.75rem; white-space: nowrap;">
-                🕒 ${updatedTime} | 編輯人: <span class="fw-bold text-[#5b2a30]">${sop.last_edited_by || '系統'}</span>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      container.innerHTML = html;
-    }
 
     // ✨ 4. SOP 釘選置頂切換功能
     async function toggleSopPin(sopId, currentPinnedState) {
@@ -4016,19 +4252,25 @@
     let calSubMode = 'month';          // 'month' | 'week'
     let calCurrentDate = new Date();   // 目前日曆切換視角時間
 
-    // 1. 切換 清單 / 日曆 主視圖
-    function switchAppViewMode(mode) {
-      currentAppViewMode = mode;
-      document.getElementById('appModeTabList').className = mode === 'list' ? 'active-tab' : '';
-      document.getElementById('appModeTabCal').className = mode === 'calendar' ? 'active-tab' : '';
+    // 2. 切換 清單 / 日曆 主視圖
+function switchAppViewMode(mode) {
+  currentAppViewMode = mode;
+  
+  const btnList = document.getElementById('appModeBtnList');
+  const btnCal = document.getElementById('appModeBtnCal');
+  
+  if (btnList && btnCal) {
+    btnList.className = mode === 'list' ? 'btn btn-primary px-2.5 py-1 fw-bold' : 'btn btn-outline-primary px-2.5 py-1 fw-bold';
+    btnCal.className = mode === 'calendar' ? 'btn btn-primary px-2.5 py-1 fw-bold' : 'btn btn-outline-primary px-2.5 py-1 fw-bold';
+  }
 
-      document.getElementById('appListView').style.display = mode === 'list' ? 'block' : 'none';
-      document.getElementById('appCalendarView').style.display = mode === 'calendar' ? 'block' : 'none';
+  document.getElementById('appListView').style.display = mode === 'list' ? 'block' : 'none';
+  document.getElementById('appCalendarView').style.display = mode === 'calendar' ? 'block' : 'none';
 
-      if (mode === 'calendar') {
-        renderCalendarView();
-      }
-    }
+  if (mode === 'calendar') {
+    renderCalendarView();
+  }
+}
 
     // 2. 切換 月 / 週 子視圖
     function setCalSubMode(subMode) {
@@ -4054,28 +4296,35 @@
       renderCalendarView();
     }
 
-    // ✨ 週模式高度拉高 3 倍與多筆呈現版
-    function renderCalendarView() {
-      const gridContainer = document.getElementById('calendarGrid');
-      const titleDisplay = document.getElementById('calTitleDisplay');
-      if (!gridContainer) return;
+    // 3. 升級 renderCalendarView() 支援「我的預約」過濾
+function renderCalendarView() {
+  const gridContainer = document.getElementById('calendarGrid');
+  const titleDisplay = document.getElementById('calTitleDisplay');
+  if (!gridContainer) return;
 
-      const year = calCurrentDate.getFullYear();
-      const month = calCurrentDate.getMonth();
-      const todayStr = new Date().toISOString().split('T')[0];
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+  const todayStr = new Date().toISOString().split('T')[0];
 
-      titleDisplay.innerText = `${year}年 ${month + 1}月`;
+  titleDisplay.innerText = `${year}年 ${month + 1}月`;
 
-      const eventsMap = {};
-      const allAppList = cache.appointList || [];
+  const eventsMap = {};
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+  let rawAppList = cache.appointList || [];
 
-      allAppList.forEach((it, idx) => {
-        if (it.appoint_time) {
-          const dateStr = String(it.appoint_time).trim().replace('T', ' ').substring(0, 10);
-          if (!eventsMap[dateStr]) eventsMap[dateStr] = [];
-          eventsMap[dateStr].push({ ...it, originalIndex: idx });
-        }
-      });
+  // ✨ 根據設定篩選日曆資料
+  let allAppList = rawAppList;
+  if (currentAppStaffFilter === 'mine' && currentUser) {
+    allAppList = rawAppList.filter(it => it.staff === currentUser);
+  }
+
+  allAppList.forEach((it, idx) => {
+    if (it.appoint_time) {
+      const dateStr = String(it.appoint_time).trim().replace('T', ' ').substring(0, 10);
+      if (!eventsMap[dateStr]) eventsMap[dateStr] = [];
+      eventsMap[dateStr].push({ ...it, originalIndex: idx });
+    }
+  });
 
       let daysToRender = [];
 
@@ -4219,33 +4468,35 @@
         const now = new Date();
         const currentRocYear = now.getFullYear() - 1911;
 
-        dayEvents.forEach((it) => {
-          // 找到它在原本 cache.appointList 中的索引
-          const originalIndex = allAppList.findIndex(item => item.id === it.id);
+        // 替換 openDayAppListModal 裡面的迴圈產卡邏輯
+dayEvents.forEach((it) => {
+  const originalIndex = allAppList.findIndex(item => item.id === it.id);
 
-          let timeStr = it.appoint_time ? it.appoint_time.replace('T', ' ').substring(0, 16) : '';
-          const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
-          const cardStyle = isOverdue ? 'card-overdue-flash' : '';
-          const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
+  let timeStr = it.appoint_time ? it.appoint_time.replace('T', ' ').substring(0, 16) : '';
+  const isOverdue = timeStr && (new Date(timeStr.replace(/-/g, '/')) < now);
+  const cardStyle = isOverdue ? 'card-overdue-flash' : '';
+  const badgeHtml = isOverdue ? '<span class="badge bg-danger animate-pulse me-1">🚨 已逾期</span>' : '';
 
-          let ageStr = "未知";
-          if (it.birthday && it.birthday.includes('/')) {
-            const bYear = parseInt(it.birthday.split('/')[0], 10);
-            if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
-          }
+  let ageStr = "未知";
+  if (it.birthday && it.birthday.includes('/')) {
+    const bYear = parseInt(it.birthday.split('/')[0], 10);
+    if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
+  }
 
-          h += `
-            <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer ${cardStyle}" 
-                 onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '${it.name}')">
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
-                <div>${badgeHtml}<span class="badge" style="background-color: #84a59d; color: white;">📅 已預約</span></div>
-              </div>
-              <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
-              <div class="small text-muted mt-1">⏰ 時間：<b>${timeStr}</b></div>
-              <div class="small text-dark text-truncate mt-1">📌 內容：${it.event || '無'}</div>
-            </div>`;
-        });
+  h += `
+    <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer ${cardStyle}" 
+         onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '${it.name}')">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-lg text-[#3e2723]">👤 ${it.name} <span class="text-muted" style="font-size: 0.85rem;">(${ageStr})</span></span>
+        <div>${badgeHtml}<span class="badge" style="background-color: #84a59d; color: white;">📅 已預約</span></div>
+      </div>
+      <div class="small fw-bold mt-1" style="color: #84a59d;">📞 電話：${it.phone || '無'}</div>
+      <div class="small text-muted mt-1">⏰ 時間：<b>${timeStr}</b></div>
+      <div class="small text-dark text-truncate mt-1">📌 內容：${it.event || '無'}</div>
+      <!-- ✨ 新增：顯眼展示服務人員 -->
+      <div class="text-end text-xs text-muted mt-1 pt-1 border-top border-secondary border-opacity-10">👤 服務人：<b class="text-[#5b2a30]">${it.staff || '未註記'}</b></div>
+    </div>`;
+});
         container.innerHTML = h;
       }
 
