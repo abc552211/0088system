@@ -3234,6 +3234,7 @@ function selectAppCard(index, id, name, type = 'consult') {
     
     // ================= 交接清單未讀提示與個人按讚連動 =================
 
+// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 =================
 function renderHandoverList() { 
   const listDiv = document.getElementById('handoverListView'); 
   if (!cache.handoverList || cache.handoverList.length === 0) { 
@@ -3246,53 +3247,97 @@ function renderHandoverList() {
 
   const currentUser = localStorage.getItem("current_staff_name") || "";
 
-  // 1. 計算當前登入者尚未按讚的交接數量
-  const totalUnread = cache.handoverList.filter(it => !it.likes.some(l => l.staff_name === currentUser)).length;
+  // 計算各項數量 (包含總數與未讀數)
+  let countAll = 0, countTimed = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
+  let unreadAll = 0, unreadTimed = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
 
-  // 2. 即時更新首頁交接磚塊右上角的小紅圈 Badge
+  cache.handoverList.forEach(it => {
+    countAll++;
+    const isTimed = it.type.includes("指定"); 
+    const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
+    // 只要當前使用者不在按讚名單內，就算未讀
+    const isUnread = !it.likes.some(l => l.staff_name === currentUser);
+
+    if (isUnread) unreadAll++;
+
+    if (isTimed) { 
+      countTimed++; 
+      if (isUnread) unreadTimed++;
+      if (isOverdue) {
+        countOverdue++;
+        if (isUnread) unreadOverdue++;
+      }
+    } else if (it.type.includes("物流")) { 
+      countLogistics++; 
+      if (isUnread) unreadLogistics++;
+    } else { 
+      countTrack++; 
+      if (isUnread) unreadTrack++;
+    } 
+  }); 
+
+  // 即時更新首頁交接磚塊右上角的小紅圈 Badge
   const homeBadge = document.getElementById('homeHandoverUnreadBadge');
   if (homeBadge) {
-    if (totalUnread > 0) {
-      homeBadge.innerText = `未讀 ${totalUnread}`;
+    if (unreadAll > 0) {
+      homeBadge.innerText = `未讀 ${unreadAll}`;
       homeBadge.style.setProperty('display', 'inline-block', 'important');
     } else {
       homeBadge.style.setProperty('display', 'none', 'important');
     }
   }
 
-  let countAll = cache.handoverList.length; 
-  let countTimed = 0; 
-  let countTrack = 0; 
-  let countLogistics = 0; 
-  let countOverdue = 0; 
-
-  cache.handoverList.forEach(it => {
-    const isTimed = it.type.includes("指定"); 
-    if (isTimed) { 
-      countTimed++; 
-      if (it.targetDate !== '無' && new Date(it.targetDate) < new Date()) countOverdue++; 
-    } else if (it.type.includes("物流")) { 
-      countLogistics++; 
-    } else { 
-      countTrack++; 
-    } 
-  }); 
-
+  // ✨ 升級排序邏輯：1. 未讀優先 -> 2. 逾期優先 -> 3. 指定時間近到遠 -> 4. 預設最新
   let sortedList = [...cache.handoverList].sort((a, b) => { 
+    // 1. 未讀優先排序
+    const isReadA = a.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
+    const isReadB = b.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
+    if (isReadA !== isReadB) return isReadA - isReadB; // 未讀(0)排在已讀(1)前
+
+    // 2. 逾期優先排序
     const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); 
     const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); 
     const isOverB = isTimedB && b.targetDate !== '無' && new Date(b.targetDate) < new Date(); 
-    if (isOverA && !isOverB) return -1; if (!isOverA && isOverB) return 1; if (isTimedA && !isTimedB) return -1; 
-    if (!isTimedA && isTimedB) return 1; if (isTimedA && isTimedB) return new Date(a.targetDate) - new Date(b.targetDate); return 0; 
+    if (isOverA && !isOverB) return -1; 
+    if (!isOverA && isOverB) return 1; 
+
+    // 3. 指定時間排序
+    if (isTimedA && !isTimedB) return -1; 
+    if (!isTimedA && isTimedB) return 1; 
+    if (isTimedA && isTimedB) return new Date(a.targetDate) - new Date(b.targetDate); 
+    
+    return 0; 
   });
 
-  let h = `<div class="sub-filter-scroll mb-2">
-            <button class="btn btn-sm btn-primary hand-sub-btn active px-3 rounded-pill" onclick="filterHandSub('全部', this)">全部 ${countAll}</button>
-            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button>
-            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button>
-            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
-            <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button>
-            <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill ms-auto" style="border-color: #a89a9f; color: #a89a9f;" onclick="openClosedHandoverSearch()">🗂️ 已結案</button></div>`;
+  // ✨ 小紅圈 HTML 產生器 (與 SOP 款式完全同步)
+  const getBadgeHtml = (count) => count > 0 
+    ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${count}</span>` 
+    : '';
+
+  // ✨ 升級的快篩按鈕區塊
+  let h = `<div class="sub-filter-scroll mb-2 align-items-center">
+            <div class="d-inline-block" style="position: relative !important; overflow: visible !important;">
+                <button class="btn btn-sm btn-primary hand-sub-btn active px-3 rounded-pill" onclick="filterHandSub('全部', this)">全部 ${countAll}</button>
+                ${getBadgeHtml(unreadAll)}
+            </div>
+            <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
+                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button>
+                ${getBadgeHtml(unreadOverdue)}
+            </div>
+            <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
+                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button>
+                ${getBadgeHtml(unreadTimed)}
+            </div>
+            <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
+                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
+                ${getBadgeHtml(unreadTrack)}
+            </div>
+            <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
+                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button>
+                ${getBadgeHtml(unreadLogistics)}
+            </div>
+            <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill ms-auto flex-shrink-0" style="border-color: #a89a9f; color: #a89a9f;" onclick="openClosedHandoverSearch()">🗂️ 已結案</button>
+          </div>`;
 
   sortedList.forEach((it, index) => { 
     const isTimed = it.type.includes("指定"); 
@@ -3321,22 +3366,21 @@ function renderHandoverList() {
     const likedNames = it.likes.map(l => l.staff_name).join(', ');
     const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
 
-    // 3. 個別卡片未讀標籤：當前登入者若未按讚則顯示 [未讀]
-    // ✨ 升級版：#d6a3a5 煙燻玫瑰粉底色 + 白邊框 + 慢速呼吸柔和閃爍
-const unreadBadgeHtml = !hasLiked 
-  ? `<span class="badge me-2 shadow-sm" 
-           style="background-color: #d6a3a5 !important; 
-                  color: #ffffff !important; 
-                  border: 1.5px solid #ffffff; 
-                  font-size: 0.78rem; 
-                  font-weight: 800; 
-                  padding: 4px 8px; 
-                  letter-spacing: 1px; 
-                  animation: pulse-slow 2.5s infinite ease-in-out;
-                  box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
-       未讀
-     </span>` 
-  : '';
+    // 個別卡片未讀標籤
+    const unreadBadgeHtml = !hasLiked 
+      ? `<span class="badge me-2 shadow-sm" 
+               style="background-color: #d6a3a5 !important; 
+                      color: #ffffff !important; 
+                      border: 1.5px solid #ffffff; 
+                      font-size: 0.78rem; 
+                      font-weight: 800; 
+                      padding: 4px 8px; 
+                      letter-spacing: 1px; 
+                      animation: pulse-slow 2.5s infinite ease-in-out;
+                      box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
+           未讀
+         </span>` 
+      : '';
 
     const commentCountHtml = it.comments.length > 0 
       ? `<span class="fw-bold" style="color: #d9534f; font-size: 0.95rem;">${it.comments.length}</span>` 
