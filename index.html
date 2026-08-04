@@ -822,7 +822,13 @@
   <div id="searchPage" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
     <div class="card p-4">
-      <h4 class="mb-4">🔍諮詢預約查詢與關懷</h4>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">🔍諮詢預約查詢與關懷</h4>
+        <div class="position-relative d-inline-block">
+          <button class="btn btn-sm btn-outline-secondary fw-bold px-3 py-1 rounded-pill shadow-sm" style="color: #4a4e69; border-color: rgba(142, 154, 175, 0.4); background-color: #ffffff;" onclick="doMyUnclosedSearch()">我的未結案</button>
+          <span id="searchMyUnclosedBadge" class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; display: none;">0</span>
+        </div>
+      </div>
       <label class="small fw-bold text-muted">依病歷序號</label>
       <div class="input-group mb-3">
         <div class="clear-wrapper">
@@ -1558,36 +1564,49 @@
       await updateHomeConsultBadge();
       await updateHomeSopBadge(); // ✨ 加入這行，讓 SOP 未讀提示在第一次進系統時就載入！
     }
-    // ================= 計算個人未結案諮詢數量並更新首頁 Badge =================
+    // ================= 計算個人未結案諮詢數量並更新首頁與快篩 Badge =================
 async function updateHomeConsultBadge() {
   const currentUser = localStorage.getItem("current_staff_name") || "";
   const badgeEl = document.getElementById('homeConsultUnfinishedBadge');
-  if (!badgeEl) return;
+  const searchBadgeEl = document.getElementById('searchMyUnclosedBadge'); 
 
   if (!currentUser) {
-    badgeEl.style.setProperty('display', 'none', 'important');
+    if (badgeEl) badgeEl.style.setProperty('display', 'none', 'important');
+    if (searchBadgeEl) searchBadgeEl.style.setProperty('display', 'none', 'important');
     return;
   }
 
   try {
-    // 撈取服務人為當前登入者，且狀態為「待處理」、「已關懷」、或空白/null (未結案) 的紀錄
     const { data, error } = await _supabase.from('consultations')
-      .select('id, status')
-      .eq('staff', currentUser)
+      .select('id, status, staff, care_staff, care_note')
       .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.');
 
     if (error) throw error;
 
-    const unfinishedCount = data ? data.length : 0;
+    const myUnfinishedData = (data || []).filter(r => {
+        const sStaff = r.staff || '';
+        const cStaff = r.care_staff || '';
+        const cNote = r.care_note || '';
+        return sStaff === currentUser || cStaff === currentUser || cNote.includes(currentUser);
+    });
+
+    const unfinishedCount = myUnfinishedData.length;
 
     if (unfinishedCount > 0) {
-      badgeEl.innerText = `未結案 ${unfinishedCount}`;
-      badgeEl.style.setProperty('display', 'inline-block', 'important');
+      if (badgeEl) {
+        badgeEl.innerText = `未結案 ${unfinishedCount}`;
+        badgeEl.style.setProperty('display', 'inline-block', 'important');
+      }
+      if (searchBadgeEl) {
+        searchBadgeEl.innerText = unfinishedCount;
+        searchBadgeEl.style.setProperty('display', 'flex', 'important');
+      }
     } else {
-      badgeEl.style.setProperty('display', 'none', 'important');
+      if (badgeEl) badgeEl.style.setProperty('display', 'none', 'important');
+      if (searchBadgeEl) searchBadgeEl.style.setProperty('display', 'none', 'important');
     }
   } catch (e) {
-    console.error("計算個人未結案諮詢出錯:", e);
+    console.error("計算個人未結案出錯:", e);
   }
 }
 // ================= 計算個人未讀 SOP 數量並更新首頁 Badge =================
@@ -2036,6 +2055,79 @@ async function updateHomeSopBadge() {
 
       initSelectors();
       document.getElementById('careModal').style.display = 'flex';
+    }
+    // ✨ 全新：一鍵查詢「我的未結案」 (包含原服務人與參與關懷的關係人)
+    async function doMyUnclosedSearch(keepScroll = false) { 
+      const currentUser = localStorage.getItem("current_staff_name") || "";
+      if (!currentUser) return alert("請先解鎖裝置以識別身分");
+
+      if (keepScroll) lastSearchScroll = window.scrollY; else lastSearchScroll = 0;
+
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      const resDiv = document.getElementById('searchResults'); 
+      if (!keepScroll) resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索關係人未結案中...</div>'; 
+
+      try {
+        // 先抓出所有未結案的資料
+        const { data, error } = await _supabase.from('consultations')
+          .select('*')
+          .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.');
+        
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+
+        // 前端精準過濾：自己是服務人、最新關懷人、或是曾在關懷紀錄留名的
+        let filteredData = (data || []).filter(r => {
+            const sStaff = r.staff || '';
+            const cStaff = r.care_staff || '';
+            const cNote = r.care_note || '';
+            return sStaff === currentUser || cStaff === currentUser || cNote.includes(currentUser);
+        });
+
+        if (filteredData.length === 0) { 
+          resDiv.innerHTML = '<div class="alert alert-success text-center">🎉 太棒了！您目前沒有任何未結案的紀錄</div>'; 
+          return; 
+        }
+
+        // 依照建立時間排序 (舊的排前面優先處理)
+        filteredData.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        allSearchData = filteredData.map(item => ({
+          rowIndex: item.id,
+          name: item.name,
+          status: item.status,
+          barcode: item.barcode,
+          birthday: item.birthday,
+          phone: item.phone,
+          event: item.event,
+          staff: item.staff,
+          doctor: item.doctor,
+          isAppoint: item.is_appoint,
+          appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
+          imageUrl: item.image_url || "", 
+          salesNote: item.sales_note || "",
+          careTimeRaw: item.care_time || null,
+          careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
+          careNote: item.care_note,
+          careStaff: item.care_staff || "",
+          note: item.note,
+          createdAt: item.created_at ? (String(item.created_at).includes('T') ? new Date(item.created_at).toLocaleString('zh-TW') : item.created_at) : '無'
+        }));
+
+        if (!keepScroll) {
+          currentActiveFilter = '全部'; 
+        }
+
+        renderSearchFilterTabs(); 
+        applySearchFilterAndRender(true); 
+
+        if (keepScroll && lastSearchScroll > 0) {
+          setTimeout(() => window.scrollTo(0, lastSearchScroll), 50);
+        }
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("搜尋出錯: " + e.message);
+      }
     }
 
     async function doSearch(keepScroll = false) { 
@@ -3200,8 +3292,9 @@ function selectAppCard(index, id, name, type = 'consult') {
           <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.id})">
             ${likeIcon} ${it.likes.length}
           </button>
-          <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill" onclick="toggleHandoverComments(${it.id})">
+          <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments(${it.id})">
             💬 ${it.comments.length} 則留言 🔽
+            ${(!hasLiked && it.comments.length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
           </button>
         </div>
 
@@ -3430,8 +3523,9 @@ function renderHandoverList() {
           ${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span>
         </button>
         
-        <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.8rem;">
+        <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.8rem;">
           💬 <span class="mx-1">${commentCountHtml}</span> 則 <span class="ms-1" style="font-size: 0.7rem; color: #7d8b9e;">🔽</span>
+          ${(!hasLiked && it.comments.length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
         </button>
       </div>
 
@@ -3849,6 +3943,9 @@ async function toggleHandoverLike(handoverId) {
         
         if (error) throw error;
         
+        // ✨ 核心邏輯：刪除「不是自己」的按讚紀錄。這會讓卡片對其他人重新變成未讀並頂置！
+        await _supabase.from('handover_likes').delete().eq('handover_id', handoverId).neq('staff_name', staff);
+
         // 重新載入最新資料
         await loadData();
         
