@@ -741,26 +741,50 @@
 
   <div id="handover" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
-    <div class="nav-tabs-custom">
-      <div id="tabH1" class="active-tab" onclick="switchHandTab(1)">瀏覽交接清單</div>
-      <div id="tabH2" onclick="switchHandTab(2)">交接維護</div>
-    </div>
+    
     <div id="handTab1">
-      <div id="handoverListView"></div>
+      <div class="card p-3 md:p-4 mb-4" style="background: rgba(255, 250, 240, 0.98) !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">交接清單</h4>
+          <div>
+            <button class="btn btn-outline-secondary fw-bold shadow-sm btn-sm px-3 me-2" style="border-radius: 10px; border-color: rgba(168, 154, 159, 0.6); color: #8a7c81;" onclick="openHandoverSearch()">🔍 搜尋</button>
+            <button class="btn text-white fw-bold shadow-sm btn-sm px-3" style="background-color: #a89a9f; border-radius: 10px;" onclick="switchHandTab(2)">＋ 新增交接</button>
+          </div>
+        </div>
+          
+
+        <!-- 全部/我的 雙膠囊滑動切換列 -->
+        <div class="d-flex justify-content-center align-items-center p-1 rounded-pill shadow-inner mb-3" style="background-color: rgba(142, 154, 175, 0.15);">
+          <button id="btnHandFilterMine" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 transition-all" onclick="switchHandoverStaffFilter('mine')" style="font-size: 0.85rem; background-color: #ffffff; color: #3e2723; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+            我的交接
+          </button>
+          <button id="btnHandFilterAll" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchHandoverStaffFilter('all')" style="font-size: 0.85rem; background-color: transparent;">
+            全部
+          </button>
+        </div>
+
+        <div id="handoverListView"></div>
+      </div>
     </div>
+
     <div id="handTab2" style="display:none;">
       <div class="card p-4">
-        <h4 class="mb-4">✒️工作交接登記</h4>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="mb-0 font-serif-tc text-[#3e2723] fw-bold">新增工作交接</h4>
+          <button class="btn btn-sm btn-light fw-bold text-muted shadow-sm" onclick="switchHandTab(1)">返回清單</button>
+        </div>
         <div class="text-center mb-4 mt-n2" style="cursor: pointer;" onclick="showPage('consultation')">
           <span class="px-3 py-1 rounded-pill shadow-sm" style="background-color: rgba(255,255,255,0.7); color: #84a59d; font-size: 0.85rem; border: 1px solid rgba(91,42,48,0.2); letter-spacing: 1px;">
             ✨<span style="text-decoration: underline;">新客請至預約區登記留紀錄</span>
           </span>
         </div>
+        
         <select id="hType" class="form-select mb-3" onchange="changeHandoverType(this.value)">
           <option value="指定時間">1. 指定時間</option>
           <option value="追蹤工作">2. 追蹤工作</option>
           <option value="物流">3. 物流</option>
         </select>
+        
         <div id="hDateArea">
           <label class="small text-muted fw-bold">預計執行日期與時間</label>
           <div class="date-row">
@@ -773,28 +797,34 @@
             <select id="hMin" class="form-select"></select><span class="text-muted">分</span>
           </div>
         </div>
+        
         <label class="small fw-bold text-muted">交接具體內容</label>
         <div class="clear-wrapper">
           <textarea id="hContent" class="form-control my-2" placeholder="請詳述待辦事項..." rows="3"></textarea><button class="clear-btn" onclick="clearInput('hContent')">×</button>
         </div>
+        
         <label id="hPhoneLabel" class="small fw-bold text-muted">電話備註</label>
         <div class="clear-wrapper">
           <input type="tel" id="hPhone" class="form-control my-2" placeholder="輸入電話(非必要)">
           <button class="clear-btn" onclick="clearInput('hPhone')">×</button>
         </div>
+        
         <label class="small fw-bold text-muted mt-2">附加照片 (高壓縮比省空間)</label>
         <input type="file" id="hImage" class="form-control mb-2" accept="image/*" onchange="compressAndPreview(this, 'hImagePreview')">
         <img id="hImagePreview" style="max-height: 150px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
+        
         <div class="row">
           <div class="col-6"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
           <div class="col-6"><label class="small text-muted fw-bold">接交人</label><select id="hTo" class="form-select"></select></div>
         </div>
+        
         <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" id="hNoNotify">
             <label class="form-check-label fw-bold text-secondary" for="hNoNotify">🔕 僅登記不通知LINE</label>
           </div>
         </div>
+        
         <div class="mt-3 p-3 rounded border" style="background-color: rgba(255, 248, 225, 0.7); border-color: rgba(255, 193, 7, 0.3);">
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" id="hDelaySwitch" onchange="toggleDelayInput()">
@@ -810,14 +840,15 @@
             <input type="datetime-local" id="hDelayTime" class="form-control">
           </div>
         </div>
+        
         <button class="btn btn-info text-white w-100 mt-4 shadow" onclick="submitHand()">送出交接清單</button>
       </div>
+      
       <div class="card p-4 border-start border-danger border-4">
         <h5 class="text-danger mb-3">移除已完成交接</h5>
         <select id="hDelSelect" class="form-select mb-3"></select><button class="btn btn-outline-danger w-100 bg-white" onclick="delHand()">確認刪除此項工作</button>
       </div>
     </div>
-  </div>
 
   <div id="searchPage" class="page">
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]" onclick="showPage('home')">🔙 返回選單</button>
@@ -1140,17 +1171,25 @@
       <div style="color: #fff; text-align: center; margin-top: 13px;" class="font-serif-tc text-sm tracking-wider opacity-75">點擊任意處關閉</div>
     </div>
   </div>
-  <div id="closedHandoverModal" class="modal-overlay" style="display:none; z-index: 10500;">
+  <div id="handoverSearchModal" class="modal-overlay" style="display:none; z-index: 10500;">
     <div class="modal-body" style="max-width: 500px; width: 95%; max-height: 85vh; overflow-y: hidden; display: flex; flex-direction: column;">
-      <h5 class="fw-bold mb-3" style="color: #4a4e69;">🗂️ 已結案交接調閱</h5>
-      <div class="input-group mb-3">
-        <input type="text" id="closedSearchInput" class="form-control" placeholder="輸入關鍵字 (內容、人員)...">
-        <button class="btn text-white" style="background-color: #7d8b9e;" onclick="searchClosedHandovers()">搜尋</button>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0" style="color: #4a4e69;">🔍 交接紀錄搜尋</h5>
+        <button class="btn-close" onclick="document.getElementById('handoverSearchModal').style.display='none'"></button>
       </div>
-      <div id="closedSearchResults" class="mt-2 flex-grow-1" style="overflow-y: auto; padding-right: 5px;"></div>
-      <div class="d-grid mt-3">
-        <button class="btn btn-light" onclick="document.getElementById('closedHandoverModal').style.display='none'">關閉</button>
+      
+      <!-- 搜尋狀態切換膠囊 -->
+      <div class="d-flex justify-content-center align-items-center p-1 rounded-pill shadow-inner mb-3" style="background-color: rgba(142, 154, 175, 0.15);">
+        <button id="btnHSSearchAll" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchHSSearchStatus('all')" style="font-size: 0.85rem; background-color: transparent;">全部</button>
+        <button id="btnHSSearchUnclosed" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 transition-all" onclick="switchHSSearchStatus('unclosed')" style="font-size: 0.85rem; background-color: #ffffff; color: #3e2723; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">未結案</button>
+        <button id="btnHSSearchClosed" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchHSSearchStatus('closed')" style="font-size: 0.85rem; background-color: transparent;">已結案</button>
       </div>
+
+      <div class="input-group mb-2">
+        <input type="text" id="handoverSearchInput" class="form-control" placeholder="輸入關鍵字 (內容、人員)...">
+        <button class="btn text-white" style="background-color: #7d8b9e;" onclick="searchHandovers()">搜尋</button>
+      </div>
+      <div id="handoverSearchResults" class="mt-2 flex-grow-1" style="overflow-y: auto; padding-right: 5px;"></div>
     </div>
   </div>
 
@@ -2916,7 +2955,43 @@ async function updateHomeSopBadge() {
     }
     function toggleDelayInput() { const isChecked = document.getElementById('hDelaySwitch').checked; document.getElementById('hDelayArea').style.display = isChecked ? 'block' : 'none'; if (isChecked && !document.getElementById('hDelayTime').value) setDelayTime(9); }
     function setDelayTime(hour) { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hour, 0, 0, 0); const pad = (n) => n.toString().padStart(2, '0'); document.getElementById('hDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; }
-    function switchHandTab(tab) { document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; document.getElementById('tabH1').className = tab === 1 ? 'active-tab' : ''; document.getElementById('tabH2').className = tab === 2 ? 'active-tab' : ''; }
+    let currentHandoverStaffFilter = 'mine'; // 預設顯示我的交接
+
+    function switchHandoverStaffFilter(filterMode) {
+      currentHandoverStaffFilter = filterMode;
+      const btnMine = document.getElementById('btnHandFilterMine');
+      const btnAll = document.getElementById('btnHandFilterAll');
+
+      if (btnMine && btnAll) {
+        if (filterMode === 'mine') {
+          btnMine.style.backgroundColor = '#ffffff';
+          btnMine.style.color = '#3e2723';
+          btnMine.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+          btnMine.classList.remove('text-muted');
+
+          btnAll.style.backgroundColor = 'transparent';
+          btnAll.style.color = '';
+          btnAll.style.boxShadow = 'none';
+          btnAll.classList.add('text-muted');
+        } else {
+          btnAll.style.backgroundColor = '#ffffff';
+          btnAll.style.color = '#3e2723';
+          btnAll.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+          btnAll.classList.remove('text-muted');
+
+          btnMine.style.backgroundColor = 'transparent';
+          btnMine.style.color = '';
+          btnMine.style.boxShadow = 'none';
+          btnMine.classList.add('text-muted');
+        }
+      }
+      renderHandoverList();
+    }
+
+    function switchHandTab(tab) { 
+      document.getElementById('handTab1').style.display = tab === 1 ? 'block' : 'none'; 
+      document.getElementById('handTab2').style.display = tab === 2 ? 'block' : 'none'; 
+    }
     
     let currentSelectedAppIndex = null;
 
@@ -2962,7 +3037,7 @@ function switchAppStaffFilter(filterMode) {
   }
 }
 
-  // ================= 預約狀態處理：雙向相容資料宣告與強制日期格式化 =================
+// ================= 預約狀態處理：雙向相容資料宣告與強制日期格式化 =================
 
 function getMergedAppAndHandoverList(filterMode) {
   const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
@@ -2974,18 +3049,9 @@ function getMergedAppAndHandoverList(filterMode) {
     eventTime: it.appoint_time
   }));
 
-  // 2. 篩選指定時間交接
+  // 2. 篩選指定時間交接 (✨ 修正：移除錯誤的提早過濾，確保資料池完整)
   let rawHandovers = (cache.handoverList || [])
     .filter(h => h.type && String(h.type).includes('指定') && h.targetDate && h.targetDate !== '無')
-    .filter(h => {
-      const fromS = String(h.from_staff || h.from || '').trim();
-      const toS = String(h.to_staff || h.to || '').trim();
-      
-      const isAll = toS.includes('全員') || toS === 'EMPTY' || toS === '';
-      const isMine = (toS === currentUser) || (fromS === currentUser);
-      
-      return isAll || isMine;
-    })
     .map(h => {
       const fromS = String(h.from_staff || h.from || '').trim();
       const toS = String(h.to_staff || h.to || '').trim();
@@ -3004,7 +3070,7 @@ function getMergedAppAndHandoverList(filterMode) {
       };
     });
 
-  // 3. 過濾人員
+  // 3. 過濾人員 (✨ 修正：只有在明確要求 filterMode === 'mine' 時，才篩選自己的任務)
   if (filterMode === 'mine' && currentUser) {
     rawConsults = rawConsults.filter(it => String(it.staff || '').trim() === currentUser);
     rawHandovers = rawHandovers.filter(h => {
@@ -3324,16 +3390,37 @@ function selectAppCard(index, id, name, type = 'consult') {
       document.getElementById('appDetailModal').style.display = 'none';
       currentSelectedAppIndex = null;
     }
-    function filterHandSub(type, btn) { document.querySelectorAll('.hand-sub-btn').forEach(b => { b.className = 'btn btn-sm btn-outline-secondary px-3 rounded-pill hand-sub-btn'; }); btn.className = 'btn btn-sm btn-primary px-3 rounded-pill hand-sub-btn active'; document.querySelectorAll('.handover-main-card').forEach(card => { const cardType = card.getAttribute('data-type') || ""; const isTimed = cardType.includes("指定"); const targetStr = card.getAttribute('data-date'); const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); let isMatch = (type === '全部') || (type === '指定' && isTimed) || (type === '追蹤' && cardType.includes("追蹤")) || (type === '物流' && cardType.includes("物流")) || (type === '過期' && isOverdue); card.style.display = isMatch ? 'block' : 'none'; }); }
-    
-    // ================= 交接清單未讀提示與個人按讚連動 =================
+    function filterHandSub(type, btn) { 
+      document.querySelectorAll('.hand-sub-btn').forEach(b => { 
+        b.classList.remove('btn-primary', 'active');
+        b.classList.add('btn-outline-secondary', 'bg-white');
+        b.style.borderColor = 'rgba(142, 154, 175, 0.4)';
+      }); 
+      btn.classList.remove('btn-outline-secondary', 'bg-white');
+      btn.classList.add('btn-primary', 'active');
+      btn.style.borderColor = '';
 
-// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 =================
+      document.querySelectorAll('.handover-main-card').forEach(card => { 
+        const cardType = card.getAttribute('data-type') || ""; 
+        const isTimed = cardType.includes("指定"); 
+        const targetStr = card.getAttribute('data-date'); 
+        const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date(); 
+        
+        let isMatch = (type === '全部') || 
+                      (type === '指定' && isTimed) || 
+                      (type === '追蹤' && cardType.includes("追蹤")) || 
+                      (type === '物流' && cardType.includes("物流")) || 
+                      (type === '過期' && isOverdue); 
+        card.style.display = isMatch ? 'block' : 'none'; 
+      }); 
+    }
+    
+   
+// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 (乾淨版) =================
 function renderHandoverList() { 
   const listDiv = document.getElementById('handoverListView'); 
   if (!cache.handoverList || cache.handoverList.length === 0) { 
     listDiv.innerHTML = '<div class="alert alert-light text-center">目前無待辦交接工作</div>'; 
-    // 無資料時隱藏首頁未讀 Badge
     const homeBadge = document.getElementById('homeHandoverUnreadBadge');
     if (homeBadge) homeBadge.style.setProperty('display', 'none', 'important');
     return; 
@@ -3341,15 +3428,24 @@ function renderHandoverList() {
 
   const currentUser = localStorage.getItem("current_staff_name") || "";
 
-  // 計算各項數量 (包含總數與未讀數)
+  // 1. 先依據「我的」/「全部」過濾要顯示的清單
+  let displayList = cache.handoverList;
+  if (currentHandoverStaffFilter === 'mine' && currentUser) {
+    displayList = displayList.filter(it => {
+      const fromS = String(it.from || '').trim();
+      const toS = String(it.to || '').trim();
+      return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
+    });
+  }
+
+  // 2. 計算各項數量 (針對當前顯示的清單)
   let countAll = 0, countTimed = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
   let unreadAll = 0, unreadTimed = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
 
-  cache.handoverList.forEach(it => {
+  displayList.forEach(it => {
     countAll++;
     const isTimed = it.type.includes("指定"); 
     const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
-    // 只要當前使用者不在按讚名單內，就算未讀
     const isUnread = !it.likes.some(l => l.staff_name === currentUser);
 
     if (isUnread) unreadAll++;
@@ -3370,32 +3466,35 @@ function renderHandoverList() {
     } 
   }); 
 
-  // 即時更新首頁交接磚塊右上角的小紅圈 Badge
+  // 首頁 Badge 固定看「全域未讀數」(只要沒按過讚的都算)
   const homeBadge = document.getElementById('homeHandoverUnreadBadge');
+  const globalUnreadCount = cache.handoverList.filter(it => !it.likes.some(l => l.staff_name === currentUser)).length;
   if (homeBadge) {
-    if (unreadAll > 0) {
-      homeBadge.innerText = `未讀 ${unreadAll}`;
+    if (globalUnreadCount > 0) {
+      homeBadge.innerText = `未讀 ${globalUnreadCount}`;
       homeBadge.style.setProperty('display', 'inline-block', 'important');
     } else {
       homeBadge.style.setProperty('display', 'none', 'important');
     }
   }
 
+  if (displayList.length === 0) {
+    listDiv.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">此分類下目前無資料</div>'; 
+    return;
+  }
+
   // ✨ 升級排序邏輯：1. 未讀優先 -> 2. 逾期優先 -> 3. 指定時間近到遠 -> 4. 預設最新
-  let sortedList = [...cache.handoverList].sort((a, b) => { 
-    // 1. 未讀優先排序
+  let sortedList = [...displayList].sort((a, b) => { 
     const isReadA = a.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
     const isReadB = b.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
-    if (isReadA !== isReadB) return isReadA - isReadB; // 未讀(0)排在已讀(1)前
+    if (isReadA !== isReadB) return isReadA - isReadB; 
 
-    // 2. 逾期優先排序
     const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); 
     const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); 
     const isOverB = isTimedB && b.targetDate !== '無' && new Date(b.targetDate) < new Date(); 
     if (isOverA && !isOverB) return -1; 
     if (!isOverA && isOverB) return 1; 
 
-    // 3. 指定時間排序
     if (isTimedA && !isTimedB) return -1; 
     if (!isTimedA && isTimedB) return 1; 
     if (isTimedA && isTimedB) return new Date(a.targetDate) - new Date(b.targetDate); 
@@ -3403,34 +3502,51 @@ function renderHandoverList() {
     return 0; 
   });
 
-  // ✨ 小紅圈 HTML 產生器 (與 SOP 款式完全同步)
+  // ✨ 小紅圈 HTML 產生器
   const getBadgeHtml = (count) => count > 0 
     ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${count}</span>` 
     : '';
 
-  // ✨ 升級的快篩按鈕區塊
-  let h = `<div class="sub-filter-scroll mb-2 align-items-center">
+  // ✨ 簡約版快篩按鈕 (上字下數字、移除 Emoji 與已結案鈕)
+  let h = `<div class="sub-filter-scroll mb-2 align-items-center" style="padding-bottom: 8px;">
             <div class="d-inline-block" style="position: relative !important; overflow: visible !important;">
-                <button class="btn btn-sm btn-primary hand-sub-btn active px-3 rounded-pill" onclick="filterHandSub('全部', this)">全部 ${countAll}</button>
+                <button class="btn btn-sm btn-primary hand-sub-btn active rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('全部', this)" style="min-width: 55px; padding: 4px 8px;">
+                  <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1">全部</span>
+                  <span class="fw-bold" style="font-size: 0.95rem; line-height: 1;">${countAll}</span>
+                </button>
                 ${getBadgeHtml(unreadAll)}
             </div>
             <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
-                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('過期', this)">⚠️ 過期 ${countOverdue}</button>
+                <button class="btn btn-sm btn-outline-secondary bg-white hand-sub-btn rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('過期', this)" style="min-width: 55px; padding: 4px 8px; border-color: rgba(142,154,175,0.4);">
+                  <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1 text-danger">過期</span>
+                  <span class="fw-bold text-danger" style="font-size: 0.95rem; line-height: 1;">${countOverdue}</span>
+                </button>
                 ${getBadgeHtml(unreadOverdue)}
             </div>
             <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
-                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('指定', this)">⏰ 指定 ${countTimed}</button>
+                <button class="btn btn-sm btn-outline-secondary bg-white hand-sub-btn rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('指定', this)" style="min-width: 55px; padding: 4px 8px; border-color: rgba(142,154,175,0.4);">
+                  <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1">指定</span>
+                  <span class="fw-bold" style="font-size: 0.95rem; line-height: 1;">${countTimed}</span>
+                </button>
                 ${getBadgeHtml(unreadTimed)}
             </div>
             <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
-                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('追蹤', this)">📌 追蹤 ${countTrack}</button>
+                <button class="btn btn-sm btn-outline-secondary bg-white hand-sub-btn rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('追蹤', this)" style="min-width: 55px; padding: 4px 8px; border-color: rgba(142,154,175,0.4);">
+                  <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1">追蹤</span>
+                  <span class="fw-bold" style="font-size: 0.95rem; line-height: 1;">${countTrack}</span>
+                </button>
                 ${getBadgeHtml(unreadTrack)}
             </div>
             <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
-                <button class="btn btn-sm btn-outline-secondary hand-sub-btn px-3 rounded-pill" onclick="filterHandSub('物流', this)">📦 物流 ${countLogistics}</button>
+                <button class="btn btn-sm btn-outline-secondary bg-white hand-sub-btn rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('物流', this)" style="min-width: 55px; padding: 4px 8px; border-color: rgba(142,154,175,0.4);">
+                  <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1">物流</span>
+                  <span class="fw-bold" style="font-size: 0.95rem; line-height: 1;">${countLogistics}</span>
+                </button>
                 ${getBadgeHtml(unreadLogistics)}
             </div>
-            <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill ms-auto flex-shrink-0" style="border-color: #a89a9f; color: #a89a9f;" onclick="openClosedHandoverSearch()">🗂️ 已結案</button>
+          </div>
+          <div class="text-end mb-2 pe-1" style="font-size: 0.7rem; color: #5b2a30; opacity: 0.75; letter-spacing: 0.5px; margin-top: -6px;">
+            [ 若有新留言，須重新閱讀 ]
           </div>`;
 
   sortedList.forEach((it, index) => { 
@@ -3458,7 +3574,7 @@ function renderHandoverList() {
     const likeIcon = hasLiked ? '❤️' : '🤍';
     const hImgHtml = it.imageUrl ? `<div class="mt-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 120px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
     const likedNames = it.likes.map(l => l.staff_name).join(', ');
-    const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
+    const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
 
     // 個別卡片未讀標籤
     const unreadBadgeHtml = !hasLiked 
@@ -3962,34 +4078,38 @@ async function toggleHandoverLike(handoverId) {
       }
     }
 
-    async function editComment(commentId, oldContent) {
+    async function editComment(commentId, oldContent, isSearch = false) {
       const newContent = prompt("編輯留言內容：", oldContent);
       if (newContent === null || newContent.trim() === oldContent) return;
       
       document.getElementById('loadingOverlay').style.display = 'flex';
       try {
         const { error } = await _supabase.from('handover_comments').update({ content: newContent.trim(), is_edited: true }).eq('id', commentId);
+        if (error) throw error; 
+        
+        await loadData();
+        if (isSearch && document.getElementById('handoverSearchModal').style.display === 'flex') {
+            await searchHandovers();
+        }
         document.getElementById('loadingOverlay').style.display = 'none';
-        
-        if (error) throw error; // 🛑 補上攔截，遇到問題會直接跳到 catch 報錯
-        
-        loadData();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("編輯失敗: " + (e.message || JSON.stringify(e)));
       }
     }
 
-    async function deleteComment(commentId) {
+    async function deleteComment(commentId, isSearch = false) {
       if (!confirm("確定要刪除這則留言嗎？")) return;
       document.getElementById('loadingOverlay').style.display = 'flex';
       try {
         const { error } = await _supabase.from('handover_comments').delete().eq('id', commentId);
+        if (error) throw error; 
+        
+        await loadData();
+        if (isSearch && document.getElementById('handoverSearchModal').style.display === 'flex') {
+            await searchHandovers();
+        }
         document.getElementById('loadingOverlay').style.display = 'none';
-        
-        if (error) throw error; // 🛑 補上攔截
-        
-        loadData();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("刪除失敗: " + (e.message || JSON.stringify(e)));
@@ -4009,90 +4129,267 @@ async function toggleHandoverLike(handoverId) {
         alert("結案失敗: " + e.message);
       }
     }
-    function openClosedHandoverSearch() {
-      document.getElementById('closedSearchInput').value = '';
-      document.getElementById('closedSearchResults').innerHTML = '<div class="text-center text-muted small py-3">請輸入關鍵字進行模糊搜尋 (不可編輯)</div>';
-      document.getElementById('closedHandoverModal').style.display = 'flex';
+    let currentHSSearchStatus = 'unclosed';
+
+    function switchHSSearchStatus(status) {
+      currentHSSearchStatus = status;
+      const btnAll = document.getElementById('btnHSSearchAll');
+      const btnUnclosed = document.getElementById('btnHSSearchUnclosed');
+      const btnClosed = document.getElementById('btnHSSearchClosed');
+
+      [btnAll, btnUnclosed, btnClosed].forEach(btn => {
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = '';
+        btn.style.boxShadow = 'none';
+        btn.classList.add('text-muted');
+      });
+
+      const activeBtn = status === 'all' ? btnAll : (status === 'unclosed' ? btnUnclosed : btnClosed);
+      activeBtn.style.backgroundColor = '#ffffff';
+      activeBtn.style.color = '#3e2723';
+      activeBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+      activeBtn.classList.remove('text-muted');
+
+      if(document.getElementById('handoverSearchInput').value.trim() !== '') {
+        searchHandovers();
+      }
     }
 
-    async function searchClosedHandovers() {
-      const kw = document.getElementById('closedSearchInput').value.trim();
+    function openHandoverSearch() {
+      document.getElementById('handoverSearchInput').value = '';
+      document.getElementById('handoverSearchResults').innerHTML = '<div class="text-center text-muted small py-3">請輸入關鍵字進行模糊搜尋 (系統保持防呆不提供直接編輯)</div>';
+      switchHSSearchStatus('unclosed');
+      document.getElementById('handoverSearchModal').style.display = 'flex';
+    }
+
+    async function searchHandovers() {
+      const kw = document.getElementById('handoverSearchInput').value.trim();
       if (!kw) return alert("請輸入搜尋關鍵字");
       
       document.getElementById('loadingOverlay').style.display = 'flex';
-      const resDiv = document.getElementById('closedSearchResults');
+      const resDiv = document.getElementById('handoverSearchResults');
       resDiv.innerHTML = '<div class="text-center py-3">🔍 搜尋中...</div>';
       
       try {
-        // 1. 先抓取相符的結案交接
-        const { data: handoversData, error } = await _supabase.from('handovers')
-          .select('*')
-          .eq('push_status', 'Sent')
+        let query = _supabase.from('handovers').select('*')
           .or(`content.ilike.%${kw}%,from_staff.ilike.%${kw}%,to_staff.ilike.%${kw}%`)
           .order('created_at', { ascending: false })
-          .limit(30);
-          
+          .limit(50); // 提升搜尋上限
+
+        if (currentHSSearchStatus === 'closed') {
+          query = query.eq('push_status', 'Sent');
+        } else if (currentHSSearchStatus === 'unclosed') {
+          query = query.neq('push_status', 'Sent');
+        }
+        
+        const { data: handoversData, error } = await query;
         if (error) throw error;
         
         if (!handoversData || handoversData.length === 0) {
           document.getElementById('loadingOverlay').style.display = 'none';
-          resDiv.innerHTML = '<div class="alert alert-warning small text-center">查無相關已結案紀錄</div>';
+          resDiv.innerHTML = '<div class="alert alert-warning small text-center">查無相關紀錄</div>';
           return;
         }
 
-        // 2. 批次抓取這些交接單底下的所有留言
         const handoverIds = handoversData.map(h => h.id);
         const { data: commentsData } = await _supabase.from('handover_comments')
           .select('*')
           .in('handover_id', handoverIds)
           .order('created_at', { ascending: true });
+          
+        const { data: likesData } = await _supabase.from('handover_likes')
+          .select('*')
+          .in('handover_id', handoverIds);
 
         document.getElementById('loadingOverlay').style.display = 'none';
         
-        // 3. 組裝歷史卡片與留言 HTML
-        let html = '';
+        const currentUser = localStorage.getItem("current_staff_name") || "";
+        
+        // ✨ 顯示搜尋結果數量
+        let html = `<div class="text-muted small mb-2 fw-bold text-end">共找到 <span class="text-[#d9534f]">${handoversData.length}</span> 筆結果</div>`;
+        
         handoversData.forEach(it => {
           const dTime = it.target_date || '無';
           const imgHtml = it.image_url ? `<div class="mt-2"><img src="${it.image_url}" onclick="openImageViewer('${it.image_url}')" style="max-height: 80px; border-radius: 5px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
           
-          // 過濾出屬於這張交接單的留言
+          const isClosed = it.push_status === 'Sent';
           const cardComments = (commentsData || []).filter(c => c.handover_id === it.id);
-          let commentsHtml = '';
-          if (cardComments.length > 0) {
-            commentsHtml = `<div class="mt-2 pt-2 border-top" style="background-color: rgba(142, 154, 175, 0.05); padding: 8px; border-radius: 6px;">
-              <div class="fw-bold text-muted small mb-2">💬 歷史討論 (${cardComments.length})</div>`;
-            
-            cardComments.forEach(c => {
-              const cTime = new Date(c.created_at);
-              const fTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
-              commentsHtml += `
-                <div class="mb-2 pb-1 small border-bottom border-secondary border-opacity-10">
-                  <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span> <span class="text-muted" style="font-size:0.7rem;">${fTime}</span>
-                  <div style="white-space: pre-wrap; font-size:0.85rem; color:#4a4e69;">${c.content}</div>
-                  ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 60px; margin-top:4px; border-radius:4px; border:1px solid #ccc; cursor:pointer;">` : ''}
-                </div>`;
-            });
-            commentsHtml += `</div>`;
-          }
+          const cardLikes = (likesData || []).filter(l => l.handover_id === it.id);
+          
+          if (isClosed) {
+            // ================= 已結案卡片 (唯讀模式) =================
+            const statusBadge = '<span class="badge bg-secondary text-white">已結案</span>';
+            let commentsHtml = '';
+            if (cardComments.length > 0) {
+              commentsHtml = `<div class="mt-2 pt-2 border-top" style="background-color: rgba(142, 154, 175, 0.05); padding: 8px; border-radius: 6px;">
+                <div class="fw-bold text-muted small mb-2">💬 歷史討論 (${cardComments.length})</div>`;
+              
+              cardComments.forEach(c => {
+                const cTime = new Date(c.created_at);
+                const fTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+                commentsHtml += `
+                  <div class="mb-2 pb-1 small border-bottom border-secondary border-opacity-10">
+                    <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span> <span class="text-muted" style="font-size:0.7rem;">${fTime} ${c.is_edited ? '(已編輯)' : ''}</span>
+                    <div style="white-space: pre-wrap; font-size:0.85rem; color:#4a4e69;">${c.content}</div>
+                    ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 60px; margin-top:4px; border-radius:4px; border:1px solid #ccc; cursor:pointer;">` : ''}
+                  </div>`;
+              });
+              commentsHtml += `</div>`;
+            }
 
-          html += `
-            <div class="p-3 mb-3 bg-white rounded border shadow-sm small" style="border-left: 5px solid #a89a9f !important;">
-              <div class="d-flex justify-content-between text-muted mb-2">
-                <span class="badge bg-secondary text-white">${it.type}</span>
-                <span>預計: ${dTime}</span>
+            html += `
+              <div class="p-3 mb-3 bg-white rounded border shadow-sm small" style="border-left: 5px solid #a89a9f !important;">
+                <div class="d-flex justify-content-between text-muted mb-2">
+                  <div>${statusBadge} <span class="badge bg-light text-dark border">${it.type}</span></div>
+                  <span>預計: ${dTime}</span>
+                </div>
+                <div style="white-space: pre-wrap; color: #4a4e69; font-size: 0.95rem; font-weight: bold;">${it.content}</div>
+                ${imgHtml}
+                ${commentsHtml}
+                <div class="text-end text-muted mt-2 border-top pt-2" style="font-size: 0.75rem;">📤 交接: ${it.from_staff} ➡️ 📥 接收: ${it.to_staff}</div>
+              </div>`;
+          } else {
+            // ================= 未結案卡片 (支援全功能操作) =================
+            const isTimed = (it.type || '').includes("指定"); 
+            const isOverdue = isTimed && it.target_date !== '無' && new Date(it.target_date) < new Date(); 
+            let cardClass = isTimed ? "handover-card-timed" : ((it.type || '').includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
+            if (isOverdue) cardClass += " handover-overdue"; 
+            
+            const hasLiked = cardLikes.some(l => l.staff_name === currentUser);
+            const likeIcon = hasLiked ? '❤️' : '🤍';
+            const likedNames = cardLikes.map(l => l.staff_name).join(', ');
+            const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
+
+            const unreadBadgeHtml = !hasLiked 
+              ? `<span class="badge me-2 shadow-sm" style="background-color: #d6a3a5 !important; color: #ffffff !important; border: 1.5px solid #ffffff; font-size: 0.78rem; font-weight: 800; padding: 4px 8px; letter-spacing: 1px; animation: pulse-slow 2.5s infinite ease-in-out; box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">未讀</span>` 
+              : '';
+
+            const commentCountHtml = cardComments.length > 0 ? `<span class="fw-bold" style="color: #d9534f; font-size: 0.95rem;">${cardComments.length}</span>` : `<span>0</span>`;
+
+            let commentsHtml = cardComments.map(c => {
+              const cTime = new Date(c.created_at);
+              const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+              return `
+              <div class="mb-2 p-2 bg-white rounded border border-secondary border-opacity-10 small" id="comment_${c.id}">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span>
+                  <span class="text-muted" style="font-size: 0.7rem;">${formattedTime} ${c.is_edited ? '(已編輯)' : ''}</span>
+                </div>
+                <div style="white-space: pre-wrap; font-size: 0.85rem;">${c.content}</div>
+                ${c.image_url ? `<img src="${c.image_url}" onclick="openImageViewer('${c.image_url}')" style="max-height: 80px; border-radius: 5px; margin-top: 5px; cursor: pointer; border: 1px solid #eee;">` : ''}
+                ${c.commenter === currentUser ? `
+                  <div class="text-end mt-1">
+                    <button class="btn btn-sm text-primary py-0 px-1" style="font-size:0.7rem;" onclick="editComment('${c.id}', '${c.content.replace(/'/g, "\\'")}', true)">編輯</button>
+                    <button class="btn btn-sm text-danger py-0 px-1" style="font-size:0.7rem;" onclick="deleteComment('${c.id}', true)">刪除</button>
+                  </div>
+                ` : ''}
+              </div>`;
+            }).join('');
+
+            html += `
+            <div class="card p-3 mb-3 shadow-sm ${cardClass} handover-main-card" id="hcard_search_${it.id}" style="position: relative;">
+              <div onclick="shareCard('hcard_search_${it.id}', '交接_${it.to_staff}')" style="position:absolute; top:8px; right:8px; cursor:pointer; opacity:0.5; font-size:0.8rem; z-index:5;">📤</div>
+              
+              <div class="d-flex justify-content-start align-items-center mb-2">
+                <button class="btn btn-sm btn-outline-success py-0 px-2 me-2 shadow-sm" style="font-size: 0.75rem; border-color: #84a59d; color: #84a59d;" onclick="closeHandoverCaseSearch(${it.id})">✅ 結案</button>
+                ${unreadBadgeHtml}
+                <span class="badge text-white">${it.type}${isOverdue ? ' (已過期)' : ''}</span>
+                <small class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} ms-2">📅 預計: ${it.target_date}</small>
               </div>
-              <div style="white-space: pre-wrap; color: #4a4e69; font-size: 0.95rem; font-weight: bold;">${it.content}</div>
-              ${imgHtml}
-              ${commentsHtml}
-              <div class="text-end text-muted mt-2 border-top pt-2" style="font-size: 0.75rem;">📤 交接: ${it.from_staff} ➡️ 📥 接收: ${it.to_staff}</div>
-            </div>
-          `;
+              
+              <div class="p-2 bg-white bg-opacity-70 rounded mb-2 border shadow-sm" style="white-space: pre-wrap; font-size: 0.95rem;">${it.content}${imgHtml}</div>
+              
+              <div class="row g-0 small text-muted pt-1">
+                <div class="col-6">📤 交接: ${it.from_staff}</div><div class="col-6 text-end">📥 接收: ${it.to_staff}</div>
+              </div>
+
+              <div class="d-flex justify-content-start align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
+                <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLikeSearch(${it.id})">
+                  ${likeIcon} <span>${cardLikes.length}</span>
+                </button>
+                
+                <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments('search_${it.id}')" style="font-size: 0.8rem;">
+                  💬 <span class="mx-1">${commentCountHtml}</span> 則 <span class="ms-1" style="font-size: 0.7rem; color: #7d8b9e;">🔽</span>
+                  ${(!hasLiked && cardComments.length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
+                </button>
+              </div>
+
+              <div id="thread_search_${it.id}" class="mt-2 pt-2 border-top" style="display: none;">
+                <div id="comments_list_search_${it.id}" style="max-height: 280px; overflow-y: auto;" class="mb-2 pe-1">
+                   ${commentsHtml || '<div class="text-center small text-muted py-2">目前尚無討論紀錄</div>'}
+                </div>
+                <div class="d-flex flex-column gap-2 p-2 rounded" style="background: rgba(142, 154, 175, 0.08);">
+                   <textarea id="new_cmt_search_${it.id}" class="form-control form-control-sm border-0 shadow-sm" rows="2" placeholder="以 [${currentUser}] 身份留言..."></textarea>
+                   <div class="d-flex justify-content-between align-items-center">
+                     <div class="d-flex align-items-center">
+                       <label for="cmt_img_search_${it.id}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2 me-2">📎 附圖</label>
+                       <input type="file" id="cmt_img_search_${it.id}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_search_${it.id}')">
+                       <img id="cmt_preview_search_${it.id}" style="height: 25px; display: none; border-radius: 4px; border: 1px solid #ccc;">
+                     </div>
+                     <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverCommentSearch(${it.id})">送出留言</button>
+                   </div>
+                </div>
+              </div>
+            </div>`;
+          }
         });
         resDiv.innerHTML = html;
         
       } catch(e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("調閱失敗: " + e.message);
+      }
+    }
+
+    // ================= 搜尋視窗專屬：操作橋接器 (同步背景與畫面) =================
+    async function toggleHandoverLikeSearch(id) {
+      await toggleHandoverLike(id);
+      if (document.getElementById('handoverSearchModal').style.display === 'flex') {
+        searchHandovers(); // 按讚後立刻更新搜尋結果畫面
+      }
+    }
+
+    async function closeHandoverCaseSearch(id) {
+      await closeHandoverCase(id);
+      if (document.getElementById('handoverSearchModal').style.display === 'flex') {
+        searchHandovers(); // 結案後立刻更新搜尋結果畫面，讓卡片消失或變成已結案狀態
+      }
+    }
+
+    async function submitHandoverCommentSearch(id) {
+      const staff = localStorage.getItem("current_staff_name");
+      if (!staff) return alert("無法識別身分！");
+      
+      const content = document.getElementById(`new_cmt_search_${id}`).value.trim();
+      const imgInput = document.getElementById(`cmt_img_search_${id}`);
+      const imageUrl = imgInput ? (imgInput.dataset.compressed || null) : null;
+      
+      if (!content && !imageUrl) return alert("請輸入留言內容或附上照片！");
+      
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      const d = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      const taiwanTimeStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00+08:00`;
+
+      try {
+        const { error } = await _supabase.from('handover_comments').insert([{
+          handover_id: id, commenter: staff, content: content, image_url: imageUrl, created_at: taiwanTimeStr, is_edited: false
+        }]);
+        if (error) throw error;
+
+        // 留言後觸發刪除別人的已讀紀錄 (重新置頂通知)
+        await _supabase.from('handover_likes').delete().eq('handover_id', id).neq('staff_name', staff);
+        
+        await loadData();
+        await searchHandovers(); // 重繪搜尋畫面
+        
+        const targetThread = document.getElementById(`thread_search_${id}`);
+        if (targetThread) targetThread.style.display = 'block';
+
+        document.getElementById('loadingOverlay').style.display = 'none';
+      } catch (e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("留言失敗: " + e.message);
       }
     }
 	// ================= 圖片放大預覽功能 =================
