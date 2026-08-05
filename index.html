@@ -3353,10 +3353,25 @@ function renderCalendarView() {
           shiftTxt = myShiftObj.shift_type.trim();
         }
       }
-      // 個人班別：休假用極淡灰，上班用微底色加柔和字體
-      shiftBadgeStyle = (shiftTxt === '休假')
-        ? 'color: #a0a5b5; font-weight: 400; opacity: 0.6;' 
-        : 'background-color: rgba(125, 139, 158, 0.12); color: #5a6b7c; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+      // ✨ 個人班別專屬配色 (休假微橘底深灰字、AB微藍底黑字、BC微黃底黑字、D純藍字)
+      const cleanShift = shiftTxt.trim();
+      
+      if (cleanShift === '休假') {
+        // 微橘底 + 深灰字
+        shiftBadgeStyle = 'background-color: rgba(255, 237, 213, 0.6); color: #4b5563; font-weight: 500; padding: 1px 4px; border-radius: 3px;';
+      } else if (cleanShift === 'AB') {
+        // 微藍底 + 黑字
+        shiftBadgeStyle = 'background-color: rgba(224, 242, 254, 0.6); color: #111827; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+      } else if (cleanShift === 'BC') {
+        // 微黃底 + 黑字
+        shiftBadgeStyle = 'background-color: rgba(254, 240, 138, 0.5); color: #111827; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+      } else if (cleanShift === 'D') {
+        // 純藍字、無底色
+        shiftBadgeStyle = 'color: #1d4ed8; font-weight: 700; padding: 0;';
+      } else {
+        // 預設其他班別 (莫蘭迪灰藍微底)
+        shiftBadgeStyle = 'background-color: rgba(125, 139, 158, 0.12); color: #3e2723; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+      }
     }
 
     let cellClass = 'cal-day-cell';
