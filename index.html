@@ -1591,6 +1591,10 @@
         renderTagButtons('cTagContainer', cache.tags);
         renderTagButtons('sTagContainer', cache.tags);
 
+        // 讀取班表資料 (schedules)
+        const { data: shiftData } = await _supabase.from('schedules').select('*');
+        cache.shiftList = shiftData || [];
+
         // 讀取預約處理名單 (來自 consultations)
         const { data: appData } = await _supabase.from('consultations')
           .select('*')
@@ -1642,12 +1646,10 @@
           cache.handoverList.forEach(it => del.add(new Option(it.info, it.rowIndex))); 
         }
 
-        // ✨ 統計當前登入服務人員的「待處理預約 + 交接」總筆數
+        // 統計當前登入服務人員的「待處理預約 + 交接」總筆數
         const badgeEl = document.getElementById('homeOverdueBadge');
         if (badgeEl) {
           const currentUser = localStorage.getItem("current_staff_name") || "";
-          
-          // 使用已經寫好的過濾器取得我的全部任務
           const myAppAndHandoverList = getMergedAppAndHandoverList('mine');
           const totalCount = myAppAndHandoverList.length;
 
@@ -1668,7 +1670,7 @@
       }
       
       await updateHomeConsultBadge();
-      await updateHomeSopBadge(); // ✨ 加入這行，讓 SOP 未讀提示在第一次進系統時就載入！
+      await updateHomeSopBadge();
     }
     // ================= 計算個人未結案諮詢數量並更新首頁與快篩 Badge =================
 async function updateHomeConsultBadge() {
@@ -3237,7 +3239,7 @@ function renderAppSelect() {
   container.innerHTML = h;
 }
 
-// ✨ 日曆模式宣告與渲染修正 (修正單數月份/日期的截斷比對問題)
+// ✨ 日曆模式宣告與渲染修正 (店帳邏輯：當日無排班顯示店休，個人顯示個人班別)
 function renderCalendarView() {
   const gridContainer = document.getElementById('calendarGrid');
   const titleDisplay = document.getElementById('calTitleDisplay');
@@ -3246,18 +3248,17 @@ function renderCalendarView() {
   const year = calCurrentDate.getFullYear();
   const month = calCurrentDate.getMonth();
   const todayStr = new Date().toISOString().split('T')[0];
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  const isStoreAccount = (currentUser === "店帳"); // ✨ 判斷是否為公用店帳
 
   titleDisplay.innerText = `${year}年 ${month + 1}月`;
 
   const eventsMap = {};
   const mergedList = getMergedAppAndHandoverList(currentAppStaffFilter);
 
-  // ✨ 核心修正：精準拆解日期並歸類，解決「2026-8-10 14:00」因 substring 導致長度包含空白的問題
   mergedList.forEach((it) => {
     if (it.eventTime) {
       const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
-      
-      // 使用 split(' ')[0] 確保只取日期部分，不再用寫死的 substring(0,10)
       const datePart = timeStr.split(' ')[0]; 
       const parts = datePart.split('-');
       
@@ -3270,6 +3271,16 @@ function renderCalendarView() {
         if (!eventsMap[formattedKey]) eventsMap[formattedKey] = [];
         eventsMap[formattedKey].push(it);
       }
+    }
+  });
+
+  // 整理班表數據 Map: key 格式為 YYYY-MM-DD
+  const shiftMap = {};
+  (cache.shiftList || []).forEach(s => {
+    if (s.date) {
+      const formattedD = String(s.date).trim().replace(/\//g, '-');
+      if (!shiftMap[formattedD]) shiftMap[formattedD] = [];
+      shiftMap[formattedD].push(s);
     }
   });
 
@@ -3320,6 +3331,33 @@ function renderCalendarView() {
     const isOtherMonth = (calSubMode === 'month' && dateObj.getMonth() !== month);
     const isToday = (dateKey === todayStr);
     const dayEvents = eventsMap[dateKey] || [];
+    const dayShifts = shiftMap[dateKey] || [];
+
+    let shiftTxt = "休假";
+    let shiftBadgeStyle = "";
+
+   // ✨ 判斷店帳與一般個人帳號的班別顯示邏輯 (極簡不礙眼優化版)
+    if (isStoreAccount) {
+      const hasWorkingStaff = dayShifts.some(s => s.shift_type && s.shift_type.trim() !== "" && s.shift_type.trim() !== "休假");
+      if (hasWorkingStaff) {
+        shiftTxt = "• 營業";
+        shiftBadgeStyle = 'color: #7d8b9e; font-weight: 600; opacity: 0.85;'; // 莫蘭迪灰藍色無底色
+      } else {
+        shiftTxt = "• 店休";
+        shiftBadgeStyle = 'color: #e5989b; font-weight: 600; opacity: 0.85;'; // 低彩度玫瑰紅無底色
+      }
+    } else {
+      if (currentUser) {
+        const myShiftObj = dayShifts.find(s => String(s.staff_name).trim() === currentUser);
+        if (myShiftObj && myShiftObj.shift_type && myShiftObj.shift_type.trim() !== "" && myShiftObj.shift_type.trim() !== "休假") {
+          shiftTxt = myShiftObj.shift_type.trim();
+        }
+      }
+      // 個人班別：休假用極淡灰，上班用微底色加柔和字體
+      shiftBadgeStyle = (shiftTxt === '休假')
+        ? 'color: #a0a5b5; font-weight: 400; opacity: 0.6;' 
+        : 'background-color: rgba(125, 139, 158, 0.12); color: #5a6b7c; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+    }
 
     let cellClass = 'cal-day-cell';
     if (isOtherMonth) cellClass += ' other-month';
@@ -3332,7 +3370,6 @@ function renderCalendarView() {
       const evTime = ev.eventTime ? new Date(String(ev.eventTime).replace(/-/g, '/')) : null;
       const isOverdue = evTime && evTime < now && (ev.itemType === 'consult' ? (ev.status === '待處理' || ev.status === '已關懷') : true);
       
-      // ✨ 交接為莫蘭迪煙燻紫灰色(#9a8c98)，且預設 cal-event-tag 已經有文字截斷 (text-overflow: ellipsis)
       let tagStyle = ev.itemType === 'handover' 
         ? 'background-color: #9a8c98; color: #fff; border-left: 3px solid #5b2a30;' 
         : (isOverdue ? 'background-color: #e5989b; color: #fff;' : 'background-color: #84a59d; color: #fff;');
@@ -3340,7 +3377,6 @@ function renderCalendarView() {
       let displayPrefix = '';
       if (calSubMode === 'week' && ev.eventTime) {
         const timePart = String(ev.eventTime).trim().replace('T', ' ');
-        // 安全抓取時間 (例如 14:00)
         const timeTokens = timePart.split(' ');
         if (timeTokens.length > 1) {
             const timeStr = timeTokens[1];
@@ -3348,7 +3384,6 @@ function renderCalendarView() {
         }
       }
 
-      // 抓取 ev.event 顯示內容 (如果是交接，字太長會自動截斷為 ...)
       const labelTxt = ev.itemType === 'handover' ? ` ${ev.event || '無內容'}` : ev.name;
       eventsHtml += `<div class="cal-event-tag" style="${tagStyle}" title="${labelTxt}">${displayPrefix}${labelTxt}</div>`;
     });
@@ -3359,7 +3394,10 @@ function renderCalendarView() {
 
     html += `
       <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
-        <div class="cal-day-num">${dateObj.getDate()}</div>
+        <div class="d-flex justify-content-between align-items-center mb-1" style="line-height: 1;">
+          <span class="cal-day-num" style="font-size: 0.72rem;">${dateObj.getDate()}</span>
+          <span style="font-size: 0.58rem; letter-spacing: 0.5px; ${shiftBadgeStyle}">${shiftTxt}</span>
+        </div>
         ${eventsHtml}
       </div>
     `;
@@ -5316,24 +5354,63 @@ function switchAppViewMode(mode) {
 
     
 
-   // 2. 升級「當日預約清單 Modal」彈窗 (同步清單模式的精美排版與精準日期抓取)
+   // ✨ 升級「當日預約清單 Modal」彈窗 (店帳直接顯示全員當日班別概況)
 function openDayAppListModal(dateKey) {
   const container = document.getElementById('dayAppCardsContainer');
   const titleEl = document.getElementById('dayAppModalTitle');
   if (!container) return;
 
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  const isStoreAccount = (currentUser === "店帳");
+
   const dateParts = dateKey.split('-');
   titleEl.innerText = `📅 ${dateParts[0]}/${dateParts[1]}/${dateParts[2]} 當日事項`;
   
-  // ✨ 將目前的點擊日期綁定給「＋ 新增」按鈕
   const btnQuickAdd = document.getElementById('btnQuickAddDay');
   if (btnQuickAdd) btnQuickAdd.dataset.date = dateKey;
 
+  // 抓取當日班表
+  const formattedD = dateKey.replace(/\//g, '-');
+  const dayShifts = (cache.shiftList || []).filter(s => String(s.date).trim().replace(/\//g, '-') === formattedD);
+
+  // 組合全店當日班別概況
+  let shiftOverviewHtml = '';
+  if (dayShifts.length > 0) {
+    let workingBadges = '';
+    let offBadges = '';
+
+    dayShifts.forEach(s => {
+      const name = s.staff_name ? s.staff_name.trim() : '未知';
+      const shift = s.shift_type ? s.shift_type.trim() : '休假';
+
+      if (shift !== '' && shift !== '休假') {
+        workingBadges += `<span class="badge me-1 mb-1" style="background-color: #7d8b9e; color: white; font-size: 0.72rem;">${name}: ${shift}</span>`;
+      } else {
+        offBadges += `<span class="badge me-1 mb-1" style="background-color: rgba(142, 154, 175, 0.2); color: #8e9aaf; font-size: 0.72rem;">${name}: 休</span>`;
+      }
+    });
+
+    const headerTitle = isStoreAccount ? "🏢 全店出勤班別總覽" : "🏢 當日出勤簡覽 (唯讀)";
+
+    shiftOverviewHtml = `
+      <div class="p-2 mb-3 rounded" style="background-color: rgba(242, 242, 240, 0.8); border: 1px solid rgba(142, 154, 175, 0.2);">
+        <div class="fw-bold small text-muted mb-1" style="font-size: 0.75rem;">${headerTitle}</div>
+        <div class="d-flex flex-wrap align-items-center">
+          ${workingBadges || '<span class="text-danger small me-2" style="font-size: 0.72rem; font-weight: bold;">本日全店店休</span>'}
+          ${offBadges}
+        </div>
+      </div>
+    `;
+  } else {
+    shiftOverviewHtml = `
+      <div class="p-2 mb-3 rounded text-center text-muted small" style="background-color: rgba(242, 242, 240, 0.5); font-size: 0.75rem;">
+        🏢 尚無當日出勤班表紀錄 (預設店休)
+      </div>
+    `;
+  }
+
   const mergedList = getMergedAppAndHandoverList(currentAppStaffFilter);
   
-  // ... 下方保留原本的過濾與渲染邏輯 ...
-  
-  // ✨ 核心修正：精準拆解日期並比較，解決「2026-8-11」與「2026-08-11」比對失敗導致彈窗沒資料的問題
   const dayEvents = mergedList.filter(it => {
     if (!it.eventTime) return false;
     const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
@@ -5349,13 +5426,13 @@ function openDayAppListModal(dateKey) {
     return false;
   });
 
-  if (dayEvents.length === 0) {
-    container.innerHTML = '<div class="alert alert-light text-center small text-muted py-4">該日期目前無預約或指定時間交接</div>';
-  } else {
-    let h = '';
-    const now = new Date();
-    const currentRocYear = now.getFullYear() - 1911;
+  let h = shiftOverviewHtml; // 將全員班別概況置頂放置於彈窗最上方
+  const now = new Date();
+  const currentRocYear = now.getFullYear() - 1911;
 
+  if (dayEvents.length === 0) {
+    h += '<div class="alert alert-light text-center small text-muted py-3">該日期目前無預約或指定時間交接</div>';
+  } else {
     dayEvents.forEach((it) => {
       const originalIndex = mergedList.findIndex(item => item.id === it.id && item.itemType === it.itemType);
       let timeStr = it.eventTime ? it.eventTime.replace('T', ' ').substring(0, 16) : '';
@@ -5370,7 +5447,6 @@ function openDayAppListModal(dateKey) {
           if (!isNaN(bYear)) ageStr = (currentRocYear - bYear) + "歲";
         }
 
-        // 一般諮詢預約小卡
         h += `
           <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '${it.name.replace(/'/g, "\\'")}', 'consult')">
             <div class="d-flex justify-content-between align-items-center">
@@ -5386,7 +5462,6 @@ function openDayAppListModal(dateKey) {
             <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
           </div>`;
       } else {
-        // ✨ 交接項目小卡 (點擊後會觸發 selectAppCard，開啟與清單模式完全相同的處理狀態彈窗)
         h += `
           <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" style="border-left: 6px solid #a89a9f !important;" onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '交接項目', 'handover')">
             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -5404,9 +5479,9 @@ function openDayAppListModal(dateKey) {
           </div>`;
       }
     });
-    container.innerHTML = h;
   }
 
+  container.innerHTML = h;
   document.getElementById('dayAppListModal').style.display = 'flex';
 }
 
