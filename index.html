@@ -3587,9 +3587,11 @@ function selectAppCard(index, id, name, type = 'consult') {
     }
     
    
-// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 (乾淨版) =================
+// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 (穩定修復版) =================
 function renderHandoverList() { 
   const listDiv = document.getElementById('handoverListView'); 
+  if (!listDiv) return;
+
   if (!cache.handoverList || cache.handoverList.length === 0) { 
     listDiv.innerHTML = '<div class="alert alert-light text-center">目前無待辦交接工作</div>'; 
     const homeBadge = document.getElementById('homeHandoverUnreadBadge');
@@ -3597,52 +3599,29 @@ function renderHandoverList() {
     return; 
   } 
 
-  const currentUser = localStorage.getItem("current_staff_name") || "";
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+
+  // ✨ 精準判斷交接是否與當前登入者相關 (我是接收人/交接人/發給全員/或店帳)
+  const checkIsRelated = (it) => {
+    if (!currentUser || currentUser === "店帳") return true; 
+    const fromS = String(it.from || it.from_staff || '').trim();
+    const toS = String(it.to || it.to_staff || '').trim();
+    return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
+  };
 
   // 1. 先依據「我的」/「全部」過濾要顯示的清單
   let displayList = cache.handoverList;
-  if (currentHandoverStaffFilter === 'mine' && currentUser) {
-    displayList = displayList.filter(it => {
-      const fromS = String(it.from || '').trim();
-      const toS = String(it.to || '').trim();
-      return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
-    });
+  if (currentHandoverStaffFilter === 'mine' && currentUser && currentUser !== "店帳") {
+    displayList = displayList.filter(it => checkIsRelated(it));
   }
 
-  // 2. 計算各項數量 (針對當前顯示的清單)
-  let countAll = 0, countTimed = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
-  let unreadAll = 0, unreadTimed = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
-
-  displayList.forEach(it => {
-    countAll++;
-    const isTimed = it.type.includes("指定"); 
-    const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
-    const isUnread = !it.likes.some(l => l.staff_name === currentUser);
-
-    if (isUnread) unreadAll++;
-
-    if (isTimed) { 
-      countTimed++; 
-      if (isUnread) unreadTimed++;
-      if (isOverdue) {
-        countOverdue++;
-        if (isUnread) unreadOverdue++;
-      }
-    } else if (it.type.includes("物流")) { 
-      countLogistics++; 
-      if (isUnread) unreadLogistics++;
-    } else { 
-      countTrack++; 
-      if (isUnread) unreadTrack++;
-    } 
-  }); 
-
-  // 首頁 Badge 固定看「全域未讀數」(只要沒按過讚的都算)
+  // 2. 首頁小紅圈 Badge 計算 (只計算與我相關且未讀)
   const homeBadge = document.getElementById('homeHandoverUnreadBadge');
-  const globalUnreadCount = cache.handoverList.filter(it => !it.likes.some(l => l.staff_name === currentUser)).length;
+  const myUnreadCount = cache.handoverList.filter(it => checkIsRelated(it) && !it.likes.some(l => l.staff_name === currentUser)).length;
+  
   if (homeBadge) {
-    if (globalUnreadCount > 0) {
-      homeBadge.innerText = `未讀 ${globalUnreadCount}`;
+    if (myUnreadCount > 0) {
+      homeBadge.innerText = `未讀 ${myUnreadCount}`;
       homeBadge.style.setProperty('display', 'inline-block', 'important');
     } else {
       homeBadge.style.setProperty('display', 'none', 'important');
@@ -3654,13 +3633,44 @@ function renderHandoverList() {
     return;
   }
 
-  // ✨ 升級排序邏輯：1. 未讀優先 -> 2. 逾期優先 -> 3. 指定時間近到遠 -> 4. 預設最新
+  // 3. 計算各快篩按鈕數量
+  let countAll = 0, countTimed = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
+  let unreadAll = 0, unreadTimed = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
+
+  displayList.forEach(it => {
+    countAll++;
+    const isTimed = String(it.type || '').includes("指定"); 
+    const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
+    
+    // ✨ 未讀且「與我相關」才列入未讀數字
+    const isUnread = checkIsRelated(it) && (!it.likes || !it.likes.some(l => l.staff_name === currentUser));
+
+    if (isUnread) unreadAll++;
+
+    if (isTimed) { 
+      countTimed++; 
+      if (isUnread) unreadTimed++;
+      if (isOverdue) {
+        countOverdue++;
+        if (isUnread) unreadOverdue++;
+      }
+    } else if (String(it.type || '').includes("物流")) { 
+      countLogistics++; 
+      if (isUnread) unreadLogistics++;
+    } else { 
+      countTrack++; 
+      if (isUnread) unreadTrack++;
+    } 
+  }); 
+
+  // 4. 未讀優先排序
   let sortedList = [...displayList].sort((a, b) => { 
-    const isReadA = a.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
-    const isReadB = b.likes.some(l => l.staff_name === currentUser) ? 1 : 0;
+    const isReadA = (a.likes && a.likes.some(l => l.staff_name === currentUser)) ? 1 : 0;
+    const isReadB = (b.likes && b.likes.some(l => l.staff_name === currentUser)) ? 1 : 0;
     if (isReadA !== isReadB) return isReadA - isReadB; 
 
-    const isTimedA = a.type.includes("指定"); const isTimedB = b.type.includes("指定"); 
+    const isTimedA = String(a.type || '').includes("指定"); 
+    const isTimedB = String(b.type || '').includes("指定"); 
     const isOverA = isTimedA && a.targetDate !== '無' && new Date(a.targetDate) < new Date(); 
     const isOverB = isTimedB && b.targetDate !== '無' && new Date(b.targetDate) < new Date(); 
     if (isOverA && !isOverB) return -1; 
@@ -3673,12 +3683,12 @@ function renderHandoverList() {
     return 0; 
   });
 
-  // ✨ 小紅圈 HTML 產生器
+  // 快篩小紅圈 HTML 產生器
   const getBadgeHtml = (count) => count > 0 
     ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${count}</span>` 
     : '';
 
-  // ✨ 簡約版快篩按鈕 (上字下數字、移除 Emoji 與已結案鈕)
+  // 5. 渲染快篩列 HTML
   let h = `<div class="sub-filter-scroll mb-2 align-items-center" style="padding-bottom: 8px;">
             <div class="d-inline-block" style="position: relative !important; overflow: visible !important;">
                 <button class="btn btn-sm btn-primary hand-sub-btn active rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('全部', this)" style="min-width: 55px; padding: 4px 8px;">
@@ -3720,10 +3730,11 @@ function renderHandoverList() {
             [ 若有新留言，須重新閱讀 ]
           </div>`;
 
+  // 6. 渲染卡片清單
   sortedList.forEach((it, index) => { 
-    const isTimed = it.type.includes("指定"); 
+    const isTimed = String(it.type || '').includes("指定"); 
     const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
-    let cardClass = it.type.includes("指定") ? "handover-card-timed" : (it.type.includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
+    let cardClass = isTimed ? "handover-card-timed" : (String(it.type || '').includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
     if (isOverdue) cardClass += " handover-overdue"; 
     
     let pushBadge = '';
@@ -3741,10 +3752,10 @@ function renderHandoverList() {
       }
     }
 
-    const hasLiked = it.likes.some(l => l.staff_name === currentUser);
+    const hasLiked = it.likes && it.likes.some(l => l.staff_name === currentUser);
     const likeIcon = hasLiked ? '❤️' : '🤍';
     const hImgHtml = it.imageUrl ? `<div class="mt-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 120px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
-    const likedNames = it.likes.map(l => l.staff_name).join(', ');
+    const likedNames = (it.likes || []).map(l => l.staff_name).join(', ');
     const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
 
     // 個別卡片未讀標籤
@@ -3759,15 +3770,15 @@ function renderHandoverList() {
                       letter-spacing: 1px; 
                       animation: pulse-slow 2.5s infinite ease-in-out;
                       box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
-           未讀
-         </span>` 
+             未讀
+           </span>` 
       : '';
 
-    const commentCountHtml = it.comments.length > 0 
+    const commentCountHtml = (it.comments || []).length > 0 
       ? `<span class="fw-bold" style="color: #d9534f; font-size: 0.95rem;">${it.comments.length}</span>` 
       : `<span>0</span>`;
 
-    let commentsHtml = it.comments.map(c => {
+    let commentsHtml = (it.comments || []).map(c => {
       const cTime = new Date(c.created_at);
       const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
       
@@ -3807,12 +3818,12 @@ function renderHandoverList() {
 
       <div class="d-flex justify-content-start align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
         <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})">
-          ${likeIcon} <span id="like_cnt_${it.rowIndex}">${it.likes.length}</span>
+          ${likeIcon} <span id="like_cnt_${it.rowIndex}">${(it.likes || []).length}</span>
         </button>
         
         <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.8rem;">
           💬 <span class="mx-1">${commentCountHtml}</span> 則 <span class="ms-1" style="font-size: 0.7rem; color: #7d8b9e;">🔽</span>
-          ${(!hasLiked && it.comments.length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
+          ${(!hasLiked && (it.comments || []).length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
         </button>
       </div>
 
@@ -3836,21 +3847,50 @@ function renderHandoverList() {
   }); 
   listDiv.innerHTML = h; 
 }
-async function toggleHandoverLike(handoverId) {
-  const staff = localStorage.getItem("current_staff_name");
-  if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
-  
-  try {
-    const { data: existing } = await _supabase.from('handover_likes').select('id').eq('handover_id', handoverId).eq('staff_name', staff).single();
-    if (existing) {
-      await _supabase.from('handover_likes').delete().eq('id', existing.id);
-    } else {
-      await _supabase.from('handover_likes').insert([{ handover_id: handoverId, staff_name: staff }]);
+// ✨ 點讚 / 取消讚 (加入轉圈圈 Loading 與防重複連點機制)
+    async function toggleHandoverLike(handoverId) {
+      const currentUser = localStorage.getItem("current_staff_name");
+      if (!currentUser) { alert("⚠️ 請先在右上角選擇您的身分"); return; }
+
+      // 1. 抓取按鈕 DOM 元素並暫時鎖定
+      const btn = document.querySelector(`button[onclick="toggleHandoverLike(${handoverId})"]`);
+      if (!btn) return;
+
+      // 防止重複觸發
+      if (btn.disabled) return;
+      btn.disabled = true;
+
+      const originalHtml = btn.innerHTML; // 備份原始按鈕內容
+      
+      // 2. 立即將按鈕顯示為「轉圈圈 Spinner」
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm text-danger" role="status" aria-hidden="true" style="width: 0.85rem; height: 0.85rem; border-width: 0.15em;"></span>`;
+
+      try {
+        const handover = cache.handoverList.find(h => h.id === handoverId);
+        if (!handover) throw new Error("找不到該筆交接資料");
+
+        const existingLike = handover.likes ? handover.likes.find(l => l.staff_name === currentUser) : null;
+
+        if (existingLike) {
+          // 取消按讚 (DELETE)
+          const { error } = await _supabase.from('handover_likes').delete().eq('id', existingLike.id);
+          if (error) throw error;
+        } else {
+          // 新增按讚 (INSERT)
+          const { error } = await _supabase.from('handover_likes').insert([{ handover_id: handoverId, staff_name: currentUser }]);
+          if (error) throw error;
+        }
+
+        // 3. 重新載入最新資料並重繪清單 (會自動解鎖按鈕並更新狀態)
+        await loadData();
+      } catch (err) {
+        console.error("更新點讚狀態失敗:", err);
+        alert("點讚操作失敗: " + err.message);
+        // 若發生錯誤，還原按鈕狀態
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
     }
-    // 重新載入資料並更新首頁與交接卡片狀態
-    await loadData(); 
-  } catch (e) { alert("操作失敗: " + e.message); }
-}
 
     async function renderSpecialList() { 
       // 🛠️ 1. 核心變更：不再過濾舊表，直接在 consultations 裡撈出 [待處理/已關懷] 的未結案名單
