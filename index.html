@@ -430,9 +430,11 @@
           桃園南崁 <span id="heroUserName" class="text-lg md:text-2xl text-[#84a59d] font-bold align-middle ms-1" style="letter-spacing: 1px;"></span><br>
           <span class="font-playfair italic font-normal text-[#5b2a30] text-2xl md:text-4xl mt-1 block">Management System</span>
         </h1>
-        <p class="hero-item font-serif-tc text-[#5b2a30]/80 text-base md:text-lg max-w-2xl mx-auto leading-loose tracking-wide m-0">
-          現在還在工作，你很勇。
-        </p>
+        <div class="hero-item font-serif-tc text-[#5b2a30]/80 text-base md:text-lg max-w-2xl mx-auto leading-loose tracking-wide m-0 d-flex justify-center align-items-center" style="height: 36px; overflow: hidden; position: relative;">
+          <p id="heroSubtitleQuote" class="m-0 font-serif-tc text-[#5b2a30]/80 text-base md:text-lg tracking-wide" style="position: absolute; white-space: nowrap; transform: translateY(0); opacity: 1;">
+            現在還在工作，你很勇。
+          </p>
+        </div>
       </div>
     </header>
 
@@ -669,12 +671,84 @@
     <div id="dayAppListModal" class="modal-overlay" style="display:none; z-index: 9999 !important;">
       <div class="modal-body" style="max-width: 450px; width: 92%; max-height: 85vh; overflow-y: auto;">
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-          <h5 class="fw-bold mb-0 font-serif-tc text-[#3e2723]" id="dayAppModalTitle">📅 2026/08/01 當日預約</h5>
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="fw-bold mb-0 font-serif-tc text-[#3e2723]" id="dayAppModalTitle">📅 2026/08/01 當日事項</h5>
+            <button id="btnQuickAddDay" class="btn btn-sm text-white fw-bold px-2 py-0 shadow-sm" style="background-color: #84a59d; border-radius: 8px; font-size: 0.75rem; height: 24px;" onclick="jumpToHandoverAdd(this.dataset.date)">＋ 新增</button>
+          </div>
           <button class="btn-close" onclick="closeDayAppListModal()"></button>
         </div>
         <div id="dayAppCardsContainer"></div>
         <div class="d-grid mt-3">
           <button class="btn btn-light" onclick="closeDayAppListModal()">關閉</button>
+        </div>
+      </div>
+    </div>
+    <!-- ✨ 日曆專用：完整版快速新增指定交接 Modal (功能零閹割) -->
+    <div id="quickAddHandoverModal" class="modal-overlay" style="display:none; z-index: 10500 !important;">
+      <div class="modal-body" style="max-width: 480px; width: 92%; max-height: 88vh; overflow-y: auto;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0 font-serif-tc text-[#5b2a30]">✒️ 快速新增指定交接</h5>
+          <button class="btn-close" onclick="closeQuickAddHandoverModal()"></button>
+        </div>
+        
+        <div class="mb-3 p-3 rounded" style="background-color: rgba(243, 233, 224, 0.5); border: 1px solid #ddb892;">
+          <label class="small text-muted fw-bold">預計執行日期與時間</label>
+          <div class="date-row mb-2 mt-1">
+            <input type="text" id="qhDateDisplay" class="form-control form-control-sm fw-bold bg-white text-[#5b2a30]" readonly disabled style="opacity: 0.8;">
+          </div>
+          <div class="date-row">
+            <select id="qhHour" class="form-select form-select-sm"></select><span class="text-muted fw-bold">點</span>
+            <select id="qhMin" class="form-select form-select-sm"></select><span class="text-muted fw-bold">分</span>
+          </div>
+        </div>
+        
+        <label class="small fw-bold text-muted">交接具體內容</label>
+        <div class="clear-wrapper">
+          <textarea id="qhContent" class="form-control my-2" placeholder="請詳述待辦事項..." rows="3"></textarea>
+          <button class="clear-btn" onclick="clearInput('qhContent')">×</button>
+        </div>
+        
+        <label class="small fw-bold text-muted">電話備註</label>
+        <div class="clear-wrapper">
+          <input type="tel" id="qhPhone" class="form-control my-2" placeholder="輸入電話(非必要)">
+          <button class="clear-btn" onclick="clearInput('qhPhone')">×</button>
+        </div>
+        
+        <label class="small fw-bold text-muted mt-2">附加照片 (高壓縮比省空間)</label>
+        <input type="file" id="qhImage" class="form-control mb-2" accept="image/*" onchange="compressAndPreview(this, 'qhImagePreview')">
+        <img id="qhImagePreview" style="max-height: 120px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
+        
+        <div class="row">
+          <div class="col-6"><label class="small text-muted fw-bold">交接人</label><select id="qhFrom" class="form-select form-select-sm"></select></div>
+          <div class="col-6"><label class="small text-muted fw-bold">接交人</label><select id="qhTo" class="form-select form-select-sm"></select></div>
+        </div>
+        
+        <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="qhNoNotify">
+            <label class="form-check-label fw-bold text-secondary" for="qhNoNotify">🔕 僅登記不通知LINE</label>
+          </div>
+        </div>
+        
+        <div class="mt-3 p-3 rounded border mb-4" style="background-color: rgba(255, 248, 225, 0.7); border-color: rgba(255, 193, 7, 0.3);">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="qhDelaySwitch" onchange="toggleQDelayInput()">
+            <label class="form-check-label fw-bold" for="qhDelaySwitch" style="color:#b45309">🌙 啟用延遲推播</label>
+          </div>
+          <div id="qhDelayArea" style="display:none;" class="mt-2">
+            <label class="small text-muted mb-1 fw-bold">預計發送時間</label>
+            <div class="d-flex gap-2 mb-2">
+              <button class="btn btn-sm text-dark bg-white border" onclick="setQDelayTime(8)">明天 08:00</button>
+              <button class="btn btn-sm text-dark bg-white border" onclick="setQDelayTime(9)">明天 09:00</button>
+              <button class="btn btn-sm text-dark bg-white border" onclick="setQDelayTime(12)">明天 12:00</button>
+            </div>
+            <input type="datetime-local" id="qhDelayTime" class="form-control form-control-sm">
+          </div>
+        </div>
+        
+        <div class="d-grid gap-2">
+          <button class="btn btn-info text-white w-100 shadow" onclick="submitQuickHandover()">送出交接清單</button>
+          <button class="btn btn-light w-100" onclick="closeQuickAddHandoverModal()">取消返回</button>
         </div>
       </div>
     </div>
@@ -1024,6 +1098,10 @@
         <label class="small fw-bold text-[#84a59d]">📱 員工 LINE UID 設定對照表 (格式請嚴格遵循：姓名:UID，每行一筆)</label>
         <textarea id="setUidMapInput" class="form-control form-control-sm mt-1 font-monospace" rows="4" placeholder="林哲玄:U123456789...&#10;模擬員工A:U99999999..."></textarea>
       </div>
+      <div class="mb-3">
+        <label class="small fw-bold text-muted">💬 店內金句庫 (請用半形逗號 , 或換行分隔)</label>
+        <textarea id="setQuotesInput" class="form-control form-control-sm mt-1" rows="3" placeholder="開什麼玩笑...,現在先不要說這個..."></textarea>
+      </div>
 
       <div class="row g-2 mb-4">
         <div class="col-6">
@@ -1363,14 +1441,6 @@
       });
     }
 
-    // ✨ 修正：將所有初始加載邏輯捆綁，確保首次開啟 100% 渲染選單
-    window.addEventListener('DOMContentLoaded', async () => {
-      initScrollAnimations();
-      checkDeviceSecurityLock();
-      initSelectors();
-      await loadData();
-      await updateSystemStatus();
-    });
 
     function clearInput(id) { document.getElementById(id).value = ""; document.getElementById(id).focus();  }
 
@@ -1415,14 +1485,7 @@
       }
     }
 
-    // ✨ 修正：將所有初始加載邏輯捆綁，確保首次開啟 100% 渲染選單
-    window.addEventListener('DOMContentLoaded', async () => {
-      initScrollAnimations();
-      checkDeviceSecurityLock();
-      initSelectors();
-      await loadData();
-      await updateSystemStatus();
-    });
+  
 
     function clearAllInputs() { 
       try {
@@ -1489,8 +1552,9 @@
       ['cAppY', 'hYear', 'careYear', 'appCY'].forEach(id => f(id, y, y + yearRange, y)); 
       ['cAppM', 'hMonth', 'careMonth', 'appCM'].forEach(id => f(id, 1, 12, now.getMonth()+1)); 
       ['cAppD', 'hDay', 'careDay', 'appCD'].forEach(id => f(id, 1, 31, now.getDate())); 
-      ['cAppH', 'hHour', 'careHour', 'appCH'].forEach(id => f(id, startHour, endHour, currentH)); 
-      ['cAppMin', 'hMin', 'careMin', 'appCMin'].forEach(id => f(id, 0, 59, currentM));
+      // ✨ 加入了 qhHour 與 qhMin
+      ['cAppH', 'hHour', 'careHour', 'appCH', 'qhHour'].forEach(id => f(id, startHour, endHour, currentH)); 
+      ['cAppMin', 'hMin', 'careMin', 'appCMin', 'qhMin'].forEach(id => f(id, 0, 59, currentM));
     }
 
     async function loadData() { 
@@ -1501,7 +1565,8 @@
             if (item.key === 'staff_list') cache.staff = item.value;
             if (item.key === 'doctor_list') cache.doctors = item.value;
             if (item.key === 'tag_list') cache.tags = item.value;
-            if (item.key === 'line_uid_map') cache.lineUidMap = item.value; 
+            if (item.key === 'line_uid_map') cache.lineUidMap = item.value;
+            if (item.key === 'quote_list' && Array.isArray(item.value) && item.value.length > 0) FUNNY_QUOTES = item.value; 
           });
         }
         cache.statuses = [ '締結', '其他', '爽約'];
@@ -2297,11 +2362,26 @@ async function updateHomeSopBadge() {
       renderNextBatch();
     }
 
-    window.addEventListener('scroll', () => {
-      if (document.getElementById('searchPage').classList.contains('active')) {
-        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-          if (currentRenderIndex < filteredSearchData.length) renderNextBatch();
-        }
+    // ✨ 統一系統初始加載事件
+    window.addEventListener('DOMContentLoaded', async () => {
+      initScrollAnimations();
+      checkDeviceSecurityLock();
+      initSelectors();
+      updateHeroName();
+      
+      // 1. 開啟隨機金句動畫與霧面遮罩
+      startFunnyQuoteAnimation();
+
+      try {
+        // 2. 載入數據與狀態
+        await loadData();
+        await updateSystemStatus();
+      } catch (err) {
+        console.error("初始同步失敗:", err);
+      } finally {
+        // 3. 載入完成，淡出遮罩並啟動副標題輪播
+        hideHomeInitLoader();
+        startHeroSubtitleQuoteAnimation();
       }
     });
 
@@ -3848,21 +3928,190 @@ async function toggleHandoverLike(handoverId) {
       if (!heroSpan) return;
       const currentUser = localStorage.getItem("current_staff_name");
       if (currentUser) {
-        heroSpan.innerText = `勇者: ${currentUser}`;
+        // ✨ 加入精緻襯線體、莫蘭迪深綠與復古文字微陰影
+        heroSpan.innerHTML = `<span class="font-serif-tc text-lg md:text-2xl font-bold align-middle ms-2" style="color: #6b705c; letter-spacing: 1.5px; text-shadow: 0 2px 8px rgba(245, 240, 232, 0.9);">勇者: ${currentUser}</span>`;
       } else {
         heroSpan.innerText = '';
       }
     }
 
-    // ✨ 修正：將所有初始加載邏輯捆綁，確保首次開啟 100% 渲染選單
-    window.addEventListener('DOMContentLoaded', async () => {
-      initScrollAnimations();
-      checkDeviceSecurityLock();
-      initSelectors();
-      updateHeroName(); // ⬅️ 載入時立刻更新勇者名稱
-      await loadData();
-      await updateSystemStatus();
-    });
+
+    let quoteTimer = null;
+
+    // ✨ 金句 1 秒向上滑動切換動畫 (GSAP)
+    function startFunnyQuoteAnimation() {
+      const quoteEl = document.getElementById('funnyQuoteText');
+      if (!quoteEl) return;
+
+      let quoteIndex = 0;
+      quoteEl.innerText = FUNNY_QUOTES[quoteIndex];
+
+      // 初始進入動畫
+      if (typeof gsap !== 'undefined') {
+        gsap.fromTo(quoteEl, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+      } else {
+        quoteEl.style.transform = 'translateY(0)';
+        quoteEl.style.opacity = '1';
+      }
+
+      quoteTimer = setInterval(() => {
+        quoteIndex = (quoteIndex + 1) % FUNNY_QUOTES.length;
+
+        if (typeof gsap !== 'undefined') {
+          // 向上滑出
+          gsap.to(quoteEl, {
+            y: -30,
+            opacity: 0,
+            duration: 0.3,
+            ease: "power2.in",
+            onComplete: () => {
+              quoteEl.innerText = FUNNY_QUOTES[quoteIndex];
+              // 下方進場
+              gsap.fromTo(quoteEl, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+            }
+          });
+        } else {
+          quoteEl.innerText = FUNNY_QUOTES[quoteIndex];
+        }
+      }, 1400); // 動畫 0.4 秒 + 展示 1 秒，節奏最流暢
+    }
+
+    // ✨ 停止動畫並淡出霧面遮罩
+    function hideHomeInitLoader() {
+      if (quoteTimer) clearInterval(quoteTimer);
+      const loader = document.getElementById('homeInitLoader');
+      if (!loader) return;
+
+      if (typeof gsap !== 'undefined') {
+        gsap.to(loader, {
+          opacity: 0,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            loader.style.display = 'none';
+          }
+        });
+      } else {
+        loader.style.display = 'none';
+      }
+    }
+
+    // ✨ 店內專屬預設金句庫（若 Supabase 無設定則使用此預設）
+    let FUNNY_QUOTES = [
+      "現在還在工作，你很勇。",
+      "開什麼玩笑...",
+      "現在先不要說這個...",
+      "眼鏡不行服務要可以...",
+      "葉黃素用含的...",
+      "沒有表情..."
+    ];
+
+    let loaderQuoteTimer = null;
+    let heroSubtitleTimer = null;
+
+    // 取得隨機不重複索引輔助函式
+    function getRandomQuoteIndex(lastIndex, totalCount) {
+      if (totalCount <= 1) return 0;
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * totalCount);
+      } while (nextIndex === lastIndex);
+      return nextIndex;
+    }
+
+    // ✨ 1. 霧面載入遮罩隨機金句動畫（1秒切換）
+    function startFunnyQuoteAnimation() {
+      const quoteEl = document.getElementById('funnyQuoteText');
+      if (!quoteEl) return;
+
+      let lastIndex = -1;
+      let currentIndex = getRandomQuoteIndex(lastIndex, FUNNY_QUOTES.length);
+      lastIndex = currentIndex;
+      
+      quoteEl.innerText = FUNNY_QUOTES[currentIndex];
+
+      if (typeof gsap !== 'undefined') {
+        gsap.fromTo(quoteEl, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+      } else {
+        quoteEl.style.transform = 'translateY(0)';
+        quoteEl.style.opacity = '1';
+      }
+
+      loaderQuoteTimer = setInterval(() => {
+        currentIndex = getRandomQuoteIndex(lastIndex, FUNNY_QUOTES.length);
+        lastIndex = currentIndex;
+
+        if (typeof gsap !== 'undefined') {
+          gsap.to(quoteEl, {
+            y: -30,
+            opacity: 0,
+            duration: 0.3,
+            ease: "power2.in",
+            onComplete: () => {
+              quoteEl.innerText = FUNNY_QUOTES[currentIndex];
+              gsap.fromTo(quoteEl, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+            }
+          });
+        } else {
+          quoteEl.innerText = FUNNY_QUOTES[currentIndex];
+        }
+      }, 1400);
+    }
+
+    // ✨ 2. 首頁副標題隨機金句輪播（每 3 秒切換）
+    function startHeroSubtitleQuoteAnimation() {
+      if (heroSubtitleTimer) clearInterval(heroSubtitleTimer);
+      const subEl = document.getElementById('heroSubtitleQuote');
+      if (!subEl) return;
+
+      let lastIndex = -1;
+      let currentIndex = getRandomQuoteIndex(lastIndex, FUNNY_QUOTES.length);
+      lastIndex = currentIndex;
+
+      subEl.innerText = FUNNY_QUOTES[currentIndex];
+
+      heroSubtitleTimer = setInterval(() => {
+        currentIndex = getRandomQuoteIndex(lastIndex, FUNNY_QUOTES.length);
+        lastIndex = currentIndex;
+
+        if (typeof gsap !== 'undefined') {
+          gsap.to(subEl, {
+            y: -25,
+            opacity: 0,
+            duration: 0.4,
+            ease: "power2.in",
+            onComplete: () => {
+              subEl.innerText = FUNNY_QUOTES[currentIndex];
+              gsap.fromTo(subEl, { y: 25, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" });
+            }
+          });
+        } else {
+          subEl.innerText = FUNNY_QUOTES[currentIndex];
+        }
+      }, 3400); // 3 秒展示 + 0.4 秒轉場
+    }
+
+    // ✨ 停止載入動畫並淡出霧面遮罩
+    function hideHomeInitLoader() {
+      if (loaderQuoteTimer) clearInterval(loaderQuoteTimer);
+      const loader = document.getElementById('homeInitLoader');
+      if (!loader) return;
+
+      if (typeof gsap !== 'undefined') {
+        gsap.to(loader, {
+          opacity: 0,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            loader.style.display = 'none';
+          }
+        });
+      } else {
+        loader.style.display = 'none';
+      }
+    }
+    // ✨ 修改：loadData 支援載入與快取自訂金句庫
+    const originalLoadData = loadData; // 保持原有 loadData 相容
 
     async function verifyDeviceGlobalPassword() {
       const inputPwd = document.getElementById('deviceGlobalPwdInput').value.trim();
@@ -3923,6 +4172,7 @@ async function toggleHandoverLike(handoverId) {
           document.getElementById('setStaffInput').value = cache.staff.join(',');
           document.getElementById('setDoctorInput').value = cache.doctors.join(',');
           document.getElementById('setTagInput').value = cache.tags.join(',');
+          document.getElementById('setQuotesInput').value = FUNNY_QUOTES.join('\n');
           
           const mapObj = cache.lineUidMap || {};
           const mapLines = Object.keys(mapObj).map(name => {
@@ -3978,6 +4228,12 @@ async function toggleHandoverLike(handoverId) {
         await _supabase.from('system_settings').upsert({ key: 'staff_list', value: staffArr });
         await _supabase.from('system_settings').upsert({ key: 'doctor_list', value: doctorArr });
         await _supabase.from('system_settings').upsert({ key: 'tag_list', value: tagArr });
+        const rawQuotes = document.getElementById('setQuotesInput').value;
+        const quoteArr = rawQuotes.replace(/,/g, '\n').split('\n').map(q => q.trim()).filter(q => q);
+        if (quoteArr.length > 0) {
+          await _supabase.from('system_settings').upsert({ key: 'quote_list', value: quoteArr });
+          FUNNY_QUOTES = quoteArr;
+        }
         await _supabase.from('system_settings').upsert({ key: 'is_maintenance', value: isMaint });
         await _supabase.from('system_settings').upsert({ key: 'line_uid_map', value: newUidMap });
 
@@ -5068,8 +5324,14 @@ function openDayAppListModal(dateKey) {
 
   const dateParts = dateKey.split('-');
   titleEl.innerText = `📅 ${dateParts[0]}/${dateParts[1]}/${dateParts[2]} 當日事項`;
+  
+  // ✨ 將目前的點擊日期綁定給「＋ 新增」按鈕
+  const btnQuickAdd = document.getElementById('btnQuickAddDay');
+  if (btnQuickAdd) btnQuickAdd.dataset.date = dateKey;
 
   const mergedList = getMergedAppAndHandoverList(currentAppStaffFilter);
+  
+  // ... 下方保留原本的過濾與渲染邏輯 ...
   
   // ✨ 核心修正：精準拆解日期並比較，解決「2026-8-11」與「2026-08-11」比對失敗導致彈窗沒資料的問題
   const dayEvents = mergedList.filter(it => {
@@ -5151,6 +5413,147 @@ function openDayAppListModal(dateKey) {
     function closeDayAppListModal() {
       document.getElementById('dayAppListModal').style.display = 'none';
     }
+
+
+
+// ✨ 日曆快速新增交接專屬 (完整欄位無閹割)
+    let tempQuickAddDate = '';
+
+    function toggleQDelayInput() { 
+      const isChecked = document.getElementById('qhDelaySwitch').checked; 
+      document.getElementById('qhDelayArea').style.display = isChecked ? 'block' : 'none'; 
+      if (isChecked && !document.getElementById('qhDelayTime').value) setQDelayTime(9); 
+    }
+
+    function setQDelayTime(hour) { 
+      const tomorrow = new Date(); 
+      tomorrow.setDate(tomorrow.getDate() + 1); 
+      tomorrow.setHours(hour, 0, 0, 0); 
+      const pad = (n) => n.toString().padStart(2, '0'); 
+      document.getElementById('qhDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; 
+    }
+
+    function jumpToHandoverAdd(dateKey) {
+      if (!dateKey) return;
+      tempQuickAddDate = dateKey.replace(/-/g, '/'); // 格式化為 2026/08/05
+      
+      closeDayAppListModal(); // 關閉當日清單彈窗
+      
+      // 清空與初始化表單欄位
+      document.getElementById('qhDateDisplay').value = tempQuickAddDate;
+      document.getElementById('qhContent').value = '';
+      document.getElementById('qhPhone').value = '';
+      document.getElementById('qhImage').value = '';
+      document.getElementById('qhImagePreview').style.display = 'none';
+      document.getElementById('qhImagePreview').src = '';
+      document.getElementById('qhNoNotify').checked = false;
+      document.getElementById('qhDelaySwitch').checked = false;
+      document.getElementById('qhDelayArea').style.display = 'none';
+      document.getElementById('qhDelayTime').value = '';
+      
+      const qImgInput = document.getElementById('qhImage');
+      if (qImgInput) qImgInput.removeAttribute('data-compressed');
+
+      // 載入人員下拉選單
+      const fromSel = document.getElementById('qhFrom');
+      const toSel = document.getElementById('qhTo');
+      fromSel.innerHTML = '<option value="">-請選擇-</option>';
+      toSel.innerHTML = '<option value="">-請選擇-</option>';
+      
+      cache.staff.forEach(s => { 
+        if(s) {
+          fromSel.add(new Option(s, s)); 
+          toSel.add(new Option(s, s)); 
+        }
+      });
+      
+      // 預設代入登入者身分
+      const currentStaff = localStorage.getItem("current_staff_name");
+      if (currentStaff && cache.staff.includes(currentStaff)) {
+        fromSel.value = currentStaff;
+      } else {
+        fromSel.value = "";
+      }
+
+      // 顯示彈窗並 Focus 內容框
+      document.getElementById('quickAddHandoverModal').style.display = 'flex';
+      setTimeout(() => {
+        document.getElementById('qhContent').focus();
+      }, 100);
+    }
+
+    function closeQuickAddHandoverModal() {
+      document.getElementById('quickAddHandoverModal').style.display = 'none';
+    }
+
+    // ✨ 完整版快速新增交接送出邏輯 (與原本 submitHand 100% 相同)
+    async function submitQuickHandover() {
+      const fromStaff = document.getElementById('qhFrom').value;
+      const toStaff = document.getElementById('qhTo').value;
+      if (!fromStaff || !toStaff) { alert("⚠️ 請確實選擇交接人與接交人！"); return; }
+
+      const isDelay = document.getElementById('qhDelaySwitch').checked;
+      const isNoNotify = document.getElementById('qhNoNotify').checked;
+      
+      let delayTimeStr = null;
+      if (isDelay) {
+        const rawTime = document.getElementById('qhDelayTime').value;
+        if (!rawTime) { alert("請設定延遲推播時間"); return; }
+        delayTimeStr = rawTime.replace('T', ' '); 
+      }
+
+      const hContentValue = document.getElementById('qhContent').value;
+      const hPhoneValue = document.getElementById('qhPhone').value;
+
+      const pad = (n) => n < 10 ? '0' + n : n;
+      const timeStr = `${pad(document.getElementById('qhHour').value)}:${pad(document.getElementById('qhMin').value)}`;
+      
+      // 與 submitHand 完全相同的內容與電話組合邏輯
+      let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
+      finalContent += ` ${timeStr}`;
+
+      let finalPushStatus = isNoNotify ? 'None' : 'Pending';
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      const qImgInput = document.getElementById('qhImage');
+      const base64Image = qImgInput ? (qImgInput.dataset.compressed || null) : null;
+
+      const targetDateStr = `${tempQuickAddDate} ${timeStr}`;
+
+      const payload = {
+        type: '指定時間',
+        target_date: targetDateStr,
+        content: finalContent,
+        from_staff: fromStaff,
+        to_staff: toStaff,
+        is_delay: isDelay,
+        delay_time: delayTimeStr,
+        is_no_notify: isNoNotify,
+        push_status: finalPushStatus,
+        image_url: base64Image
+      };
+
+      try {
+        const { data, error } = await _supabase.from('handovers').insert([payload]).select();
+        document.getElementById('loadingOverlay').style.display = 'none';
+        if (error) throw error;
+
+        // 同步寫入 Google 日曆
+        const calTime = targetDateStr.replace(/\//g, '-');
+        const title = `[指定時間]${hContentValue}-${toStaff}`;
+        autoSyncCalendar('handovers', data[0].id, title, calTime);
+
+        alert("🎉 工作交接登記成功！");
+        closeQuickAddHandoverModal();
+        
+        // 重新重繪背景資料與日曆
+        loadData();
+      } catch(e) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("登記交接失敗: " + e.message);
+      }
+    }
     // 找尋對應人員時，做去空白防呆
 function getStaffData(staffName, staffConfig) {
   if (!staffName || !staffConfig) return null;
@@ -5161,5 +5564,19 @@ function getStaffData(staffName, staffConfig) {
   return matchedKey ? staffConfig[matchedKey] : null;
 }
   </script>
+  <!-- ✨ 首頁初始資料同步專屬：莫蘭迪霧面金句 Loading 遮罩 -->
+  <div id="homeInitLoader" style="position: fixed; inset: 0; z-index: 10000; background: rgba(242, 242, 240, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; pointer-events: auto;">
+    <div class="d-flex align-items-center mb-3">
+      <div class="spinner-border spinner-border-sm me-2" style="color: #5b2a30;" role="status"></div>
+      <span class="font-serif-tc fw-bold text-xs tracking-widest" style="color: #5b2a30; opacity: 0.8;">系統數據同步中...</span>
+    </div>
+    
+    <!-- 金句輪播容器 -->
+    <div style="height: 40px; overflow: hidden; position: relative; width: 100%; max-width: 320px;" class="d-flex justify-content-center align-items-center">
+      <div id="funnyQuoteText" class="font-serif-tc fw-bold text-lg text-center" style="color: #3e2723; letter-spacing: 2px; white-space: nowrap; position: absolute; transform: translateY(100%); opacity: 0;">
+        [開什麼玩笑...]
+      </div>
+    </div>
+  </div>
 </body>
 </html>
