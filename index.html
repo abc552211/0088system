@@ -640,6 +640,19 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">指定時間任務</h4>
     
+    <!-- ✨ 簡約微光圓形下載圖示按鈕 -->
+    <button onclick="exportMyShiftsToICS()" 
+            class="btn p-0 d-flex align-items-center justify-content-center rounded-circle transition-all duration-300" 
+            title="匯出我的班表 (.ics)"
+            style="width: 34px; height: 34px; background-color: rgba(125, 139, 158, 0.12); color: #4a5568; border: 1px solid rgba(125, 139, 158, 0.25);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+    </button>
+  </div>
+    
     <!-- 1. 清單 / 日曆 主模式切換 (莫蘭迪微型圖示鈕) -->
     <div class="btn-group btn-group-sm shadow-sm" role="group">
       <button id="appModeBtnList" type="button" class="btn btn-primary px-2.5 py-1 fw-bold" onclick="switchAppViewMode('list')" style="font-size: 0.8rem;">📋 清單</button>
@@ -5728,6 +5741,88 @@ function getStaffData(staffName, staffConfig) {
   // 遍歷 Key 進行 trim 後的比對
   const matchedKey = Object.keys(staffConfig).find(key => key.trim() === cleanName);
   return matchedKey ? staffConfig[matchedKey] : null;
+}
+// ✨ 產生並下載個人專屬 .ics 班表檔案 (含自動抓取 Supabase 防呆機制)
+async function exportMyShiftsToICS() {
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  if (!currentUser || currentUser === "店帳") {
+    alert("⚠️ 請先在右上角切換為個人身分，才能匯出個人班表喔！");
+    return;
+  }
+
+  let myShifts = [];
+
+  // 1. 優先從快取中尋找 (相容 cache.schedules 或 cache.shiftList)
+  const scheduleSource = cache.schedules || cache.shiftList;
+
+  if (scheduleSource && scheduleSource.length > 0) {
+    myShifts = scheduleSource.filter(s => 
+      String(s.staff_name || s.staffName).trim() === currentUser && 
+      s.shift_type && 
+      String(s.shift_type).trim() !== "休假"
+    );
+  } else {
+    // 2. 防呆降級：若快取尚未載入完畢，直接向 Supabase 撈取
+    try {
+      const { data, error } = await _supabase
+        .from('schedules')
+        .select('*')
+        .eq('staff_name', currentUser)
+        .neq('shift_type', '休假');
+
+      if (error) throw error;
+      myShifts = data || [];
+    } catch (err) {
+      console.error("即時抓取班表失敗:", err);
+      alert("⚠️ 班表資料連線失敗，請重新整理頁面後再試一次！");
+      return;
+    }
+  }
+
+  if (myShifts.length === 0) {
+    alert(`📅 目前無 ${currentUser} 的上班班表紀錄！`);
+    return;
+  }
+
+  // 3. 建立 iCalendar (.ics) 格式文字
+  let icsContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Store Schedule App//TW",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:${currentUser} 的工作班表`
+  ];
+
+  myShifts.forEach(shift => {
+    const rawDate = shift.date;
+    if (!rawDate) return;
+    
+    // 格式化日期 YYYYMMDD
+    const dateStr = String(rawDate).replace(/-/g, '').substring(0, 8);
+    const shiftType = shift.shift_type || shift.shiftType || '上班';
+    
+    icsContent.push("BEGIN:VEVENT");
+    icsContent.push(`SUMMARY:[班表] ${shiftType}`);
+    icsContent.push(`DESCRIPTION:員工 ${currentUser} 勤務班別：${shiftType}`);
+    icsContent.push(`DTSTART;VALUE=DATE:${dateStr}`);
+    icsContent.push(`DTEND;VALUE=DATE:${dateStr}`);
+    icsContent.push(`UID:shift-${dateStr}-${currentUser}@store`);
+    icsContent.push("END:VEVENT");
+  });
+
+  icsContent.push("END:VCALENDAR");
+
+  // 4. 觸發下載 .ics 檔案
+  const blob = new Blob([icsContent.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = window.URL.createObjectURL(blob);
+  link.download = `${currentUser}_班表.ics`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  alert(`🎉 已成功產生 ${currentUser} 的班表檔案！\n\n請開啟 TimeTree / 日曆 APP ➡️ 進入設定 ➡️ 選擇「匯入外部行事曆」，選擇此下載的 .ics 檔即可！`);
 }
   </script>
   <!-- ✨ 首頁初始資料同步專屬：莫蘭迪霧面金句 Loading 遮罩 -->
