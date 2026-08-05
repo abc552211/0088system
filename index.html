@@ -266,23 +266,40 @@
       animation: flash-red 1s infinite alternate;
       border: 2px solid #e5989b !important;
     }
-    /* ✨ 日曆模式：月/週模式差異化高度樣式 */
+    /* ✨ 日曆滿版加寬與極細邊框優化 */
+    #calendarGrid {
+      padding: 4px !important; /* 縮減內邊距讓格子儘量拓寬 */
+      border: 1px solid rgba(142, 154, 175, 0.15) !important;
+    }
     .cal-grid-header {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       text-align: center;
-      font-weight: bold;
-      font-size: 0.8rem;
+      font-weight: 600;
+      font-size: 0.75rem;
       color: var(--font-color-muted);
-      padding-bottom: 6px;
-      border-bottom: 1px solid rgba(142, 154, 175, 0.2);
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(142, 154, 175, 0.12);
     }
     .cal-grid-body {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 2px;
-      background-color: rgba(142, 154, 175, 0.15);
-      margin-top: 4px;
+      gap: 1px; /* 1px 極細隔線 */
+      background-color: rgba(142, 154, 175, 0.12); /* 隔線色彩 */
+      margin-top: 2px;
+    }
+    /* 月模式：鎖定 105px 高度 */
+    .cal-day-cell {
+      background-color: #ffffff;
+      height: 105px !important;
+      max-height: 105px !important;
+      padding: 3px 2px; /* 左右邊距拉近以利班別延伸 */
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      overflow: hidden !important;
+      box-sizing: border-box;
+      transition: background-color 0.2s;
     }
     /* 月模式：拉高至 105px 增加舒適空間 */
     .cal-day-cell {
@@ -3353,89 +3370,93 @@ function renderCalendarView() {
           shiftTxt = myShiftObj.shift_type.trim();
         }
       }
-      // ✨ 個人班別專屬配色 (休假微橘底深灰字、AB微藍底黑字、BC微黃底黑字、D純藍字)
       const cleanShift = shiftTxt.trim();
       
       if (cleanShift === '休假') {
-        // 微橘底 + 深灰字
-        shiftBadgeStyle = 'background-color: rgba(255, 237, 213, 0.6); color: #c2410c; font-weight: 500; padding: 1px 4px; border-radius: 3px;';
+        // 微橘底 + 暖橘棕字
+        shiftBadgeStyle = 'background-color: rgba(255, 237, 213, 0.85); color: #c2410c; font-weight: 600;';
       } else if (cleanShift === 'AB') {
         // 微藍底 + 黑字
-        shiftBadgeStyle = 'background-color: rgba(224, 242, 254, 0.6); color: #111827; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+        shiftBadgeStyle = 'background-color: rgba(224, 242, 254, 0.85); color: #111827; font-weight: 600;';
       } else if (cleanShift === 'BC') {
         // 微黃底 + 黑字
-        shiftBadgeStyle = 'background-color: rgba(254, 240, 138, 0.5); color: #111827; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+        shiftBadgeStyle = 'background-color: rgba(254, 240, 138, 0.85); color: #111827; font-weight: 600;';
       } else if (cleanShift === 'D') {
-        // 純藍字、無底色
-        shiftBadgeStyle = 'color: #1d4ed8; font-weight: 700; padding: 0;';
+        // 中淺灰底 + 經典深藍字
+        shiftBadgeStyle = 'background-color: rgba(229, 231, 235, 0.85); color: #1d4ed8; font-weight: 700;';
+      } else if (cleanShift.includes('店休')) {
+        // 店帳店休
+        shiftBadgeStyle = 'background-color: rgba(254, 226, 226, 0.85); color: #dc2626; font-weight: 600;';
+      } else if (cleanShift.includes('營業')) {
+        // 店帳營業
+        shiftBadgeStyle = 'background-color: rgba(224, 242, 254, 0.85); color: #0369a1; font-weight: 600;';
       } else {
-        // 預設其他班別 (莫蘭迪灰藍微底)
-        shiftBadgeStyle = 'background-color: rgba(125, 139, 158, 0.12); color: #3e2723; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
+        // 預設其他班別
+        shiftBadgeStyle = 'background-color: rgba(243, 244, 246, 0.85); color: #374151; font-weight: 600;';
       }
     }
 
     let cellClass = 'cal-day-cell';
-    if (isOtherMonth) cellClass += ' other-month';
-    if (isToday) cellClass += ' today';
+      if (isOtherMonth) cellClass += ' other-month';
+      if (isToday) cellClass += ' today';
 
     let eventsHtml = '';
-    // 月模式下允許最多顯示 3 筆，週模式最多 8 筆
-    const maxTags = (calSubMode === 'week') ? 8 : 4;
+    // ✨ 月模式最多顯示 3 筆，週模式最多 8 筆
+      const maxTags = (calSubMode === 'week') ? 8 : 3;
 
-    dayEvents.slice(0, maxTags).forEach(ev => {
-      const evTime = ev.eventTime ? new Date(String(ev.eventTime).replace(/-/g, '/')) : null;
-      const isOverdue = evTime && evTime < now && (ev.itemType === 'consult' ? (ev.status === '待處理' || ev.status === '已關懷') : true);
-      
-      // ✨ 極簡風：取消滿版色塊，改為透明底深色字 + 左側專屬色彩指標線
-      let tagStyle = '';
-      if (ev.itemType === 'handover') {
-        // 交接：煙燻藕粉指示線 + 深鐵灰字
-        tagStyle = 'background-color: rgba(168, 154, 159, 0.12); color: #4a4e69; border-left: 3px solid #a89a9f;';
-      } else if (isOverdue) {
-        // 逾期：乾燥玫瑰紅指示線 + 紅字
-        tagStyle = 'background-color: rgba(229, 152, 155, 0.15); color: #c96b70; border-left: 3px solid #e5989b; font-weight: bold;';
-      } else {
-        // 正常預約：莫蘭迪灰綠指示線 + 深綠字
-        tagStyle = 'background-color: rgba(132, 165, 157, 0.12); color: #3d5a52; border-left: 3px solid #84a59d;';
-      }
-      
-      let displayPrefix = '';
-      if (calSubMode === 'week' && ev.eventTime) {
-        const timePart = String(ev.eventTime).trim().replace('T', ' ');
-        const timeTokens = timePart.split(' ');
-        if (timeTokens.length > 1) {
-            const timeStr = timeTokens[1];
-            if (timeStr.length >= 5) displayPrefix = `${timeStr.substring(0, 5)} `;
+      dayEvents.slice(0, maxTags).forEach(ev => {
+        const evTime = ev.eventTime ? new Date(String(ev.eventTime).replace(/-/g, '/')) : null;
+        const isOverdue = evTime && evTime < now && (ev.itemType === 'consult' ? (ev.status === '待處理' || ev.status === '已關懷') : true);
+        
+        // ✨ 任務條瘦身：字體變細 (font-weight: 400)、指示線縮為 2px、內邊距壓低
+        let tagStyle = '';
+        if (ev.itemType === 'handover') {
+          tagStyle = 'background-color: rgba(168, 154, 159, 0.12); color: #4a4e69; border-left: 2px solid #a89a9f; font-weight: 400;';
+        } else if (isOverdue) {
+          tagStyle = 'background-color: rgba(229, 152, 155, 0.15); color: #c96b70; border-left: 2px solid #e5989b; font-weight: 600;';
+        } else {
+          tagStyle = 'background-color: rgba(132, 165, 157, 0.12); color: #3d5a52; border-left: 2px solid #84a59d; font-weight: 400;';
         }
+        
+        let displayPrefix = '';
+        if (calSubMode === 'week' && ev.eventTime) {
+          const timePart = String(ev.eventTime).trim().replace('T', ' ');
+          const timeTokens = timePart.split(' ');
+          if (timeTokens.length > 1) {
+              const timeStr = timeTokens[1];
+              if (timeStr.length >= 5) displayPrefix = `${timeStr.substring(0, 5)} `;
+          }
+        }
+
+        const labelTxt = ev.itemType === 'handover' ? `${ev.event || '無內容'}` : ev.name;
+        
+        // ✨ 高度降低、字級縮至 0.58rem、行高緊湊 (line-height: 1.1)
+        eventsHtml += `<div class="cal-event-tag" style="font-size: 0.58rem; line-height: 1.1; padding: 0.5px 3px; border-radius: 2px; margin-bottom: 1.5px; ${tagStyle}" title="${labelTxt}">${displayPrefix}${labelTxt}</div>`;
+      });
+
+      if (dayEvents.length > maxTags) {
+        eventsHtml += `<div class="cal-event-more">+${dayEvents.length - maxTags} 筆</div>`;
       }
 
-      const labelTxt = ev.itemType === 'handover' ? `${ev.event || '無內容'}` : ev.name;
-      eventsHtml += `<div class="cal-event-tag" style="padding: 1px 4px; border-radius: 2px; margin-bottom: 2px; ${tagStyle}" title="${labelTxt}">${displayPrefix}${labelTxt}</div>`;
+      html += `
+        <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
+          <!-- 第 1 列：日期置頂置中、字體變細 -->
+          <div class="cal-day-num text-center" style="font-size: 0.7rem; font-weight: 400; line-height: 1; margin-top: -1px; margin-bottom: 1px;">${dateObj.getDate()}</div>
+          
+          <!-- 第 2 列：班別置中、色底拓寬接近邊緣、字級縮小且微向上抬升 -->
+          <div style="height: 14px; margin-bottom: 2px;" class="d-flex align-items-center justify-content-center w-100">
+            <span class="w-100 text-center" style="font-size: 0.52rem; line-height: 1.2; letter-spacing: 0.2px; padding: 0.5px 0; border-radius: 2px; ${shiftBadgeStyle}">${shiftTxt}</span>
+          </div>
+          
+          <!-- 第 3 列起：任務/交接清單 -->
+          ${eventsHtml}
+        </div>
+      `;
     });
 
-    if (dayEvents.length > maxTags) {
-      eventsHtml += `<div class="cal-event-more">+${dayEvents.length - maxTags} 筆</div>`;
-    }
-
-    html += `
-      <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
-        <!-- 第 1 列：日期 -->
-        <div class="cal-day-num" style="font-size: 0.72rem; line-height: 1; margin-bottom: 2px;">${dateObj.getDate()}</div>
-        
-        <!-- 第 2 列：班別標籤 (固定獨占獨立一行，防止拉扯與高矮不一) -->
-        <div style="height: 16px; margin-bottom: 3px;" class="d-flex align-items-center">
-          <span style="font-size: 0.58rem; line-height: 1.2; letter-spacing: 0.3px; ${shiftBadgeStyle}">${shiftTxt}</span>
-        </div>
-        
-        <!-- 第 3 列起：任務/交接清單 -->
-        ${eventsHtml}
-      </div>
-    `;
-  });
-
-  html += `</div>`;
-  gridContainer.innerHTML = html;
-}
+    html += `</div>`;
+    gridContainer.innerHTML = html;
+  }
 
 // 1. 點擊清單卡片彈出處理 Modal
 function selectAppCard(index, id, name, type = 'consult') {
@@ -4156,7 +4177,7 @@ async function toggleHandoverLike(handoverId) {
         } else {
           subEl.innerText = FUNNY_QUOTES[currentIndex];
         }
-      }, 3400); // 3 秒展示 + 0.4 秒轉場
+      }, 2400); // 2 秒展示 + 0.4 秒轉場
     }
 
     // ✨ 停止載入動畫並淡出霧面遮罩
