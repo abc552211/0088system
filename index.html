@@ -284,12 +284,12 @@
       background-color: rgba(142, 154, 175, 0.15);
       margin-top: 4px;
     }
-    /* 月模式：鎖定 75px */
+    /* 月模式：拉高至 105px 增加舒適空間 */
     .cal-day-cell {
       background-color: #ffffff;
-      height: 75px !important;
-      max-height: 75px !important;
-      padding: 4px;
+      height: 105px !important;
+      max-height: 105px !important;
+      padding: 4px 5px;
       display: flex;
       flex-direction: column;
       cursor: pointer;
@@ -3364,15 +3364,25 @@ function renderCalendarView() {
     if (isToday) cellClass += ' today';
 
     let eventsHtml = '';
-    const maxTags = (calSubMode === 'week') ? 8 : 2;
+    // 月模式下允許最多顯示 3 筆，週模式最多 8 筆
+    const maxTags = (calSubMode === 'week') ? 8 : 4;
 
     dayEvents.slice(0, maxTags).forEach(ev => {
       const evTime = ev.eventTime ? new Date(String(ev.eventTime).replace(/-/g, '/')) : null;
       const isOverdue = evTime && evTime < now && (ev.itemType === 'consult' ? (ev.status === '待處理' || ev.status === '已關懷') : true);
       
-      let tagStyle = ev.itemType === 'handover' 
-        ? 'background-color: #9a8c98; color: #fff; border-left: 3px solid #5b2a30;' 
-        : (isOverdue ? 'background-color: #e5989b; color: #fff;' : 'background-color: #84a59d; color: #fff;');
+      // ✨ 極簡風：取消滿版色塊，改為透明底深色字 + 左側專屬色彩指標線
+      let tagStyle = '';
+      if (ev.itemType === 'handover') {
+        // 交接：煙燻藕粉指示線 + 深鐵灰字
+        tagStyle = 'background-color: rgba(168, 154, 159, 0.12); color: #4a4e69; border-left: 3px solid #a89a9f;';
+      } else if (isOverdue) {
+        // 逾期：乾燥玫瑰紅指示線 + 紅字
+        tagStyle = 'background-color: rgba(229, 152, 155, 0.15); color: #c96b70; border-left: 3px solid #e5989b; font-weight: bold;';
+      } else {
+        // 正常預約：莫蘭迪灰綠指示線 + 深綠字
+        tagStyle = 'background-color: rgba(132, 165, 157, 0.12); color: #3d5a52; border-left: 3px solid #84a59d;';
+      }
       
       let displayPrefix = '';
       if (calSubMode === 'week' && ev.eventTime) {
@@ -3384,8 +3394,8 @@ function renderCalendarView() {
         }
       }
 
-      const labelTxt = ev.itemType === 'handover' ? ` ${ev.event || '無內容'}` : ev.name;
-      eventsHtml += `<div class="cal-event-tag" style="${tagStyle}" title="${labelTxt}">${displayPrefix}${labelTxt}</div>`;
+      const labelTxt = ev.itemType === 'handover' ? `${ev.event || '無內容'}` : ev.name;
+      eventsHtml += `<div class="cal-event-tag" style="padding: 1px 4px; border-radius: 2px; margin-bottom: 2px; ${tagStyle}" title="${labelTxt}">${displayPrefix}${labelTxt}</div>`;
     });
 
     if (dayEvents.length > maxTags) {
