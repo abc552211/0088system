@@ -5817,7 +5817,7 @@ async function exportMyShiftsToICS() {
     const shiftType = shift.shift_type || shift.shiftType || '上班';
     
     icsContent.push("BEGIN:VEVENT");
-    icsContent.push(`SUMMARY:[班表] ${shiftType}`);
+    icsContent.push(`SUMMARY: ${shiftType}`);
     icsContent.push(`DESCRIPTION:員工 ${currentUser} 勤務班別：${shiftType}`);
     icsContent.push(`DTSTART;VALUE=DATE:${dateStr}`);
     icsContent.push(`DTEND;VALUE=DATE:${dateStr}`);
