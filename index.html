@@ -5333,21 +5333,52 @@ if (!hasLiked) {
   container.innerHTML = html;
 }
 
-// 6. 按讚切換 (立刻更新狀態並重新計算未讀數)
+// ✨ SOP 按讚 / 取消按讚 (加入運作感轉圈圈與防重複點擊機制)
 async function toggleSopLike(sopId) {
   const staff = localStorage.getItem("current_staff_name");
   if (!staff) return alert("無法識別身分，請確認裝置已解鎖授權！");
   
+  // 1. 抓取點擊的 DOM 按鈕並防止重複連點
+  const btn = document.querySelector(`button[onclick="toggleSopLike(${sopId})"]`);
+  if (!btn) return;
+
+  if (btn.disabled) return; // 若正處於處理狀態則忽略重複點擊
+  btn.disabled = true;      // 暫時鎖定按鈕
+
+  const originalHtml = btn.innerHTML; // 備份原本按鈕 HTML
+
+  // 2. 即時切換為旋轉圈圈 Spinner UI
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm text-danger" role="status" aria-hidden="true" style="width: 0.85rem; height: 0.85rem; border-width: 0.15em;"></span><span class="ms-1.5" style="font-size:0.75rem;">處理中...</span>`;
+
   try {
-    const { data: existing } = await _supabase.from('sop_likes').select('id').eq('sop_id', sopId).eq('staff_name', staff).single();
+    // 3. 向 Supabase 查詢與更新按讚狀態
+    const { data: existing, error: fetchErr } = await _supabase
+      .from('sop_likes')
+      .select('id')
+      .eq('sop_id', sopId)
+      .eq('staff_name', staff)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+
     if (existing) {
-      await _supabase.from('sop_likes').delete().eq('id', existing.id);
+      // 已經按過讚 -> 刪除 (取消讚)
+      const { error: delErr } = await _supabase.from('sop_likes').delete().eq('id', existing.id);
+      if (delErr) throw delErr;
     } else {
-      await _supabase.from('sop_likes').insert([{ sop_id: sopId, staff_name: staff }]);
+      // 未按過讚 -> 新增 (按讚/已閱)
+      const { error: insErr } = await _supabase.from('sop_likes').insert([{ sop_id: sopId, staff_name: staff }]);
+      if (insErr) throw insErr;
     }
-    searchSops(); // 重新整理狀態
+
+    // 4. 重新搜尋與渲染 SOP 列表 (會自動更新 UI 並重新綁定狀態)
+    await searchSops();
   } catch (e) {
-    console.error("按讚切換失敗:", e);
+    console.error("SOP 按讚切換失敗:", e);
+    alert("操作失敗: " + (e.message || JSON.stringify(e)));
+    // 若出錯則還原按鈕
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
   }
 }
 
