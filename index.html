@@ -3358,7 +3358,7 @@ function renderCalendarView() {
       
       if (cleanShift === '休假') {
         // 微橘底 + 深灰字
-        shiftBadgeStyle = 'background-color: rgba(255, 237, 213, 0.6); color: #4b5563; font-weight: 500; padding: 1px 4px; border-radius: 3px;';
+        shiftBadgeStyle = 'background-color: rgba(255, 237, 213, 0.6); color: #c2410c; font-weight: 500; padding: 1px 4px; border-radius: 3px;';
       } else if (cleanShift === 'AB') {
         // 微藍底 + 黑字
         shiftBadgeStyle = 'background-color: rgba(224, 242, 254, 0.6); color: #111827; font-weight: 600; padding: 1px 4px; border-radius: 3px;';
@@ -3419,10 +3419,15 @@ function renderCalendarView() {
 
     html += `
       <div class="${cellClass}" onclick="openDayAppListModal('${dateKey}')">
-        <div class="d-flex justify-content-between align-items-center mb-1" style="line-height: 1;">
-          <span class="cal-day-num" style="font-size: 0.72rem;">${dateObj.getDate()}</span>
-          <span style="font-size: 0.58rem; letter-spacing: 0.5px; ${shiftBadgeStyle}">${shiftTxt}</span>
+        <!-- 第 1 列：日期 -->
+        <div class="cal-day-num" style="font-size: 0.72rem; line-height: 1; margin-bottom: 2px;">${dateObj.getDate()}</div>
+        
+        <!-- 第 2 列：班別標籤 (固定獨占獨立一行，防止拉扯與高矮不一) -->
+        <div style="height: 16px; margin-bottom: 3px;" class="d-flex align-items-center">
+          <span style="font-size: 0.58rem; line-height: 1.2; letter-spacing: 0.3px; ${shiftBadgeStyle}">${shiftTxt}</span>
         </div>
+        
+        <!-- 第 3 列起：任務/交接清單 -->
         ${eventsHtml}
       </div>
     `;
