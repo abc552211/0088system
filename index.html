@@ -2414,6 +2414,8 @@ async function updateHomeSopBadge() {
         // 3. 載入完成，淡出遮罩並啟動副標題輪播
         hideHomeInitLoader();
         startHeroSubtitleQuoteAnimation();
+        // ✨ 新增：自動檢查並顯示勇者未讀提醒
+        checkAndShowHeroUnreadNotice();
       }
     });
 
@@ -3600,7 +3602,7 @@ function selectAppCard(index, id, name, type = 'consult') {
     }
     
    
-// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 (穩定修復版) =================
+// ================= 交接清單未讀提示、快篩小紅圈與未讀優先排序 (文字即連結) =================
 function renderHandoverList() { 
   const listDiv = document.getElementById('handoverListView'); 
   if (!listDiv) return;
@@ -3614,7 +3616,7 @@ function renderHandoverList() {
 
   const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
 
-  // ✨ 精準判斷交接是否與當前登入者相關 (我是接收人/交接人/發給全員/或店帳)
+  // 精準判斷交接是否與當前登入者相關
   const checkIsRelated = (it) => {
     if (!currentUser || currentUser === "店帳") return true; 
     const fromS = String(it.from || it.from_staff || '').trim();
@@ -3622,13 +3624,13 @@ function renderHandoverList() {
     return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
   };
 
-  // 1. 先依據「我的」/「全部」過濾要顯示的清單
+  // 1. 依據過濾篩選清單
   let displayList = cache.handoverList;
   if (currentHandoverStaffFilter === 'mine' && currentUser && currentUser !== "店帳") {
     displayList = displayList.filter(it => checkIsRelated(it));
   }
 
-  // 2. 首頁小紅圈 Badge 計算 (只計算與我相關且未讀)
+  // 2. 首頁 Badge 計算
   const homeBadge = document.getElementById('homeHandoverUnreadBadge');
   const myUnreadCount = cache.handoverList.filter(it => checkIsRelated(it) && !it.likes.some(l => l.staff_name === currentUser)).length;
   
@@ -3646,7 +3648,7 @@ function renderHandoverList() {
     return;
   }
 
-  // 3. 計算各快篩按鈕數量
+  // 3. 計算快篩數量
   let countAll = 0, countTimed = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
   let unreadAll = 0, unreadTimed = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
 
@@ -3654,8 +3656,6 @@ function renderHandoverList() {
     countAll++;
     const isTimed = String(it.type || '').includes("指定"); 
     const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
-    
-    // ✨ 未讀且「與我相關」才列入未讀數字
     const isUnread = checkIsRelated(it) && (!it.likes || !it.likes.some(l => l.staff_name === currentUser));
 
     if (isUnread) unreadAll++;
@@ -3696,7 +3696,6 @@ function renderHandoverList() {
     return 0; 
   });
 
-  // 快篩小紅圈 HTML 產生器
   const getBadgeHtml = (count) => count > 0 
     ? `<span class="badge rounded-circle bg-danger text-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="position: absolute !important; top: -4px; right: -4px; width: 16px; height: 16px; aspect-ratio: 1 / 1; font-size: 0.6rem; font-weight: bold; z-index: 99 !important; pointer-events: none; border: 1.5px solid #ffffff; opacity: 0.85; line-height: 1;">${count}</span>` 
     : '';
@@ -3768,10 +3767,24 @@ function renderHandoverList() {
     const hasLiked = it.likes && it.likes.some(l => l.staff_name === currentUser);
     const likeIcon = hasLiked ? '❤️' : '🤍';
     const hImgHtml = it.imageUrl ? `<div class="mt-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 120px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc;"></div>` : '';
-    const likedNames = (it.likes || []).map(l => l.staff_name).join(', ');
-    const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
+    
+    // 生成文字連結（點擊文字直接開彈窗，不額外顯示按鈕）
+    const likedList = (it.likes || []).map(l => l.staff_name);
+    let likeSummaryHtml = '<span style="opacity: 0.6;">尚未有人按讚</span>';
+    if (likedList.length > 0) {
+      let namesCopy = [...likedList];
+      const meIdx = namesCopy.indexOf(currentUser);
+      if (meIdx !== -1) {
+        namesCopy.splice(meIdx, 1);
+        namesCopy.unshift("你");
+      }
+      let summaryText = namesCopy.length <= 2 
+        ? `${namesCopy.join('、')}已按讚` 
+        : `${namesCopy.slice(0, 2).join('、')}等${namesCopy.length}人已按讚`;
 
-    // 個別卡片未讀標籤
+      likeSummaryHtml = `<span style="cursor: pointer; text-decoration: underline;" onclick="alert('完整按讚名單：\\n${likedList.join('、')}')">${summaryText}</span>`;
+    }
+
     const unreadBadgeHtml = !hasLiked 
       ? `<span class="badge me-2 shadow-sm" 
                style="background-color: #d6a3a5 !important; 
@@ -3812,11 +3825,10 @@ function renderHandoverList() {
       </div>`;
     }).join('');
 
-    // ✨ 專為手機端優化的極簡整齊交接小卡
     h += `
     <div class="card p-2.5 p-md-3 mb-2.5 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
       
-      <!-- 📌 第 1 列：頂級狀態列 (一律單行不摺頁，彈性縮放) -->
+      <!-- 📌 第 1 列：頂級狀態列 -->
       <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-10">
         <div class="d-flex align-items-center gap-1.5 overflow-hidden">
           <button class="btn btn-sm btn-outline-success py-0 px-1.5 flex-shrink-0" style="font-size: 0.7rem; border-color: #84a59d; color: #84a59d; line-height: 1.4;" onclick="closeHandoverCase(${it.rowIndex})">✅</button>
@@ -3831,22 +3843,20 @@ function renderHandoverList() {
       <div class="p-2 bg-white bg-opacity-80 rounded mb-2 border-0 shadow-2xs" style="white-space: pre-wrap; font-size: 0.88rem; line-height: 1.45; color: #2d3748;">${it.content}${hImgHtml}</div>
       ${pushBadge}
       
-      <!-- 📌 第 3 列：底欄資訊 (交接人員與互動按鈕對齊) -->
+      <!-- 📌 第 3 列：底欄資訊 -->
       <div class="d-flex justify-content-between align-items-center mt-1 pt-1" style="font-size: 0.72rem; color: #718096;">
-        <!-- 人員流向 -->
         <div class="d-flex align-items-center gap-1 text-truncate pe-2">
           <span class="fw-medium text-dark">${it.from}</span>
           <span style="font-size: 0.65rem; color: #a0aec0;">➔</span>
           <span class="fw-medium text-dark">${it.to}</span>
         </div>
 
-        <!-- 按讚與留言 (微型按鈕) -->
         <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-          <button class="btn btn-sm bg-white border-0 py-0.5 px-2 fw-semibold text-[#d9534f] shadow-2xs rounded-pill d-flex align-items-center" title="${likeTooltip}" onclick="toggleHandoverLike(${it.rowIndex})" style="font-size: 0.72rem; line-height: 1.2;">
+          <button class="btn btn-sm bg-white border-0 py-0.5 px-2 fw-semibold text-[#d9534f] shadow-2xs rounded-pill d-flex align-items-center" onclick="toggleHandoverLike(${it.rowIndex})">
             ${likeIcon} <span id="like_cnt_${it.rowIndex}" class="ms-1">${(it.likes || []).length}</span>
           </button>
           
-          <button class="btn btn-sm bg-white border-0 py-0.5 px-2 fw-semibold text-muted shadow-2xs rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments(${it.rowIndex})" style="font-size: 0.72rem; line-height: 1.2;">
+          <button class="btn btn-sm bg-white border-0 py-0.5 px-2 fw-semibold text-muted shadow-2xs rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments(${it.rowIndex})">
             💬 <span class="ms-1">${commentCountHtml}</span>
             ${(!hasLiked && (it.comments || []).length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 8px; height: 8px;"></span>` : ''}
           </button>
@@ -3855,6 +3865,11 @@ function renderHandoverList() {
 
       <!-- 💬 展開討論區塊 -->
       <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
+        <!-- ✨ 簡約細字按讚名單 (文字即連結) -->
+        <div class="mb-2 pe-1 text-muted" style="font-size: 0.72rem; font-weight: 400; color: #4a4e69 !important;">
+          ${likeSummaryHtml}
+        </div>
+
         <div id="comments_list_${it.rowIndex}" style="max-height: 250px; overflow-y: auto;" class="mb-2 pe-1">
            ${commentsHtml || '<div class="text-center small text-muted py-2" style="font-size: 0.75rem;">尚無留言</div>'}
         </div>
@@ -5206,7 +5221,7 @@ function renderSopCategoryFilters(sopList) {
   container.innerHTML = btnHtml;
 }
 
-// 5. 渲染 SOP 卡片列表 (左上顯示 [未讀] 與 [幾人未完成])
+// 5. 渲染 SOP 卡片列表 (無背景純文字讚鈕 + 文字即連結)
 function renderSopList(sopList, searchKeyword) {
   const container = document.getElementById('sopListContainer');
   if (!container) return;
@@ -5218,7 +5233,7 @@ function renderSopList(sopList, searchKeyword) {
 
   let html = '';
   const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
-  const totalStaffCount = (cache.staff && cache.staff.length > 0) ? cache.staff.length : 7; // 總員工數預設
+  const totalStaffCount = (cache.staff && cache.staff.length > 0) ? cache.staff.length : 7;
 
   sopList.forEach((sop) => {
     const cardId = `sop_card_${sop.id}`;
@@ -5226,30 +5241,27 @@ function renderSopList(sopList, searchKeyword) {
     const likesArr = sop.likes || [];
     const hasLiked = likesArr.some(l => l.staff_name === currentUser);
     const likeIcon = hasLiked ? '❤️' : '🤍';
-    const likedNames = likesArr.map(l => l.staff_name).join(', ');
-    const likeTooltip = likedNames ? `已閱人員：${likedNames}` : '尚未有人閱讀按讚';
-
+    
     const updatedTime = new Date(sop.updated_at).toLocaleString('zh-TW', { hour12: false });
     
     // 未讀 / 未完成狀態計算
     const unreadStaffCount = Math.max(0, totalStaffCount - likesArr.length);
     let statusBadgeHtml = '';
 
-    // ✨ SOP 小卡升級版：#d6a3a5 煙燻玫瑰粉底色 + 白邊框 + 慢速呼吸柔和閃爍
-if (!hasLiked) {
-  statusBadgeHtml = `<span class="badge me-1 shadow-sm" 
-                           style="background-color: #d6a3a5 !important; 
-                                  color: #ffffff !important; 
-                                  border: 1.5px solid #ffffff; 
-                                  font-size: 0.75rem; 
-                                  font-weight: 800; 
-                                  padding: 4px 8px; 
-                                  letter-spacing: 1px; 
-                                  animation: pulse-slow 2.5s infinite ease-in-out;
-                                  box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
-                       未讀
-                     </span>`;
-} else if (unreadStaffCount > 0) {
+    if (!hasLiked) {
+      statusBadgeHtml = `<span class="badge me-1 shadow-sm" 
+                                 style="background-color: #d6a3a5 !important; 
+                                        color: #ffffff !important; 
+                                        border: 1.5px solid #ffffff; 
+                                        font-size: 0.75rem; 
+                                        font-weight: 800; 
+                                        padding: 4px 8px; 
+                                        letter-spacing: 1px; 
+                                        animation: pulse-slow 2.5s infinite ease-in-out;
+                                        box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
+                             未讀
+                           </span>`;
+    } else if (unreadStaffCount > 0) {
       statusBadgeHtml = `<span class="badge bg-warning text-dark px-2 py-1 me-1 shadow-sm" style="font-size:0.75rem;"> ${unreadStaffCount} 人未讀</span>`;
     } else {
       statusBadgeHtml = `<span class="badge bg-success text-white px-2 py-1 me-1 shadow-sm" style="font-size:0.75rem;">全員已閱</span>`;
@@ -5291,6 +5303,23 @@ if (!hasLiked) {
       imgHtml = `<div class="d-flex gap-2 mt-2 overflow-auto pb-1" style="scrollbar-width: none;">${imgsGroup}</div>`;
     }
 
+    // 生成 SOP 簡約細字已讀名單 (文字即連結)
+    const readStaffList = likesArr.map(l => l.staff_name);
+    let readSummaryHtml = '<span style="opacity: 0.6;">尚未有人閱讀</span>';
+    if (readStaffList.length > 0) {
+      let namesCopy = [...readStaffList];
+      const meIdx = namesCopy.indexOf(currentUser);
+      if (meIdx !== -1) {
+        namesCopy.splice(meIdx, 1);
+        namesCopy.unshift("你");
+      }
+      let summaryText = namesCopy.length <= 2 
+        ? `${namesCopy.join('、')}已讀` 
+        : `${namesCopy.slice(0, 2).join('、')}等${namesCopy.length}人已讀`;
+
+      readSummaryHtml = `<span style="cursor: pointer; text-decoration: underline;" onclick="alert('完整閱讀名單：\\n${readStaffList.join('、')}')">${summaryText}</span>`;
+    }
+
     html += `
       <div class="result-card mb-4 bg-white p-3 shadow-sm" id="${cardId}" style="${borderStyle} position: relative;">
         <div onclick="shareCard('${cardId}', 'SOP_${sop.title}')" style="position:absolute; top:12px; right:12px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:5;" title="截圖分享">📤</div>
@@ -5311,15 +5340,23 @@ if (!hasLiked) {
 
         ${imgHtml}
 
-        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25 gap-2">
+        <!-- ✨ 置頂按鈕上方 - 純文字細字讚鈕與已讀文字連結 -->
+        <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+          <button class="btn btn-sm p-0 border-0 bg-transparent fw-normal" style="color: #d9534f; font-size: 0.78rem;" onclick="toggleSopLike(${sop.id})">
+            ${likeIcon} <span class="ms-0.5">${likesArr.length} 人已閱</span>
+          </button>
+          
+          <div class="text-muted" style="font-size: 0.72rem; font-weight: 400; color: #4a4e69 !important;">
+            ${readSummaryHtml}
+          </div>
+        </div>
+
+        <!-- 功能操作工具列 -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-25 gap-2">
           <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm p-1 border-0 bg-transparent ${pinBtnClass}" title="切換置頂" onclick="toggleSopPin(${sop.id}, ${isPinned})" style="font-size: 0.85rem;">${pinIcon}</button>
             <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick='openSopModal(${JSON.stringify(sop).replace(/'/g, "&apos;")})' style="font-size: 0.85rem;">✏️ 編輯</button>
             <button class="btn btn-sm p-1 border-0 text-danger bg-transparent fw-bold" title="刪除" onclick="deleteSopWithGlobalAuth(${sop.id}, '${sop.title.replace(/'/g, "\\'")}')" style="font-size: 0.85rem;">🗑️ 刪除</button>
-
-            <button class="btn btn-sm bg-light border py-0 px-2 fw-bold text-[#d9534f] rounded-pill shadow-sm d-flex align-items-center" style="font-size: 0.75rem;" title="${likeTooltip}" onclick="toggleSopLike(${sop.id})">
-              ${likeIcon} <span class="ms-1">${likesArr.length} 人已閱</span>
-            </button>
           </div>
 
           <div class="text-end text-muted small ms-auto" style="font-size: 0.75rem; white-space: nowrap;">
@@ -5869,6 +5906,70 @@ async function exportMyShiftsToICS() {
 
   alert(`✅ 已成功產生 ${currentUser} 的班表檔案！\n\n請加入行事曆即可設定於Timetree顯示。`);
 }
+// ================= 勇者未讀提醒 Modal 邏輯 =================
+
+async function checkAndShowHeroUnreadNotice() {
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  if (!currentUser || currentUser === "店帳") return;
+
+  try {
+    // 1. 檢查未讀交接數量
+    const checkIsHandoverRelated = (it) => {
+      const fromS = String(it.from || it.from_staff || '').trim();
+      const toS = String(it.to || it.to_staff || '').trim();
+      return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
+    };
+
+    const unreadHandoverCount = (cache.handoverList || []).filter(it => 
+      checkIsHandoverRelated(it) && !it.likes.some(l => l.staff_name === currentUser)
+    ).length;
+
+    // 2. 檢查未讀 SOP 數量
+    const { data: sopData } = await _supabase.from('sops').select('id');
+    const { data: sopLikesData } = await _supabase.from('sop_likes').select('sop_id, staff_name');
+    
+    let unreadSopCount = 0;
+    if (sopData) {
+      unreadSopCount = sopData.filter(sop => 
+        !(sopLikesData || []).some(l => l.sop_id === sop.id && l.staff_name === currentUser)
+      ).length;
+    }
+
+    // 3. 若有未讀項目則開啟彈窗提醒
+    if (unreadHandoverCount > 0 || unreadSopCount > 0) {
+      document.getElementById('noticeHeroName').innerText = currentUser;
+      const listContainer = document.getElementById('unreadNoticeList');
+      
+      let html = '';
+      if (unreadSopCount > 0) {
+        html += `
+          <div class="p-2.5 rounded d-flex justify-content-between align-items-center" style="background: rgba(229, 152, 155, 0.15); border: 1px solid rgba(229, 152, 155, 0.4);">
+            <span class="fw-bold text-[#5b2a30]" style="font-size: 0.88rem;">📖 你有 <b class="text-danger">${unreadSopCount}</b> 筆 SOP 未讀</span>
+            <button class="btn btn-sm btn-primary py-0.5 px-2.5 fw-bold" style="font-size: 0.75rem; border-radius: 8px; background-color: #84a59d; border: none;" onclick="closeHeroUnreadNoticeModal(); showPage('sopPage');">前往閱讀</button>
+          </div>
+        `;
+      }
+
+      if (unreadHandoverCount > 0) {
+        html += `
+          <div class="p-2.5 rounded d-flex justify-content-between align-items-center" style="background: rgba(154, 140, 152, 0.15); border: 1px solid rgba(154, 140, 152, 0.4);">
+            <span class="fw-bold text-[#3e2723]" style="font-size: 0.88rem;">📋 你有 <b class="text-danger">${unreadHandoverCount}</b> 筆交接未讀</span>
+            <button class="btn btn-sm btn-primary py-0.5 px-2.5 fw-bold" style="font-size: 0.75rem; border-radius: 8px; background-color: #a89a9f; border: none;" onclick="closeHeroUnreadNoticeModal(); showPage('handover');">前往檢視</button>
+          </div>
+        `;
+      }
+
+      listContainer.innerHTML = html;
+      document.getElementById('heroUnreadNoticeModal').style.display = 'flex';
+    }
+  } catch (e) {
+    console.error("未讀召喚檢查出錯:", e);
+  }
+}
+
+function closeHeroUnreadNoticeModal() {
+  document.getElementById('heroUnreadNoticeModal').style.display = 'none';
+}
   </script>
   <!-- ✨ 首頁初始資料同步專屬：莫蘭迪霧面金句 Loading 遮罩 -->
   <div id="homeInitLoader" style="position: fixed; inset: 0; z-index: 10000; background: rgba(242, 242, 240, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; pointer-events: auto;">
@@ -5884,5 +5985,21 @@ async function exportMyShiftsToICS() {
       </div>
     </div>
   </div>
+  <!-- ✨ 勇者未讀任務召喚提醒 Modal -->
+<div id="heroUnreadNoticeModal" class="modal-overlay" style="display:none; z-index: 12000 !important; background: rgba(74, 78, 105, 0.4); backdrop-filter: blur(4px);">
+  <div class="modal-body text-center p-4 shadow-lg" style="max-width: 380px; width: 90%; border-radius: 20px; background: #fafafa; border: 1px solid rgba(142, 154, 175, 0.2);">
+    <div class="text-3xl mb-2">⚔️</div>
+    <h5 class="font-serif-tc fw-bold mb-1" style="color: #3e2723; font-size: 1.15rem;">受召喚的勇者：<span id="noticeHeroName" class="text-[#84a59d]"></span></h5>
+    <p class="small text-muted mb-3" style="font-size: 0.8rem;">魔力感知到有尚未閱讀事項：</p>
+    
+    <div id="unreadNoticeList" class="d-flex flex-column gap-2 mb-4 text-start">
+      <!-- 動態填入未讀項目 -->
+    </div>
+    
+    <button class="btn btn-light w-100 fw-bold shadow-2xs border-0 py-2" style="background-color: rgba(142, 154, 175, 0.15); color: #4a4e69; border-radius: 12px; font-size: 0.88rem;" onclick="closeHeroUnreadNoticeModal()">
+      OK 當沒看到
+    </button>
+  </div>
+</div>
 </body>
 </html>
