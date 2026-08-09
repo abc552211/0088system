@@ -52,11 +52,13 @@
       --handover-logistics-bg: rgba(226, 234, 241, 0.85); --handover-logistics-accent: #7d8b9e;
     }
     /* ✨ 強制還原透明度滑桿的軌道與球紐 */
+/* ✨ 編輯模式下，僅讓 ... 按鈕獨自呼吸閃爍，卡片本身靜止 */
 .card-more-btn {
   display: none !important;
 }
 body.edit-mode-active .card-more-btn {
   display: flex !important;
+  animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 input[type=range].custom-opacity-range {
@@ -179,6 +181,10 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
             box-shadow: 0 0 0 0 rgba(147, 162, 133, 0); 
           } 
         }
+        @keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.92); }
+}
 
       @keyframes pulse-slow {
   0% {
@@ -6002,12 +6008,12 @@ async function checkAndShowHeroUnreadNotice() {
 function closeHeroUnreadNoticeModal() {
   document.getElementById('heroUnreadNoticeModal').style.display = 'none';
 }
-// ================= 支援單卡片暫存還原與全頁面快照保護邏輯 =================
+// ================= 右側懸浮選單膠囊客製化與 0 毫秒即時連動邏輯 =================
 
 let isEditMode = false;
 let userHomePreferences = null;
-let editModeBackupSnapshot = null; // 全頁面進入編輯時的快照
-let singleCardBackupSnapshot = null; // 開啟單一卡片 Modal 前的快照
+let editModeBackupSnapshot = null;
+let singleCardBackupSnapshot = null;
 
 const DEFAULT_HOME_CARDS = [
   { id: "card_consultation", size: "3x1", color: "rgba(132, 165, 157, 0.4)", order: 1, hideTitle: false, hideDesc: false },
@@ -6103,8 +6109,6 @@ function applyCardSizeStyle(cardEl, size) {
   cardEl.classList.remove('col-span-1', 'col-span-2', 'lg:col-span-2');
   cardEl.style.padding = '';
   cardEl.style.minHeight = '';
-  cardEl.style.height = '';
-  cardEl.style.maxHeight = '';
 
   if (size === '3x1' || size === '2x1_old') {
     cardEl.classList.add('col-span-2', 'lg:col-span-2');
@@ -6113,6 +6117,7 @@ function applyCardSizeStyle(cardEl, size) {
   }
 }
 
+// ✨ 編輯模式開啟：移除卡片抖動 (animate-pulse)，僅保留按鈕閃爍
 function enableHomeEditMode() {
   if (isEditMode) return;
   isEditMode = true;
@@ -6126,7 +6131,7 @@ function enableHomeEditMode() {
   if (editBar) editBar.style.display = 'flex';
 
   document.querySelectorAll('#sys-grid div[id^="card_"]').forEach(card => {
-    card.classList.add('animate-pulse');
+    // 移除 card.classList.add('animate-pulse'); 讓卡片本身不閃爍
 
     if (!card.dataset.editBlockerBound) {
       card.addEventListener('click', (e) => {
@@ -6143,6 +6148,29 @@ function enableHomeEditMode() {
       card.dataset.editBlockerBound = "true";
     }
   });
+}
+
+// ✨ 小工具面板收起為純圖示 ⚙️
+function minimizeFloatingConfigPanel() {
+  const panel = document.getElementById('floatingCardConfigPanel');
+  const minBtn = document.getElementById('minimizedCardBtn');
+  if (panel) panel.style.display = 'none';
+  if (minBtn) minBtn.style.display = 'flex';
+}
+
+// ✨ 點擊純圖示 ⚙️ 重新展開小工具面板
+function restoreFloatingConfigPanel() {
+  const panel = document.getElementById('floatingCardConfigPanel');
+  const minBtn = document.getElementById('minimizedCardBtn');
+  if (panel) panel.style.display = 'flex';
+  if (minBtn) minBtn.style.display = 'none';
+}
+
+function closeFloatingConfigPanel() {
+  const panel = document.getElementById('floatingCardConfigPanel');
+  const minBtn = document.getElementById('minimizedCardBtn');
+  if (panel) panel.style.display = 'none';
+  if (minBtn) minBtn.style.display = 'none';
 }
 
 function saveCurrentStateToSnapshot() {
@@ -6184,10 +6212,7 @@ function disableHomeEditMode(saveToCloud = false) {
   const editBar = document.getElementById('homeEditModeBar');
   if (editBar) editBar.style.display = 'none';
 
-  const minBtn = document.getElementById('minimizedCardBtn');
-  const quickBtns = document.getElementById('quickMoveBtnsWrapper');
-  if (minBtn) minBtn.style.display = 'none';
-  if (quickBtns) quickBtns.style.display = 'none';
+  closeFloatingConfigPanel();
 
   document.querySelectorAll('#sys-grid div[id^="card_"]').forEach(card => {
     card.classList.remove('animate-pulse');
@@ -6209,7 +6234,7 @@ let tempSelectedSize = null;
 let tempHideTitle = false;
 let tempHideDesc = false;
 
-// ✨ 開啟單一卡片 Modal 時：記錄該卡片的單獨快照
+// ✨ 開啟右下角懸浮客製化膠囊
 function openCardConfigModal(cardId, event) {
   if (event) {
     event.preventDefault();
@@ -6233,11 +6258,7 @@ function openCardConfigModal(cardId, event) {
     hideDesc: descElBackup ? (descElBackup.style.display === 'none') : false
   };
 
-  document.getElementById('configModalTitle').innerText = `⚙️ 客製化：${titleText}`;
-  document.getElementById('configCardId').value = cardId;
-
-  document.getElementById('minimizedCardBtn').style.display = 'none';
-  document.getElementById('quickMoveBtnsWrapper').style.display = 'none';
+  document.getElementById('floatingPanelTitle').innerText = `⚙️ ${titleText}`;
 
   const is3x1 = cardEl.classList.contains('col-span-2');
   setTempCardSize(is3x1 ? '3x1' : '2x1');
@@ -6253,35 +6274,30 @@ function openCardConfigModal(cardId, event) {
 
   tempSelectedStyle = cardEl.style.background || cardEl.style.backgroundColor;
 
-  document.getElementById('cardConfigModal').style.display = 'flex';
+  // 顯示右下角懸浮膠囊
+  const panel = document.getElementById('floatingCardConfigPanel');
+  panel.style.display = 'flex';
 }
 
-function minimizeCardConfigModal() {
-  document.getElementById('cardConfigModal').style.display = 'none';
-  document.getElementById('minimizedCardBtn').style.display = 'flex';
-  document.getElementById('quickMoveBtnsWrapper').style.display = 'flex';
+function closeFloatingConfigPanel() {
+  const panel = document.getElementById('floatingCardConfigPanel');
+  if (panel) panel.style.display = 'none';
 }
 
-function restoreCardConfigModal() {
-  document.getElementById('minimizedCardBtn').style.display = 'none';
-  document.getElementById('quickMoveBtnsWrapper').style.display = 'none';
-  document.getElementById('cardConfigModal').style.display = 'flex';
+function toggleAdvancedColorPicker() {
+  const wrapper = document.getElementById('advancedPickerWrapper');
+  if (wrapper) wrapper.style.display = (wrapper.style.display === 'none') ? 'block' : 'none';
 }
 
 function setTempCardSize(size) {
   tempSelectedSize = size;
   
-  const box3 = document.getElementById('sizeBox_3x1');
-  const box2 = document.getElementById('sizeBox_2x1');
+  const btn3 = document.getElementById('btnSize3x1');
+  const btn2 = document.getElementById('btnSize2x1');
 
-  if (box3 && box2) {
-    if (size === '3x1') {
-      box3.style.border = '2px solid #84a59d'; box3.style.background = '#e6f0ed';
-      box2.style.border = '1px solid #dee2e6'; box2.style.background = '#f8f9fa';
-    } else {
-      box2.style.border = '2px solid #84a59d'; box2.style.background = '#e6f0ed';
-      box3.style.border = '1px solid #dee2e6'; box3.style.background = '#f8f9fa';
-    }
+  if (btn3 && btn2) {
+    btn3.className = (size === '3x1') ? 'btn btn-sm btn-primary flex-grow-1 fw-bold py-1' : 'btn btn-sm btn-outline-secondary flex-grow-1 fw-bold py-1';
+    btn2.className = (size === '2x1') ? 'btn btn-sm btn-primary flex-grow-1 fw-bold py-1' : 'btn btn-sm btn-outline-secondary flex-grow-1 fw-bold py-1';
   }
 
   if (tempConfigCardId) {
@@ -6375,21 +6391,17 @@ function moveCardOrder(direction) {
   }
 }
 
-// ✨ 按下 Modal「套用變更」：保留目前的改動，關閉 Modal
 function confirmSingleCardConfig() {
-  singleCardBackupSnapshot = null; // 清除該卡片的備份
-  closeCardConfigModal();
+  singleCardBackupSnapshot = null;
+  closeFloatingConfigPanel();
 }
 
-// ✨ 按下 Modal「取消」：恢復點開該卡片設定前的原樣
 function cancelSingleCardConfig() {
   if (singleCardBackupSnapshot && tempConfigCardId) {
     const cardEl = document.getElementById(tempConfigCardId);
     if (cardEl) {
-      // 1. 還原尺寸
       applyCardSizeStyle(cardEl, singleCardBackupSnapshot.size);
       
-      // 2. 還原色彩
       if (singleCardBackupSnapshot.color.includes('gradient')) {
         cardEl.style.background = singleCardBackupSnapshot.color;
       } else {
@@ -6398,20 +6410,13 @@ function cancelSingleCardConfig() {
       }
       cardEl.style.borderColor = singleCardBackupSnapshot.color;
 
-      // 3. 還原標題與說明隱藏狀態
       const titleEl = cardEl.querySelector('.card-title-text');
       const descEl = cardEl.querySelector('.card-desc-text');
       if (titleEl) titleEl.style.display = singleCardBackupSnapshot.hideTitle ? 'none' : '';
       if (descEl) descEl.style.display = singleCardBackupSnapshot.hideDesc ? 'none' : '';
     }
   }
-  closeCardConfigModal();
-}
-
-function closeCardConfigModal() {
-  document.getElementById('cardConfigModal').style.display = 'none';
-  document.getElementById('minimizedCardBtn').style.display = 'none';
-  document.getElementById('quickMoveBtnsWrapper').style.display = 'none';
+  closeFloatingConfigPanel();
 }
 
 function openMainBgConfigModal() {
@@ -6555,162 +6560,120 @@ window.addEventListener('DOMContentLoaded', () => {
   <span id="sysStatusText">檢查中...</span>
 </div>
 
-<!-- ✨ 2. 首頁排版編輯模式下方控制列 (改至底部 bottom:20px，避開最上方卡片遮擋) -->
-<!-- ✨ 1. 首頁排版編輯模式控制列 (取消按鈕傳入 false 觸發還原快照) -->
-<div id="homeEditModeBar" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10500; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border: 1.5px solid rgba(91,42,48,0.2);" class="align-items-center gap-2 flex-wrap justify-content-center">
-  <span class="font-serif-tc fw-bold text-sm text-[#3e2723] me-1">🎨 排版編輯模式</span>
+<!-- ✨ 首頁排版編輯模式下方控制列 (極簡微型膠囊版，完全不遮擋卡片) -->
+<div id="homeEditModeBar" style="display: none; position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10500; background: rgba(250, 250, 249, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); border: 1px solid rgba(91,42,48,0.18);" class="align-items-center gap-1.5 flex-nowrap">
+  <span class="font-serif-tc fw-bold text-xs text-[#3e2723] whitespace-nowrap" style="font-size: 11px;">🎨 編輯模式</span>
   
-  <button class="btn btn-sm btn-outline-dark fw-bold px-2 py-0.5 rounded-pill" style="font-size:0.75rem;" onclick="openMainBgConfigModal()">背景色</button>
+  <button class="btn btn-sm btn-outline-dark fw-bold px-2 py-0 rounded-pill" style="font-size:11px; height: 22px; line-height: 1.2;" onclick="openMainBgConfigModal()">🌄 背景</button>
 
-  <!-- TOP 回頂按鈕開關 (獨立框選與微型極簡化版) -->
-    <div class="mb-3 text-start p-2 rounded bg-light border" style="font-size: 0.75rem;">
-      <label class="fw-bold text-muted mb-1 d-block" style="font-size: 0.72rem;">啟用TOP按鈕</label>
-      <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
-        <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="userTopBtnSwitch" onchange="toggleUserTopBtn(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
-        <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="userTopBtnSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">Off/On</label>
-      </div>
-    </div>
+  <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
+    <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="userTopBtnSwitch" onchange="toggleUserTopBtn(this.checked)" style="width: 1.8rem !important; height: 0.9rem !important;">
+    <label class="form-check-label fw-bold text-dark ms-1 cursor-pointer" style="font-size: 10px; padding-left: 2px; line-height: 1;" for="userTopBtnSwitch">TOP</label>
+  </div>
 
-  <button class="btn btn-sm btn-success fw-bold px-3 py-1 rounded-pill" onclick="disableHomeEditMode(true)">完成並儲存</button>
-  <button class="btn btn-sm btn-outline-secondary fw-bold px-2.5 py-1 rounded-pill" style="font-size:0.78rem;" onclick="disableHomeEditMode(false)">取消變更</button>
+  <button class="btn btn-sm btn-success fw-bold px-2.5 py-0 rounded-pill ms-1" style="font-size: 11px; height: 22px; line-height: 1.2; background-color: #84a59d; border: none;" onclick="disableHomeEditMode(true)">儲存</button>
+  <button class="btn btn-sm btn-outline-secondary fw-bold px-2 py-0 rounded-pill" style="font-size: 11px; height: 22px; line-height: 1.2;" onclick="disableHomeEditMode(false)">取消</button>
 </div>
 
-<!-- ✨ 3. 右下角懸浮按鈕群 (收起時的小圓圖 + ⬅️ ➡️ 快速移動鈕 + TOP 回頂鈕) -->
-<div id="floatingControlsWrapper" style="position: fixed; bottom: 25px; right: 20px; z-index: 9990; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-  
-  <!-- 收起時顯示在小圓圖上方：往前與往後移動快速鈕 -->
-  <div id="quickMoveBtnsWrapper" style="display: none; flex-direction: column; gap: 6px; align-items: center;">
-    <button type="button" class="btn btn-sm btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0" style="width: 38px; height: 38px; font-size: 15px; border: 1.5px solid #fff;" onclick="moveCardOrder(-1)" title="向前移動">⬅️</button>
-    <button type="button" class="btn btn-sm btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0" style="width: 38px; height: 38px; font-size: 15px; border: 1.5px solid #fff;" onclick="moveCardOrder(1)" title="向後移動">➡️</button>
-  </div>
+<!-- ✨ 右下角手機專屬：懸浮客製化控制膠囊群 (含收起純圖示按鈕) -->
+<div id="floatingControlsWrapper" style="position: fixed; bottom: 20px; right: 15px; z-index: 11000; display: flex; flex-direction: column; align-items: end; gap: 8px;">
 
-  <!-- 收起時的小圓圖懸浮按鈕 (點擊展開完整 Modal) -->
-  <div id="minimizedCardBtn" onclick="restoreCardConfigModal()" class="shadow-lg transition-all duration-300" style="display: none; width: 46px; height: 46px; border-radius: 50%; background: #84a59d; color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #ffffff; font-weight: bold; font-size: 1.1rem;" title="點擊展開方塊設定">
-    ⚙️
-  </div>
-
-  <!-- TOP 懸浮回頂鈕 -->
-  <div id="floatingTopBtn" onclick="scrollToTop()" class="shadow-lg transition-all duration-300" style="display: none; width: 46px; height: 46px; border-radius: 50%; background: rgba(91, 42, 48, 0.85); backdrop-filter: blur(6px); color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 1.5px solid rgba(255, 255, 255, 0.4); font-weight: bold; font-size: 0.8rem;">
-    TOP
-  </div>
-</div>
-
-<!-- ✨ 4. 方塊客製化 Modal (無背景霧化，帶有 🔽 收起鈕) -->
-<div id="cardConfigModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.15) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; z-index: 11000 !important;">
-  <div class="modal-body" style="max-width: 400px; width: 92%; max-height: 88vh; overflow-y: auto; background: rgba(250, 250, 249, 0.98); border: 1.5px solid rgba(91,42,48,0.2);">
+  <!-- ✨ 點擊 ... 後浮現的右側直立式客製化控制膠囊 -->
+  <div id="floatingCardConfigPanel" class="shadow-lg p-2.5 rounded-4 bg-white bg-opacity-95 border border-secondary border-opacity-20 flex-column gap-2" style="display: none; width: 210px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 0.72rem;">
     
-    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-      <h5 class="fw-bold mb-0 font-serif-tc text-[#3e2723]" id="configModalTitle">方塊客製化設定</h5>
-      <button type="button" class="btn btn-sm btn-outline-dark fw-bold rounded-pill py-0.5 px-2.5" style="font-size:0.75rem;" onclick="minimizeCardConfigModal()">🔽 收起</button>
-    </div>
-    
-    <input type="hidden" id="configCardId">
-
-    <!-- 1. 順序調整 -->
-    <div class="mb-3 text-start">
-      <label class="small fw-bold text-muted mb-1">調整方塊顯示位置</label>
-      <div class="d-flex gap-2">
-        <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-bold" onclick="moveCardOrder(-1)">⬅️ 向前移動</button>
-        <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-bold" onclick="moveCardOrder(1)">➡️ 向後移動</button>
-      </div>
+    <!-- 標題與 🔽 收起鈕 -->
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+      <span class="fw-bold text-[#3e2723]" id="floatingPanelTitle" style="font-size: 0.75rem;">⚙️ 方塊設定</span>
+      <button type="button" class="btn btn-sm btn-outline-dark fw-bold rounded-pill p-0 px-1.5" style="font-size: 0.65rem; height: 18px; line-height: 1;" onclick="minimizeFloatingConfigPanel()">🔽</button>
     </div>
 
-    <!-- 2. 比例尺寸切換 -->
-    <div class="mb-3 text-start">
-      <label class="small fw-bold text-muted mb-1">選擇方塊尺寸</label>
-      <div class="row g-2">
-        <div class="col-6">
-          <div id="sizeBox_3x1" onclick="setTempCardSize('3x1')" class="size-preview-box p-2 border rounded text-center cursor-pointer transition-all" style="background:#f8f9fa;">
-            <div class="mx-auto rounded bg-[#84a59d] opacity-75 mb-1" style="width:100%; height:26px;"></div>
-            <span class="small fw-bold" style="font-size:0.75rem;">(寬格)</span>
-          </div>
-        </div>
-        <div class="col-6">
-          <div id="sizeBox_2x1" onclick="setTempCardSize('2x1')" class="size-preview-box p-2 border rounded text-center cursor-pointer transition-all" style="background:#f8f9fa;">
-            <div class="mx-auto rounded bg-[#84a59d] opacity-75 mb-1" style="width:50%; height:26px;"></div>
-            <span class="small fw-bold" style="font-size:0.75rem;">(標準格)</span>
-          </div>
-        </div>
-      </div>
+    <!-- 1. 位置移動 -->
+    <div class="d-flex gap-1">
+      <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-bold py-1" style="font-size: 0.7rem;" onclick="moveCardOrder(-1)">⬅️ 移前</button>
+      <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-bold py-1" style="font-size: 0.7rem;" onclick="moveCardOrder(1)">➡️ 移後</button>
     </div>
 
-    <!-- 3. 文字內容隱藏設定 (微型極簡化版) -->
-    <div class="mb-3 text-start p-2 rounded bg-light border" style="font-size: 0.75rem;">
-      <label class="fw-bold text-muted mb-1 d-block" style="font-size: 0.72rem;">文字隱藏設定</label>
-      <div class="d-flex justify-content-between align-items-center gap-2">
+    <!-- 2. 尺寸切換 -->
+    <div class="d-flex gap-1">
+      <button id="btnSize3x1" type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 fw-bold py-1" style="font-size: 0.7rem;" onclick="setTempCardSize('3x1')">3x1 寬格</button>
+      <button id="btnSize2x1" type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 fw-bold py-1" style="font-size: 0.7rem;" onclick="setTempCardSize('2x1')">2x1 標準</button>
+    </div>
+
+    <!-- 3. 文字隱藏開關 (微型框選) -->
+    <div class="p-1.5 rounded bg-light border">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="fw-bold text-muted" style="font-size: 0.68rem;">標題</span>
         <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
-          <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="hideTitleSwitch" onchange="toggleHideTitle(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
-          <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="hideTitleSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">隱藏標題</label>
+          <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="hideTitleSwitch" onchange="toggleHideTitle(this.checked)" style="width: 2rem !important; height: 1rem !important;">
         </div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-muted" style="font-size: 0.68rem;">備註</span>
         <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
-          <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="hideDescSwitch" onchange="toggleHideDesc(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
-          <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="hideDescSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">隱藏備註</label>
+          <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="hideDescSwitch" onchange="toggleHideDesc(this.checked)" style="width: 2rem !important; height: 1rem !important;">
         </div>
       </div>
     </div>
 
-    <!-- 4. 色彩切換模式 -->
-    <div class="mb-3 text-start">
-      <label class="small fw-bold text-muted mb-1">莫蘭迪經典預設色</label>
-      <div class="d-flex flex-wrap gap-2 mb-3" id="colorPaletteContainer">
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(132, 165, 157, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(132, 165, 157, 0.8);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(163, 177, 138, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(163, 177, 138, 0.8);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(154, 140, 152, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(154, 140, 152, 0.8);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(74, 78, 105, 0.3)')" style="width:26px; height:26px; border-radius:50%; background:rgba(74, 78, 105, 0.7);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(229, 152, 155, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(229, 152, 155, 0.8);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(181, 131, 141, 0.35)')" style="width:26px; height:26px; border-radius:50%; background:rgba(181, 131, 141, 0.75);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(231, 111, 81, 0.25)')" style="width:26px; height:26px; border-radius:50%; background:rgba(231, 111, 81, 0.75);"></div>
-        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(217, 83, 79, 0.15)')" style="width:26px; height:26px; border-radius:50%; background:rgba(217, 83, 79, 0.75);"></div>
+    <!-- 4. 色彩快速選取與展開調色 -->
+    <div>
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="fw-bold text-muted" style="font-size: 0.68rem;">配色</span>
+        <button class="btn btn-sm p-0 text-primary border-0 bg-transparent fw-bold" style="font-size: 0.68rem;" onclick="toggleAdvancedColorPicker()">進階</button>
+      </div>
+      <div class="d-flex flex-wrap gap-1.5" id="colorPaletteContainer">
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(132, 165, 157, 0.4)')" style="width:22px; height:22px; border-radius:50%; background:rgba(132, 165, 157, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(163, 177, 138, 0.4)')" style="width:22px; height:22px; border-radius:50%; background:rgba(163, 177, 138, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(154, 140, 152, 0.4)')" style="width:22px; height:22px; border-radius:50%; background:rgba(154, 140, 152, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(74, 78, 105, 0.3)')" style="width:22px; height:22px; border-radius:50%; background:rgba(74, 78, 105, 0.7);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(229, 152, 155, 0.4)')" style="width:22px; height:22px; border-radius:50%; background:rgba(229, 152, 155, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(181, 131, 141, 0.35)')" style="width:22px; height:22px; border-radius:50%; background:rgba(181, 131, 141, 0.75);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(231, 111, 81, 0.25)')" style="width:22px; height:22px; border-radius:50%; background:rgba(231, 111, 81, 0.75);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(217, 83, 79, 0.15)')" style="width:22px; height:22px; border-radius:50%; background:rgba(217, 83, 79, 0.75);"></div>
       </div>
 
-      <!-- 自由調色盤：微型極簡化版 (包含雙色漸層開關與文字縮小) -->
-      <div class="p-2.5 rounded bg-light border">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="fw-bold text-dark" style="font-size: 0.72rem;">🖌️ 自由調色 / 漸層設定</span>
-          
-          <!-- ✨ 雙色漸層開關微型化 -->
-          <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
-            <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="gradientSwitch" onchange="toggleGradientMode(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
-            <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="gradientSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">雙色漸層</label>
+      <!-- 展開的進階調色盤 -->
+      <div id="advancedPickerWrapper" class="mt-2 p-1.5 rounded bg-light border" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold" style="font-size:0.65rem;">雙色漸層</span>
+          <div class="form-check form-switch m-0 p-0 d-flex align-items-center">
+            <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="gradientSwitch" onchange="toggleGradientMode(this.checked)" style="width: 2rem !important; height: 1rem !important;">
           </div>
         </div>
-
-        <div class="row g-2 align-items-center mb-2">
-          <div class="col-6">
-            <label class="small text-muted d-block" style="font-size:0.68rem;">色彩 1</label>
-            <input type="color" id="pickerColor1" class="form-control form-control-color w-100 p-0 border-0" value="#84a59d" onchange="updateCustomColorPreview()">
-          </div>
-          <div class="col-6" id="color2Wrapper" style="display:none;">
-            <label class="small text-muted d-block" style="font-size:0.68rem;">漸層色彩 2</label>
-            <input type="color" id="pickerColor2" class="form-control form-control-color w-100 p-0 border-0" value="#a3b2a6" onchange="updateCustomColorPreview()">
-          </div>
+        <div class="row g-1 mb-1">
+          <div class="col-6"><input type="color" id="pickerColor1" class="form-control form-control-color w-100 p-0 border-0" value="#84a59d" onchange="updateCustomColorPreview()"></div>
+          <div class="col-6" id="color2Wrapper" style="display:none;"><input type="color" id="pickerColor2" class="form-control form-control-color w-100 p-0 border-0" value="#a3b2a6" onchange="updateCustomColorPreview()"></div>
         </div>
-
-        <!-- 漸層角度選單 -->
-        <div class="mb-2" id="gradientDirWrapper" style="display:none;">
-          <label class="small text-muted d-block" style="font-size:0.68rem;">漸層方向</label>
-          <select id="gradientAngleSelect" class="form-select form-select-sm" onchange="updateCustomColorPreview()" style="font-size:0.72rem; padding: 2px 6px;">
-            <option value="135deg">斜向 (135° ↖ 到 ↘)</option>
-            <option value="180deg">垂直 (180° ⬆ 到 ⬇)</option>
-            <option value="90deg">水平 (90° ⬅ 到 ➡️)</option>
-            <option value="45deg">反斜 (45° ↙ 到 ↗)</option>
+        <div id="gradientDirWrapper" style="display:none;" class="mb-1">
+          <select id="gradientAngleSelect" class="form-select form-select-sm p-0 px-1" onchange="updateCustomColorPreview()" style="font-size:0.65rem;">
+            <option value="135deg">斜向 135°</option>
+            <option value="180deg">垂直 180°</option>
+            <option value="90deg">水平 90°</option>
+            <option value="45deg">反斜 45°</option>
           </select>
         </div>
-
-        <!-- 透明度滑桿 -->
         <div>
-          <label class="small text-muted d-flex justify-content-between align-items-center" style="font-size:0.68rem;">
-            <span>不透明度</span><span id="opacityValDisplay" class="fw-bold text-dark" style="font-size:0.72rem;">40%</span>
-          </label>
+          <div class="d-flex justify-content-between" style="font-size:0.65rem;"><span>不透明度</span><span id="opacityValDisplay">40%</span></div>
           <input type="range" class="custom-opacity-range mt-1" id="pickerOpacity" min="10" max="100" value="40" oninput="updateCustomColorPreview()">
         </div>
       </div>
     </div>
 
-    <div class="d-grid gap-2">
-      <button class="btn btn-success fw-bold" onclick="confirmSingleCardConfig()">套用變更</button>
-      <button class="btn btn-light" onclick="cancelSingleCardConfig()">取消</button>
+    <!-- 確定與取消按鈕 -->
+    <div class="d-flex gap-1 mt-1">
+      <button class="btn btn-sm btn-success flex-grow-1 fw-bold py-1" style="font-size:0.7rem; background-color:#84a59d; border:none;" onclick="confirmSingleCardConfig()">套用</button>
+      <button class="btn btn-sm btn-light flex-grow-1 fw-bold py-1" style="font-size:0.7rem;" onclick="cancelSingleCardConfig()">取消</button>
     </div>
+  </div>
+
+  <!-- ✨ 收起後顯示的「純圖示 ⚙️ 懸浮鈕」 (點擊即可重新展開) -->
+  <div id="minimizedCardBtn" onclick="restoreFloatingConfigPanel()" class="shadow-lg transition-all duration-300" style="display: none; width: 42px; height: 42px; border-radius: 50%; background: #84a59d; color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #ffffff; font-weight: bold; font-size: 1.1rem;" title="展開方塊設定">
+    ⚙️
+  </div>
+
+  <!-- TOP 懸浮回頂鈕 -->
+  <div id="floatingTopBtn" onclick="scrollToTop()" class="shadow-lg transition-all duration-300" style="display: none; width: 42px; height: 42px; border-radius: 50%; background: rgba(91, 42, 48, 0.85); backdrop-filter: blur(6px); color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 1.5px solid rgba(255, 255, 255, 0.4); font-weight: bold; font-size: 0.75rem;">
+    TOP
   </div>
 </div>
 
