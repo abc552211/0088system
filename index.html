@@ -84,13 +84,13 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
 }
     
     body { 
-      margin: 0; 
-      padding: 0; 
-      min-height: 100vh; 
-      background: linear-gradient(135deg, var(--main-bg-start), var(--main-bg-end)) !important; 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      color: var(--font-color-main);
-    }
+  margin: 0; 
+  padding: 0; 
+  min-height: 100vh; 
+  background: linear-gradient(135deg, var(--main-bg-start), var(--main-bg-end));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+  color: var(--font-color-main);
+}
     
     .page { display: none; padding: 20px; max-width: 500px; margin: auto; min-height: 100vh; }
     .active { display: block; animation: fadeIn 0.4s ease; }
@@ -553,7 +553,7 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
         </div>
 
         <!-- 7. 失聯關懷 -->
-        <div id="card_lostCare" onclick="window.open('https://your-new-lost-care-url.com', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
+        <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
           <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
@@ -6030,12 +6030,9 @@ const DEFAULT_HOME_CARDS = [
   { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 12, hideTitle: false, hideDesc: false }
 ];
 
-// ================= 100% 成功還原：Supabase 偏好讀取與套用修復邏輯 =================
+// ================= 100% 成功儲存與還原背景色彩修復腳本 =================
 
-// ================= 精準對應 Supabase 表格 6 大欄位控制邏輯 =================
-// 欄位規格：id, staff_name, enable_top_btn, top_btn_position, home_cards, updated_at
-
-// 1. 從 Supabase 讀取並套用偏好
+// 1. 讀取偏好 (含背景色彩)
 async function loadUserPreferences() {
   let currentUser = (localStorage.getItem("current_staff_name") || "").trim();
   if (!currentUser) {
@@ -6047,82 +6044,118 @@ async function loadUserPreferences() {
   console.log("🔍 [偏好載入] 最終確認當前使用者:", `'${currentUser}'`);
 
   if (!currentUser || currentUser === "店帳") {
-    console.warn("⚠️ 未抓到有效員工姓名（或為店帳），暫時套用預設首頁排版");
-    applyUserPreferences({ enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
+    applyUserPreferences({ enable_top_btn: true, top_btn_position: "right", home_cards: DEFAULT_HOME_CARDS });
     return;
   }
 
   try {
     const { data, error } = await _supabase
       .from('user_preferences')
-      .select('id, staff_name, enable_top_btn, top_btn_position, home_cards, updated_at')
+      .select('id, staff_name, enable_top_btn, top_btn_position, main_bg_style, home_cards, updated_at')
       .eq('staff_name', currentUser)
       .maybeSingle();
 
     if (error) {
       console.error("❌ Supabase 讀取失敗:", error);
-      applyUserPreferences({ enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
+      applyUserPreferences({ enable_top_btn: true, top_btn_position: "right", home_cards: DEFAULT_HOME_CARDS });
       return;
     }
 
-    if (data && data.home_cards && Array.isArray(data.home_cards) && data.home_cards.length > 0) {
-      console.log("🎉 成功從 Supabase 取得個人排版資料:", data);
+    if (data) {
+      console.log("🎉 成功讀取 Supabase 偏好資料 (含背景):", data);
       userHomePreferences = data;
       applyUserPreferences(data);
     } else {
-      console.log("ℹ️ 該使用者尚無雲端偏好紀錄，套用預設值");
-      applyUserPreferences({ staff_name: currentUser, enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
+      applyUserPreferences({ staff_name: currentUser, enable_top_btn: true, top_btn_position: "right", home_cards: DEFAULT_HOME_CARDS });
     }
   } catch (e) {
-    console.error("❌ 讀取偏好發生未預期異常:", e);
-    applyUserPreferences({ enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
+    console.error("❌ 讀取偏好異常:", e);
+    applyUserPreferences({ enable_top_btn: true, top_btn_position: "right", home_cards: DEFAULT_HOME_CARDS });
   }
 }
 
-// 2. 套用偏好至畫面 DOM
+// 2. ✨ 核心修復：套用偏好至畫面 (補回被遺漏的背景套用邏輯)
 function applyUserPreferences(pref) {
+  if (!pref) return;
+
+  // (A) 套用主畫面背景色彩
+  if (pref.main_bg_style) {
+    applyMainBgStyle(pref.main_bg_style);
+  }
+
+  // (B) 套用卡片尺寸、色彩、順序與隱藏
   const cards = pref.home_cards || DEFAULT_HOME_CARDS;
   const gridContainer = document.querySelector('#sys-grid > div.grid');
-  if (!gridContainer) return;
+  if (gridContainer) {
+    cards.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // 按 order 排序
-  cards.sort((a, b) => (a.order || 0) - (b.order || 0));
+    cards.forEach(c => {
+      const cardEl = document.getElementById(c.id);
+      if (cardEl) {
+        applyCardSizeStyle(cardEl, c.size || '2x1');
 
-  cards.forEach(c => {
-    const cardEl = document.getElementById(c.id);
-    if (cardEl) {
-      // 尺寸
-      applyCardSizeStyle(cardEl, c.size || '2x1');
+        const titleEl = cardEl.querySelector('.card-title-text');
+        const descEl = cardEl.querySelector('.card-desc-text');
+        if (titleEl) titleEl.style.display = c.hideTitle ? 'none' : '';
+        if (descEl) descEl.style.display = c.hideDesc ? 'none' : '';
 
-      // 文字隱藏
-      const titleEl = cardEl.querySelector('.card-title-text');
-      const descEl = cardEl.querySelector('.card-desc-text');
-      if (titleEl) titleEl.style.display = c.hideTitle ? 'none' : '';
-      if (descEl) descEl.style.display = c.hideDesc ? 'none' : '';
-
-      // 色彩
-      if (c.color) {
-        if (c.color.includes('gradient')) {
-          cardEl.style.background = c.color;
-        } else {
-          cardEl.style.background = '';
-          cardEl.style.backgroundColor = c.color;
+        if (c.color) {
+          if (c.color.includes('gradient')) {
+            cardEl.style.background = c.color;
+          } else {
+            cardEl.style.background = '';
+            cardEl.style.backgroundColor = c.color;
+          }
+          cardEl.style.borderColor = c.color;
         }
-        cardEl.style.borderColor = c.color;
+
+        gridContainer.appendChild(cardEl);
       }
+    });
+  }
 
-      gridContainer.appendChild(cardEl);
-    }
-  });
-
-  // 開關與位置
+  // (C) 套用 TOP 懸浮鈕
   const topSwitch = document.getElementById('userTopBtnSwitch');
   if (topSwitch) topSwitch.checked = pref.enable_top_btn !== false;
   
   handleTopBtnVisibility();
 }
 
-// ✨ 終極強效版：徹底不使用 upsert，絕不觸發 on_conflict=staff_name
+// ✨ 全域暫存：確保 100% 記住背景色彩字串
+let currentMainBgStyle = null;
+
+// 1. 強制套用背景色彩至 body 與全域變數
+function applyMainBgStyle(bgStyle) {
+  if (!bgStyle) return;
+  currentMainBgStyle = bgStyle;
+
+  // 使用 setProperty 加上 important 確保覆蓋全頁
+  document.body.style.setProperty('background', bgStyle, 'important');
+
+  const headerBg = document.querySelector('header > div.absolute.inset-0');
+  if (headerBg) {
+    headerBg.style.setProperty('background', bgStyle, 'important');
+    headerBg.style.opacity = '0.5';
+  }
+}
+
+// 2. 點擊彈窗「套用背景色彩」
+function saveMainBgConfig() {
+  const c1 = document.getElementById('bgPickerColor1').value;
+  const c2 = document.getElementById('bgPickerColor2').value;
+  const isGradient = document.getElementById('bgGradientSwitch').checked;
+  const angle = document.getElementById('bgGradientAngleSelect').value;
+
+  let bgStyle = c1;
+  if (isGradient) {
+    bgStyle = `linear-gradient(${angle}, ${c1}, ${c2})`;
+  }
+
+  applyMainBgStyle(bgStyle);
+  document.getElementById('mainBgConfigModal').style.display = 'none';
+}
+
+// 3. ✨ 儲存至 Supabase (雙重保險抓取背景，絕對不傳 null)
 async function saveUserPreferencesToSupabase() {
   let currentUser = (localStorage.getItem("current_staff_name") || "").trim();
   if (!currentUser) {
@@ -6160,46 +6193,41 @@ async function saveUserPreferencesToSupabase() {
 
   const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
 
+  // ✨ 雙重防呆抓取：優先拿全域變數 currentMainBgStyle
+  const bgToSave = currentMainBgStyle || document.body.style.background || null;
+
   const payload = {
     staff_name: currentUser,
     enable_top_btn: isTopEnabled,
     top_btn_position: "right",
+    main_bg_style: bgToSave, // 100% 帶入背景色彩字串
     home_cards: currentCards,
     updated_at: new Date().toISOString()
   };
 
-  console.log("📤 [準備寫入 Supabase] 封包資料:", payload);
+  console.log("📤 [寫入發送封包驗證]:", payload);
 
   try {
-    // 1. 查詢該員工是否已有紀錄
     const { data: existingData, error: selectError } = await _supabase
       .from('user_preferences')
       .select('id')
       .eq('staff_name', currentUser)
       .maybeSingle();
 
-    if (selectError) {
-      console.error("❌ 查詢舊資料失敗:", selectError);
-    }
+    if (selectError) console.error("❌ 查詢舊資料失敗:", selectError);
 
     let resultError = null;
 
     if (existingData && existingData.id) {
-      // 2A. 若已存在舊資料 ➔ 執行純 UPDATE
-      console.log(`🔄 找到同仁 『${currentUser}』 既有紀錄 (id: ${existingData.id})，執行更新...`);
       const { error: updateError } = await _supabase
         .from('user_preferences')
         .update(payload)
         .eq('id', existingData.id);
-      
       resultError = updateError;
     } else {
-      // 2B. 若無舊資料 ➔ 執行純 INSERT
-      console.log(`➕ 尚未有 『${currentUser}』 的紀錄，執行新增...`);
       const { error: insertError } = await _supabase
         .from('user_preferences')
         .insert([payload]);
-
       resultError = insertError;
     }
 
@@ -6207,8 +6235,8 @@ async function saveUserPreferencesToSupabase() {
       console.error("❌ Supabase 寫入失敗詳情:", resultError);
       alert(`❌ 寫入失敗！錯誤訊息：\n${resultError.message}`);
     } else {
-      console.log("✅ 成功同步至 Supabase 資料庫！");
-      alert(`🎉 『${currentUser}』 的個人首頁客製化排版已成功同步至雲端！`);
+      console.log("✅ 成功寫入 Supabase 資料庫！回傳封包:", payload);
+      alert(`🎉 『${currentUser}』 的個人首頁排版與背景色彩已成功同步至雲端！`);
     }
 
   } catch (e) {
@@ -6216,6 +6244,99 @@ async function saveUserPreferencesToSupabase() {
     alert(`❌ 寫入異常：${e.message}`);
   }
 }
+
+// 3. 背景 Modal 點擊「恢復預設背景」
+function resetMainBgConfig() {
+  currentMainBgStyle = null; // 清空全域變數
+  document.body.style.background = '';
+  const headerBg = document.querySelector('header > div.absolute.inset-0');
+  if (headerBg) headerBg.style.background = '';
+  document.getElementById('mainBgConfigModal').style.display = 'none';
+}
+
+
+
+function openMainBgConfigModal() {
+  const currentBg = document.body.style.background || '';
+  const isGradient = currentBg.includes('gradient');
+
+  const bgGradientSwitch = document.getElementById('bgGradientSwitch');
+  if (bgGradientSwitch) bgGradientSwitch.checked = isGradient;
+
+  toggleBgGradientMode(isGradient);
+
+  const rgbaMatches = [...currentBg.matchAll(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*/g)];
+  if (rgbaMatches.length > 0) {
+    const hex1 = rgbToHex(parseInt(rgbaMatches[0][1]), parseInt(rgbaMatches[0][2]), parseInt(rgbaMatches[0][3]));
+    const bgPickerColor1 = document.getElementById('bgPickerColor1');
+    if (bgPickerColor1) bgPickerColor1.value = hex1;
+
+    if (isGradient && rgbaMatches.length > 1) {
+      const hex2 = rgbToHex(parseInt(rgbaMatches[1][1]), parseInt(rgbaMatches[1][2]), parseInt(rgbaMatches[1][3]));
+      const bgPickerColor2 = document.getElementById('bgPickerColor2');
+      if (bgPickerColor2) bgPickerColor2.value = hex2;
+    }
+
+    if (isGradient) {
+      const angleMatch = currentBg.match(/(\d+deg)/);
+      const bgAngleSelect = document.getElementById('bgGradientAngleSelect');
+      if (angleMatch && bgAngleSelect) bgAngleSelect.value = angleMatch[1];
+    }
+  } else if (currentBg.startsWith('#')) {
+    const bgPickerColor1 = document.getElementById('bgPickerColor1');
+    if (bgPickerColor1) bgPickerColor1.value = currentBg.substring(0, 7);
+  }
+
+  document.getElementById('mainBgConfigModal').style.display = 'flex';
+}
+
+
+
+// ✨ 100% 精準：開啟背景設定 Modal 時，自動讀取並還原當前背景配色
+function openMainBgConfigModal() {
+  const currentBg = document.body.style.background || '';
+  const isGradient = currentBg.includes('gradient');
+
+  const bgGradientSwitch = document.getElementById('bgGradientSwitch');
+  if (bgGradientSwitch) bgGradientSwitch.checked = isGradient;
+
+  toggleBgGradientMode(isGradient);
+
+  // 解析當前背景的 RGB/Hex 色彩並寫回色盤
+  const rgbaMatches = [...currentBg.matchAll(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*/g)];
+  if (rgbaMatches.length > 0) {
+    const hex1 = rgbToHex(parseInt(rgbaMatches[0][1]), parseInt(rgbaMatches[0][2]), parseInt(rgbaMatches[0][3]));
+    const bgPickerColor1 = document.getElementById('bgPickerColor1');
+    if (bgPickerColor1) bgPickerColor1.value = hex1;
+
+    if (isGradient && rgbaMatches.length > 1) {
+      const hex2 = rgbToHex(parseInt(rgbaMatches[1][1]), parseInt(rgbaMatches[1][2]), parseInt(rgbaMatches[1][3]));
+      const bgPickerColor2 = document.getElementById('bgPickerColor2');
+      if (bgPickerColor2) bgPickerColor2.value = hex2;
+    }
+
+    if (isGradient) {
+      const angleMatch = currentBg.match(/(\d+deg)/);
+      const bgAngleSelect = document.getElementById('bgGradientAngleSelect');
+      if (angleMatch && bgAngleSelect) bgAngleSelect.value = angleMatch[1];
+    }
+  } else if (currentBg.startsWith('#')) {
+    const bgPickerColor1 = document.getElementById('bgPickerColor1');
+    if (bgPickerColor1) bgPickerColor1.value = currentBg.substring(0, 7);
+  }
+
+  document.getElementById('mainBgConfigModal').style.display = 'flex';
+}
+
+// ✨ 恢復預設背景配色
+function resetMainBgConfig() {
+  document.body.style.background = '';
+  const headerBg = document.querySelector('header > div.absolute.inset-0');
+  if (headerBg) headerBg.style.background = '';
+  document.getElementById('mainBgConfigModal').style.display = 'none';
+}
+
+
 
 
 // 4. ✨ 關鍵修復：確保初始化是在 DOM 與 Supabase 載入完成後進行
@@ -6226,14 +6347,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 500);
 });
 
-function applyMainBgStyle(bgStyle) {
-  document.body.style.background = bgStyle + ' !important';
-  const headerBg = document.querySelector('header > div.absolute.inset-0');
-  if (headerBg) {
-    headerBg.style.background = bgStyle;
-    headerBg.style.opacity = '0.5';
-  }
-}
+
 
 function applyCardSizeStyle(cardEl, size) {
   cardEl.classList.remove('col-span-1', 'col-span-2', 'lg:col-span-2');
@@ -6647,29 +6761,13 @@ function cancelSingleCardConfig() {
   closeFloatingConfigPanel();
 }
 
-function openMainBgConfigModal() {
-  document.getElementById('mainBgConfigModal').style.display = 'flex';
-}
 
 function toggleBgGradientMode(isGradient) {
   document.getElementById('bgColor2Wrapper').style.display = isGradient ? 'block' : 'none';
   document.getElementById('bgGradientDirWrapper').style.display = isGradient ? 'block' : 'none';
 }
 
-function saveMainBgConfig() {
-  const c1 = document.getElementById('bgPickerColor1').value;
-  const c2 = document.getElementById('bgPickerColor2').value;
-  const isGradient = document.getElementById('bgGradientSwitch').checked;
-  const angle = document.getElementById('bgGradientAngleSelect').value;
 
-  let bgStyle = c1;
-  if (isGradient) {
-    bgStyle = `linear-gradient(${angle}, ${c1}, ${c2})`;
-  }
-
-  applyMainBgStyle(bgStyle);
-  document.getElementById('mainBgConfigModal').style.display = 'none';
-}
 
 function resetMainBgConfig() {
   document.body.style.background = '';
