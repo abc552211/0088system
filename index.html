@@ -6364,7 +6364,7 @@ let tempSelectedSize = null;
 let tempHideTitle = false;
 let tempHideDesc = false;
 
-// ✨ 開啟右下角懸浮客製化膠囊
+// ✨ 100% 精準讀取 Supabase 偏好，並反向解析 RGBA / Hex 色彩還原至 UI
 function openCardConfigModal(cardId, event) {
   if (event) {
     event.preventDefault();
@@ -6373,40 +6373,138 @@ function openCardConfigModal(cardId, event) {
 
   tempConfigCardId = cardId;
   const cardEl = document.getElementById(cardId);
-  const titleText = cardEl.querySelector('.card-title-text') ? cardEl.querySelector('.card-title-text').innerText : '方塊';
-
-  // 1. 備份單一卡片編輯前狀態
-  const is3x1Backup = cardEl.classList.contains('col-span-2');
-  const titleElBackup = cardEl.querySelector('.card-title-text');
-  const descElBackup = cardEl.querySelector('.card-desc-text');
-  
-  singleCardBackupSnapshot = {
-    id: cardId,
-    size: is3x1Backup ? '3x1' : '2x1',
-    color: cardEl.style.background || cardEl.style.backgroundColor || '',
-    hideTitle: titleElBackup ? (titleElBackup.style.display === 'none') : false,
-    hideDesc: descElBackup ? (descElBackup.style.display === 'none') : false
-  };
-
-  document.getElementById('floatingPanelTitle').innerText = `⚙️ ${titleText}`;
-
-  const is3x1 = cardEl.classList.contains('col-span-2');
-  setTempCardSize(is3x1 ? '3x1' : '2x1');
+  if (!cardEl) return;
 
   const titleEl = cardEl.querySelector('.card-title-text');
-  const descEl = cardEl.querySelector('.card-desc-text');
-  
-  tempHideTitle = titleEl ? (titleEl.style.display === 'none') : false;
-  tempHideDesc = descEl ? (descEl.style.display === 'none') : false;
+  const titleText = titleEl ? titleEl.innerText : '方塊';
 
-  document.getElementById('hideTitleSwitch').checked = tempHideTitle;
-  document.getElementById('hideDescSwitch').checked = tempHideDesc;
+  // 1. 從 Supabase 的 userHomePreferences 讀取該卡片的真實資料
+  let cardData = null;
+  if (userHomePreferences && Array.isArray(userHomePreferences.home_cards)) {
+    cardData = userHomePreferences.home_cards.find(c => c.id === cardId);
+  }
 
-  tempSelectedStyle = cardEl.style.background || cardEl.style.backgroundColor;
+  // 2. 若 Supabase 查無資料，才拿預設清單或目前 DOM 的即時設定
+  if (!cardData) {
+    cardData = DEFAULT_HOME_CARDS.find(c => c.id === cardId) || {
+      size: cardEl.classList.contains('col-span-2') ? '3x1' : '2x1',
+      color: cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)',
+      hideTitle: false,
+      hideDesc: false
+    };
+  }
 
-  // 顯示右下角懸浮膠囊
+  console.log(`📖 [開啟設定] 卡片 '${cardId}' 讀取資料:`, cardData);
+
+  // 3. 備份此狀態（供點擊「取消」時還原）
+  singleCardBackupSnapshot = {
+    id: cardId,
+    size: cardData.size || '2x1',
+    color: cardData.color || 'rgba(132, 165, 157, 0.4)',
+    hideTitle: !!cardData.hideTitle,
+    hideDesc: !!cardData.hideDesc
+  };
+
+  // 4. 設定全域暫存變數
+  tempSelectedSize = singleCardBackupSnapshot.size;
+  tempHideTitle = singleCardBackupSnapshot.hideTitle;
+  tempHideDesc = singleCardBackupSnapshot.hideDesc;
+  tempSelectedStyle = singleCardBackupSnapshot.color;
+
+  // 5. 更新標題與 UI
+  document.getElementById('floatingPanelTitle').innerText = `⚙️ ${titleText}`;
+
+  // (A) 尺寸按鈕
+  setTempCardSize(tempSelectedSize);
+
+  // (B) 隱藏開關
+  const titleSwitch = document.getElementById('hideTitleSwitch');
+  const descSwitch = document.getElementById('hideDescSwitch');
+  if (titleSwitch) titleSwitch.checked = tempHideTitle;
+  if (descSwitch) descSwitch.checked = tempHideDesc;
+
+  // (C) ✨ 核心修復：精準解析並寫回調色盤
+  syncColorPickerUI(tempSelectedStyle);
+
+  // 6. 顯示右下角懸浮面板
   const panel = document.getElementById('floatingCardConfigPanel');
-  panel.style.display = 'flex';
+  const minBtn = document.getElementById('minimizedCardBtn');
+  if (panel) panel.style.display = 'flex';
+  if (minBtn) minBtn.style.display = 'none';
+}
+
+// ✨ 核心演算法：解析 RGBA/漸層字串，精準還原 Hex 顏色與不透明度至調色盤面板
+function syncColorPickerUI(bgValue) {
+  if (!bgValue) bgValue = 'rgba(132, 165, 157, 0.4)';
+
+  const isGradient = bgValue.includes('gradient');
+  const gradientSwitch = document.getElementById('gradientSwitch');
+  if (gradientSwitch) gradientSwitch.checked = isGradient;
+
+  const color2Wrapper = document.getElementById('color2Wrapper');
+  const gradientDirWrapper = document.getElementById('gradientDirWrapper');
+  if (color2Wrapper) color2Wrapper.style.display = isGradient ? 'block' : 'none';
+  if (gradientDirWrapper) gradientDirWrapper.style.display = isGradient ? 'block' : 'none';
+
+  // 1. 提取所有 RGBA 顏色區塊
+  const rgbaMatches = [...bgValue.matchAll(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/g)];
+
+  if (rgbaMatches.length > 0) {
+    // 提取色彩 1
+    const r1 = parseInt(rgbaMatches[0][1]);
+    const g1 = parseInt(rgbaMatches[0][2]);
+    const b1 = parseInt(rgbaMatches[0][3]);
+    const alpha1 = rgbaMatches[0][4] !== undefined ? parseFloat(rgbaMatches[0][4]) : 1.0;
+
+    const hex1 = rgbToHex(r1, g1, b1);
+    const opacityVal = Math.round(alpha1 * 100);
+
+    // 寫回色彩 1 與不透明度
+    const picker1 = document.getElementById('pickerColor1');
+    const opacityPicker = document.getElementById('pickerOpacity');
+    const opacityDisplay = document.getElementById('opacityValDisplay');
+
+    if (picker1) picker1.value = hex1;
+    if (opacityPicker) opacityPicker.value = opacityVal;
+    if (opacityDisplay) opacityDisplay.innerText = opacityVal + '%';
+
+    // 若有色彩 2（雙色漸層）
+    if (isGradient && rgbaMatches.length > 1) {
+      const r2 = parseInt(rgbaMatches[1][1]);
+      const g2 = parseInt(rgbaMatches[1][2]);
+      const b2 = parseInt(rgbaMatches[1][3]);
+      const hex2 = rgbToHex(r2, g2, b2);
+      
+      const picker2 = document.getElementById('pickerColor2');
+      if (picker2) picker2.value = hex2;
+    }
+
+    // 提取漸層角度 (例如 135deg)
+    if (isGradient) {
+      const angleMatch = bgValue.match(/(\d+deg)/);
+      const angleSelect = document.getElementById('gradientAngleSelect');
+      if (angleMatch && angleSelect) {
+        angleSelect.value = angleMatch[1];
+      }
+    }
+  } else if (bgValue.startsWith('#')) {
+    // 若為 Hex 顏色格式
+    const picker1 = document.getElementById('pickerColor1');
+    if (picker1) picker1.value = bgValue.substring(0, 7);
+    const opacityPicker = document.getElementById('pickerOpacity');
+    const opacityDisplay = document.getElementById('opacityValDisplay');
+    if (opacityPicker) opacityPicker.value = 100;
+    if (opacityDisplay) opacityDisplay.innerText = '100%';
+  }
+}
+
+// 輔助函式：RGB 轉 16 進位 Hex (#RRGGBB)
+function rgbToHex(r, g, b) {
+  const toHex = (n) => {
+    const hex = Math.max(0, Math.min(255, n)).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 function closeFloatingConfigPanel() {
