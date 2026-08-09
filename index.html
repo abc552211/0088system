@@ -51,6 +51,35 @@
       --handover-track-bg: rgba(232, 237, 223, 0.85); --handover-track-accent: #93a285;
       --handover-logistics-bg: rgba(226, 234, 241, 0.85); --handover-logistics-accent: #7d8b9e;
     }
+    /* ✨ 強制還原透明度滑桿的軌道與球紐 */
+.card-more-btn {
+  display: none !important;
+}
+body.edit-mode-active .card-more-btn {
+  display: flex !important;
+}
+
+input[type=range].custom-opacity-range {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 8px !important;
+  background: #cbd5e1 !important;
+  border-radius: 5px !important;
+  outline: none !important;
+}
+
+input[type=range].custom-opacity-range::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: #4a4e69 !important;
+  cursor: pointer !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
     
     body { 
       margin: 0; 
@@ -419,10 +448,7 @@
 
 <body>
   <div class="noise-overlay"></div>
-  <div class="status-indicator" style="background: rgba(245, 240, 232, 0.9); border: 1px solid rgba(91, 42, 48, 0.1); font-family: 'Noto Serif TC', serif; color: #5b2a30;">
-    <div id="sysDot" class="dot"></div>
-    <span id="sysStatusText">檢查中...</span>
-  </div>
+  
 
   <div id="loadingOverlay">
     <div class="spinner-border text-light mb-2"></div>
@@ -457,114 +483,120 @@
 
     <section id="sys-grid" class="relative z-10 px-3 md:px-8 max-w-6xl mx-auto -mt-6 md:-mt-8 pb-20">
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8 overflow-hidden pt-2 px-1">
-        <!-- 替換首頁 諮詢 / 預約登記 按鈕區塊 -->
-<!-- 1. 恢復原本乾淨的「諮詢 / 預約登記」方塊 -->
-<div onclick="showPage('consultation')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(132, 165, 157, 0.4); border-color: rgba(132, 165, 157, 0.4);">
-  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-    <iconify-icon icon="ph:notebook-duotone"></iconify-icon>
-  </div>
-  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢 / 預約登記</h3>
-  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">任何諮詢客人來這邊新增，大姐頭仔說必須留紀錄。</p>
-</div>
-
-        <!-- 替換首頁「預約狀態更新」方塊 -->
-<div onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
-  <div id="homeOverdueBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #84a59d !important; color: #ffffff !important; border: 1px solid #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 9999px; letter-spacing: 0.5px;">
-    0筆預約
-  </div>
-  
-  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-    <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
-  </div>
-  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">預約狀態更新</h3>
-  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">更新狀態，留個痕跡。</p>
-</div>
-
-        <!-- 替換首頁 工作交接清單 按鈕區塊 -->
-<div onclick="showPage('handover')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(154, 140, 152, 0.4); border-color: rgba(154, 140, 152, 0.4);">
-  <div id="homeHandoverUnreadBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">
-    未讀 0
-  </div>
-  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-    <iconify-icon icon="ph:arrows-left-right-duotone"></iconify-icon>
-  </div>
-  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作交接清單</h3>
-  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">交接事項必須講好，指定日期/追蹤/物流。</p>
-</div>
-
-        <!-- 2. 正確放上個人未結案提示的「諮詢查詢與關懷」方塊 -->
-<div onclick="showPage('searchPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group relative" style="background-color: rgba(74, 78, 105, 0.3); border-color: rgba(74, 78, 105, 0.3);">
-  <div id="homeConsultUnfinishedBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #d6a3a5 !important; color: #ffffff !important; border: 1.5px solid #ffffff; font-size: 0.78rem; font-weight: 800; padding: 4px 8px; border-radius: 9999px; letter-spacing: 1px; animation: pulse-slow 2.5s infinite ease-in-out; box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">
-    未結案 0
-  </div>
-  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-    <iconify-icon icon="ph:magnifying-glass-duotone"></iconify-icon>
-  </div>
-  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢查詢與關懷</h3>
-  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">諮詢記錄這邊查，有空自己要來追蹤更新。</p>
-</div>
-
-        <div onclick="showPage('sectionChildrenSearch')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group" style="background-color: rgba(229, 152, 155, 0.4); border-color: rgba(229, 152, 155, 0.4);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            🌳
+        
+        <!-- 1. 諮詢 / 預約登記 -->
+        <div id="card_consultation" onclick="showPage('consultation')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group relative" style="background-color: rgba(132, 165, 157, 0.4); border-color: rgba(132, 165, 157, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_consultation', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:notebook-duotone"></iconify-icon>
           </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">兒控大檔查詢</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">就兒控檔案。</p>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢 / 預約登記</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">任何諮詢客人來這邊新增，大姐頭仔說必須留紀錄。</p>
         </div>
-        <!-- 替換首頁 SOP 選單按鈕區塊 -->
-<div onclick="showPage('sopPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(181, 131, 141, 0.35); border-color: rgba(181, 131, 141, 0.4);">
-  <div id="homeSopUnreadBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">
-    未讀 0
-  </div>
-  <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-    <iconify-icon icon="ph:book-bookmark-duotone"></iconify-icon>
-  </div>
-  <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
-  <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
-</div>
 
-        <div onclick="window.open('https://your-new-lost-care-url.com', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+        <!-- 2. 預約狀態更新 -->
+        <div id="card_appointment" onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_appointment', event)">•••</div>
+          <div id="homeOverdueBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #84a59d !important; color: #ffffff !important; border: 1px solid #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 9999px; letter-spacing: 0.5px;">0筆預約</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">預約狀態更新</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">更新狀態，留個痕跡。</p>
+        </div>
+
+        <!-- 3. 工作交接清單 -->
+        <div id="card_handover" onclick="showPage('handover')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(154, 140, 152, 0.4); border-color: rgba(154, 140, 152, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_handover', event)">•••</div>
+          <div id="homeHandoverUnreadBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">未讀 0</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:arrows-left-right-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作交接清單</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">交接事項必須講好，指定日期/追蹤/物流。</p>
+        </div>
+
+        <!-- 4. 諮詢查詢與關懷 -->
+        <div id="card_searchPage" onclick="showPage('searchPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group relative" style="background-color: rgba(74, 78, 105, 0.3); border-color: rgba(74, 78, 105, 0.3);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_searchPage', event)">•••</div>
+          <div id="homeConsultUnfinishedBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #d6a3a5 !important; color: #ffffff !important; border: 1.5px solid #ffffff; font-size: 0.78rem; font-weight: 800; padding: 4px 8px; border-radius: 9999px; letter-spacing: 1px; animation: pulse-slow 2.5s infinite ease-in-out; box-shadow: 0 2px 6px rgba(214, 163, 165, 0.4);">未結案 0</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:magnifying-glass-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">諮詢查詢與關懷</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">諮詢記錄這邊查，有空自己要來追蹤更新。</p>
+        </div>
+
+        <!-- 5. 兒控大檔查詢 -->
+        <div id="card_sectionChildrenSearch" onclick="showPage('sectionChildrenSearch')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group relative" style="background-color: rgba(229, 152, 155, 0.4); border-color: rgba(229, 152, 155, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_sectionChildrenSearch', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">🌳</div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">兒控大檔查詢</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">就兒控檔案。</p>
+        </div>
+
+        <!-- 6. 工作 SOP 知識庫 -->
+        <div id="card_sopPage" onclick="showPage('sopPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(181, 131, 141, 0.35); border-color: rgba(181, 131, 141, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_sopPage', event)">•••</div>
+          <div id="homeSopUnreadBadge" class="absolute top-2 right-2 bg-[#d9534f] text-white text-xs md:text-sm font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse" style="display: none; z-index: 20;">未讀 0</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:book-bookmark-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
+        </div>
+
+        <!-- 7. 失聯關懷 -->
+        <div id="card_lostCare" onclick="window.open('https://your-new-lost-care-url.com', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
           </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
-          <p class="font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
         </div>
         
-        <div onclick="openSpecialAuth()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 lg:col-span-1 group border-[1.5px] hover:border-[#d9534f]/60" style="background-color: rgba(217, 83, 79, 0.15); border-color: rgba(217, 83, 79, 0.3);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#d9534f]/10 flex justify-center items-center mb-2 md:mb-6 text-[#d9534f] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+        <!-- 8. 特殊處理 -->
+        <div id="card_specialProcessPage" onclick="openSpecialAuth()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#d9534f]/60 relative" style="background-color: rgba(217, 83, 79, 0.15); border-color: rgba(217, 83, 79, 0.3);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_specialProcessPage', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#d9534f]/10 flex justify-center items-center mb-2 md:mb-6 text-[#d9534f] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:siren-duotone"></iconify-icon>
           </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">特殊處理</h3>
-          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">針對多次未接客群進行專案處理與簡訊批量操作。</p>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">特殊處理</h3>
+          <p class="card-desc-text hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">針對多次未接客群進行專案處理與簡訊批量操作。</p>
         </div>
-        <div onclick="openSystemSettingsModal()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#b5838d]/60" style="background-color: rgba(181, 131, 141, 0.15); border-color: rgba(181, 131, 141, 0.3);">
-          <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#b5838d]/10 flex justify-center items-center mb-2 md:mb-6 text-[#b5838d] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+
+        <!-- 9. 系統 -->
+        <div id="card_systemSettings" onclick="openSystemSettingsModal()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#b5838d]/60 relative" style="background-color: rgba(181, 131, 141, 0.15); border-color: rgba(181, 131, 141, 0.3);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_systemSettings', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#b5838d]/10 flex justify-center items-center mb-2 md:mb-6 text-[#b5838d] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:gear-six-duotone"></iconify-icon>
           </div>
-          <h3 class="font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">系統設定</h3>
-          <p class="hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">管理員工、醫師、內容標籤、系統維護開關與安全密碼。</p>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">系統</h3>
+          <p class="card-desc-text hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">管理員工、醫師、標籤、維護開關與安全性。</p>
         </div>
-      </div>
 
-      <div class="my-8 md:my-10 text-center relative">
-        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-[#5b2a30]/20"></div></div>
-        <span class="relative bg-[#F5F0E8] px-4 font-serif-tc text-[#5b2a30]/60 tracking-widest text-xs md:text-sm">外部系統連結</span>
-      </div>
+        <!-- 10. 鏡片演示 -->
+        <div id="card_showlens" onclick="window.open('https://showlens.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group relative" style="background-color: rgba(132, 165, 157, 0.25);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_showlens', event)">•••</div>
+          <div class="card-icon-box text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:package-duotone"></iconify-icon></div>
+          <h3 class="card-title-text font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">鏡片演示</h3>
+        </div>
 
-      <div class="grid grid-cols-3 gap-2 md:gap-4">
-        <div onclick="window.open('https://showlens.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group" style="background-color: rgba(132, 165, 157, 0.25);">
-          <div class="text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:package-duotone"></iconify-icon></div>
-          <h3 class="font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">鏡片演示</h3>
+        <!-- 11. 管理平台 -->
+        <div id="card_adminPlatform" onclick="window.open('https://script.google.com/macros/s/AKfycbwQukzFIXRcCWYj19176al4oCqPJyuxoRYY4xXLL8R2b3T50c6CM6ihALLCrwP-GNoy/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group relative" style="background-color: rgba(154, 140, 152, 0.25);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_adminPlatform', event)">•••</div>
+          <div class="card-icon-box text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:gear-duotone"></iconify-icon></div>
+          <h3 class="card-title-text font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">管理平台</h3>
         </div>
-        <div onclick="window.open('https://script.google.com/macros/s/AKfycbwQukzFIXRcCWYj19176al4oCqPJyuxoRYY4xXLL8R2b3T50c6CM6ihALLCrwP-GNoy/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group" style="background-color: rgba(154, 140, 152, 0.25);">
-          <div class="text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:gear-duotone"></iconify-icon></div>
-          <h3 class="font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">管理平台</h3>
+
+        <!-- 12. 隱眼驗配 -->
+        <div id="card_rgpSystem" onclick="window.open('https://0088rgp-system.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group relative" style="background-color: rgba(74, 78, 105, 0.2);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_rgpSystem', event)">•••</div>
+          <div class="card-icon-box text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:eyeglasses-duotone"></iconify-icon></div>
+          <h3 class="card-title-text font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">隱眼驗配</h3>
         </div>
-        <div onclick="window.open('https://0088rgp-system.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group" style="background-color: rgba(74, 78, 105, 0.2);">
-          <div class="text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:eyeglasses-duotone"></iconify-icon></div>
-          <h3 class="font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">隱眼驗配</h3>
-        </div>
+
       </div>
     </section>
 
@@ -5970,6 +6002,522 @@ async function checkAndShowHeroUnreadNotice() {
 function closeHeroUnreadNoticeModal() {
   document.getElementById('heroUnreadNoticeModal').style.display = 'none';
 }
+// ================= 支援單卡片暫存還原與全頁面快照保護邏輯 =================
+
+let isEditMode = false;
+let userHomePreferences = null;
+let editModeBackupSnapshot = null; // 全頁面進入編輯時的快照
+let singleCardBackupSnapshot = null; // 開啟單一卡片 Modal 前的快照
+
+const DEFAULT_HOME_CARDS = [
+  { id: "card_consultation", size: "3x1", color: "rgba(132, 165, 157, 0.4)", order: 1, hideTitle: false, hideDesc: false },
+  { id: "card_appointment", size: "2x1", color: "rgba(163, 177, 138, 0.4)", order: 2, hideTitle: false, hideDesc: false },
+  { id: "card_handover", size: "2x1", color: "rgba(154, 140, 152, 0.4)", order: 3, hideTitle: false, hideDesc: false },
+  { id: "card_searchPage", size: "3x1", color: "rgba(74, 78, 105, 0.3)", order: 4, hideTitle: false, hideDesc: false },
+  { id: "card_sectionChildrenSearch", size: "3x1", color: "rgba(229, 152, 155, 0.4)", order: 5, hideTitle: false, hideDesc: false },
+  { id: "card_sopPage", size: "2x1", color: "rgba(181, 131, 141, 0.35)", order: 6, hideTitle: false, hideDesc: false },
+  { id: "card_lostCare", size: "2x1", color: "rgba(231, 111, 81, 0.25)", order: 7, hideTitle: false, hideDesc: false },
+  { id: "card_specialProcessPage", size: "2x1", color: "rgba(217, 83, 79, 0.15)", order: 8, hideTitle: false, hideDesc: false },
+  { id: "card_systemSettings", size: "2x1", color: "rgba(181, 131, 141, 0.15)", order: 9, hideTitle: false, hideDesc: false },
+  { id: "card_showlens", size: "2x1", color: "rgba(132, 165, 157, 0.25)", order: 10, hideTitle: false, hideDesc: false },
+  { id: "card_adminPlatform", size: "2x1", color: "rgba(154, 140, 152, 0.25)", order: 11, hideTitle: false, hideDesc: false },
+  { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 12, hideTitle: false, hideDesc: false }
+];
+
+async function loadUserPreferences() {
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  if (!currentUser || currentUser === "店帳") {
+    applyUserPreferences({ enable_top_btn: true, home_cards: DEFAULT_HOME_CARDS });
+    return;
+  }
+
+  try {
+    const { data } = await _supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('staff_name', currentUser)
+      .single();
+
+    if (data) {
+      userHomePreferences = data;
+      applyUserPreferences(data);
+    } else {
+      const defaultPref = { staff_name: currentUser, enable_top_btn: true, home_cards: DEFAULT_HOME_CARDS };
+      applyUserPreferences(defaultPref);
+    }
+  } catch (e) {
+    applyUserPreferences({ enable_top_btn: true, home_cards: DEFAULT_HOME_CARDS });
+  }
+}
+
+function applyUserPreferences(pref) {
+  const cards = pref.home_cards || DEFAULT_HOME_CARDS;
+  const gridContainer = document.querySelector('#sys-grid > div.grid');
+  if (!gridContainer) return;
+
+  cards.sort((a, b) => a.order - b.order);
+
+  cards.forEach(c => {
+    const cardEl = document.getElementById(c.id);
+    if (cardEl) {
+      applyCardSizeStyle(cardEl, c.size || '2x1');
+
+      const titleEl = cardEl.querySelector('.card-title-text');
+      const descEl = cardEl.querySelector('.card-desc-text');
+      if (titleEl) titleEl.style.display = c.hideTitle ? 'none' : '';
+      if (descEl) descEl.style.display = c.hideDesc ? 'none' : '';
+
+      if (c.color && c.color.includes('gradient')) {
+        cardEl.style.background = c.color;
+      } else if (c.color) {
+        cardEl.style.background = '';
+        cardEl.style.backgroundColor = c.color;
+      }
+      cardEl.style.borderColor = c.color;
+
+      gridContainer.appendChild(cardEl);
+    }
+  });
+
+  if (pref.main_bg_style) {
+    applyMainBgStyle(pref.main_bg_style);
+  }
+
+  const topSwitch = document.getElementById('userTopBtnSwitch');
+  if (topSwitch) topSwitch.checked = pref.enable_top_btn !== false;
+  
+  handleTopBtnVisibility();
+  window.addEventListener('scroll', handleTopBtnVisibility);
+}
+
+function applyMainBgStyle(bgStyle) {
+  document.body.style.background = bgStyle + ' !important';
+  const headerBg = document.querySelector('header > div.absolute.inset-0');
+  if (headerBg) {
+    headerBg.style.background = bgStyle;
+    headerBg.style.opacity = '0.5';
+  }
+}
+
+function applyCardSizeStyle(cardEl, size) {
+  cardEl.classList.remove('col-span-1', 'col-span-2', 'lg:col-span-2');
+  cardEl.style.padding = '';
+  cardEl.style.minHeight = '';
+  cardEl.style.height = '';
+  cardEl.style.maxHeight = '';
+
+  if (size === '3x1' || size === '2x1_old') {
+    cardEl.classList.add('col-span-2', 'lg:col-span-2');
+  } else {
+    cardEl.classList.add('col-span-1');
+  }
+}
+
+function enableHomeEditMode() {
+  if (isEditMode) return;
+  isEditMode = true;
+
+  if (navigator.vibrate) navigator.vibrate(60);
+
+  saveCurrentStateToSnapshot();
+
+  document.body.classList.add('edit-mode-active');
+  const editBar = document.getElementById('homeEditModeBar');
+  if (editBar) editBar.style.display = 'flex';
+
+  document.querySelectorAll('#sys-grid div[id^="card_"]').forEach(card => {
+    card.classList.add('animate-pulse');
+
+    if (!card.dataset.editBlockerBound) {
+      card.addEventListener('click', (e) => {
+        if (isEditMode) {
+          const isMoreBtn = e.target.closest('.card-more-btn');
+          if (!isMoreBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+          }
+        }
+      }, true);
+      card.dataset.editBlockerBound = "true";
+    }
+  });
+}
+
+function saveCurrentStateToSnapshot() {
+  const currentCards = [];
+  const gridContainer = document.querySelector('#sys-grid > div.grid');
+  if (!gridContainer) return;
+
+  Array.from(gridContainer.children).forEach((cardEl, index) => {
+    if (cardEl.id && cardEl.id.startsWith('card_')) {
+      const is3x1 = cardEl.classList.contains('col-span-2');
+      const titleEl = cardEl.querySelector('.card-title-text');
+      const descEl = cardEl.querySelector('.card-desc-text');
+      
+      currentCards.push({
+        id: cardEl.id,
+        size: is3x1 ? '3x1' : '2x1',
+        color: cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)',
+        order: index + 1,
+        hideTitle: titleEl ? (titleEl.style.display === 'none') : false,
+        hideDesc: descEl ? (descEl.style.display === 'none') : false
+      });
+    }
+  });
+
+  const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
+
+  editModeBackupSnapshot = {
+    enable_top_btn: isTopEnabled,
+    main_bg_style: document.body.style.background,
+    home_cards: currentCards
+  };
+}
+
+function disableHomeEditMode(saveToCloud = false) {
+  isEditMode = false;
+  
+  document.body.classList.remove('edit-mode-active');
+
+  const editBar = document.getElementById('homeEditModeBar');
+  if (editBar) editBar.style.display = 'none';
+
+  const minBtn = document.getElementById('minimizedCardBtn');
+  const quickBtns = document.getElementById('quickMoveBtnsWrapper');
+  if (minBtn) minBtn.style.display = 'none';
+  if (quickBtns) quickBtns.style.display = 'none';
+
+  document.querySelectorAll('#sys-grid div[id^="card_"]').forEach(card => {
+    card.classList.remove('animate-pulse');
+  });
+
+  if (saveToCloud) {
+    saveUserPreferencesToSupabase();
+    alert("🎉 個人客製化首頁設定已成功儲存！");
+  } else {
+    if (editModeBackupSnapshot) {
+      applyUserPreferences(editModeBackupSnapshot);
+    }
+  }
+}
+
+let tempConfigCardId = null;
+let tempSelectedStyle = null;
+let tempSelectedSize = null;
+let tempHideTitle = false;
+let tempHideDesc = false;
+
+// ✨ 開啟單一卡片 Modal 時：記錄該卡片的單獨快照
+function openCardConfigModal(cardId, event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  tempConfigCardId = cardId;
+  const cardEl = document.getElementById(cardId);
+  const titleText = cardEl.querySelector('.card-title-text') ? cardEl.querySelector('.card-title-text').innerText : '方塊';
+
+  // 1. 備份單一卡片編輯前狀態
+  const is3x1Backup = cardEl.classList.contains('col-span-2');
+  const titleElBackup = cardEl.querySelector('.card-title-text');
+  const descElBackup = cardEl.querySelector('.card-desc-text');
+  
+  singleCardBackupSnapshot = {
+    id: cardId,
+    size: is3x1Backup ? '3x1' : '2x1',
+    color: cardEl.style.background || cardEl.style.backgroundColor || '',
+    hideTitle: titleElBackup ? (titleElBackup.style.display === 'none') : false,
+    hideDesc: descElBackup ? (descElBackup.style.display === 'none') : false
+  };
+
+  document.getElementById('configModalTitle').innerText = `⚙️ 客製化：${titleText}`;
+  document.getElementById('configCardId').value = cardId;
+
+  document.getElementById('minimizedCardBtn').style.display = 'none';
+  document.getElementById('quickMoveBtnsWrapper').style.display = 'none';
+
+  const is3x1 = cardEl.classList.contains('col-span-2');
+  setTempCardSize(is3x1 ? '3x1' : '2x1');
+
+  const titleEl = cardEl.querySelector('.card-title-text');
+  const descEl = cardEl.querySelector('.card-desc-text');
+  
+  tempHideTitle = titleEl ? (titleEl.style.display === 'none') : false;
+  tempHideDesc = descEl ? (descEl.style.display === 'none') : false;
+
+  document.getElementById('hideTitleSwitch').checked = tempHideTitle;
+  document.getElementById('hideDescSwitch').checked = tempHideDesc;
+
+  tempSelectedStyle = cardEl.style.background || cardEl.style.backgroundColor;
+
+  document.getElementById('cardConfigModal').style.display = 'flex';
+}
+
+function minimizeCardConfigModal() {
+  document.getElementById('cardConfigModal').style.display = 'none';
+  document.getElementById('minimizedCardBtn').style.display = 'flex';
+  document.getElementById('quickMoveBtnsWrapper').style.display = 'flex';
+}
+
+function restoreCardConfigModal() {
+  document.getElementById('minimizedCardBtn').style.display = 'none';
+  document.getElementById('quickMoveBtnsWrapper').style.display = 'none';
+  document.getElementById('cardConfigModal').style.display = 'flex';
+}
+
+function setTempCardSize(size) {
+  tempSelectedSize = size;
+  
+  const box3 = document.getElementById('sizeBox_3x1');
+  const box2 = document.getElementById('sizeBox_2x1');
+
+  if (box3 && box2) {
+    if (size === '3x1') {
+      box3.style.border = '2px solid #84a59d'; box3.style.background = '#e6f0ed';
+      box2.style.border = '1px solid #dee2e6'; box2.style.background = '#f8f9fa';
+    } else {
+      box2.style.border = '2px solid #84a59d'; box2.style.background = '#e6f0ed';
+      box3.style.border = '1px solid #dee2e6'; box3.style.background = '#f8f9fa';
+    }
+  }
+
+  if (tempConfigCardId) {
+    const cardEl = document.getElementById(tempConfigCardId);
+    if (cardEl) applyCardSizeStyle(cardEl, size);
+  }
+}
+
+function toggleHideTitle(hidden) {
+  tempHideTitle = hidden;
+  if (tempConfigCardId) {
+    const titleEl = document.getElementById(tempConfigCardId).querySelector('.card-title-text');
+    if (titleEl) titleEl.style.display = hidden ? 'none' : '';
+  }
+}
+
+function toggleHideDesc(hidden) {
+  tempHideDesc = hidden;
+  if (tempConfigCardId) {
+    const descEl = document.getElementById(tempConfigCardId).querySelector('.card-desc-text');
+    if (descEl) descEl.style.display = hidden ? 'none' : '';
+  }
+}
+
+function applyPreColor(color) {
+  tempSelectedStyle = color;
+  if (tempConfigCardId) {
+    const cardEl = document.getElementById(tempConfigCardId);
+    if (cardEl) {
+      cardEl.style.background = '';
+      cardEl.style.backgroundColor = color;
+      cardEl.style.borderColor = color;
+    }
+  }
+}
+
+function toggleGradientMode(isGradient) {
+  document.getElementById('color2Wrapper').style.display = isGradient ? 'block' : 'none';
+  document.getElementById('gradientDirWrapper').style.display = isGradient ? 'block' : 'none';
+  updateCustomColorPreview();
+}
+
+function hexToRgba(hex, alpha) {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const num = parseInt(c, 16);
+  return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+}
+
+function updateCustomColorPreview() {
+  const c1 = document.getElementById('pickerColor1').value;
+  const c2 = document.getElementById('pickerColor2').value;
+  const opacityVal = document.getElementById('pickerOpacity').value;
+  const opacityRatio = opacityVal / 100;
+  const isGradient = document.getElementById('gradientSwitch').checked;
+  const angle = document.getElementById('gradientAngleSelect').value;
+
+  document.getElementById('opacityValDisplay').innerText = opacityVal + '%';
+
+  const rgba1 = hexToRgba(c1, opacityRatio);
+  if (isGradient) {
+    const rgba2 = hexToRgba(c2, opacityRatio);
+    tempSelectedStyle = `linear-gradient(${angle}, ${rgba1}, ${rgba2})`;
+  } else {
+    tempSelectedStyle = rgba1;
+  }
+
+  if (tempConfigCardId) {
+    const cardEl = document.getElementById(tempConfigCardId);
+    if (cardEl) {
+      if (tempSelectedStyle.includes('gradient')) {
+        cardEl.style.background = tempSelectedStyle;
+      } else {
+        cardEl.style.background = '';
+        cardEl.style.backgroundColor = tempSelectedStyle;
+      }
+      cardEl.style.borderColor = tempSelectedStyle;
+    }
+  }
+}
+
+function moveCardOrder(direction) {
+  if (!tempConfigCardId) return;
+  const cardEl = document.getElementById(tempConfigCardId);
+  const gridContainer = document.querySelector('#sys-grid > div.grid');
+  
+  if (direction === -1 && cardEl.previousElementSibling) {
+    gridContainer.insertBefore(cardEl, cardEl.previousElementSibling);
+  } else if (direction === 1 && cardEl.nextElementSibling) {
+    gridContainer.insertBefore(cardEl.nextElementSibling, cardEl);
+  }
+}
+
+// ✨ 按下 Modal「套用變更」：保留目前的改動，關閉 Modal
+function confirmSingleCardConfig() {
+  singleCardBackupSnapshot = null; // 清除該卡片的備份
+  closeCardConfigModal();
+}
+
+// ✨ 按下 Modal「取消」：恢復點開該卡片設定前的原樣
+function cancelSingleCardConfig() {
+  if (singleCardBackupSnapshot && tempConfigCardId) {
+    const cardEl = document.getElementById(tempConfigCardId);
+    if (cardEl) {
+      // 1. 還原尺寸
+      applyCardSizeStyle(cardEl, singleCardBackupSnapshot.size);
+      
+      // 2. 還原色彩
+      if (singleCardBackupSnapshot.color.includes('gradient')) {
+        cardEl.style.background = singleCardBackupSnapshot.color;
+      } else {
+        cardEl.style.background = '';
+        cardEl.style.backgroundColor = singleCardBackupSnapshot.color;
+      }
+      cardEl.style.borderColor = singleCardBackupSnapshot.color;
+
+      // 3. 還原標題與說明隱藏狀態
+      const titleEl = cardEl.querySelector('.card-title-text');
+      const descEl = cardEl.querySelector('.card-desc-text');
+      if (titleEl) titleEl.style.display = singleCardBackupSnapshot.hideTitle ? 'none' : '';
+      if (descEl) descEl.style.display = singleCardBackupSnapshot.hideDesc ? 'none' : '';
+    }
+  }
+  closeCardConfigModal();
+}
+
+function closeCardConfigModal() {
+  document.getElementById('cardConfigModal').style.display = 'none';
+  document.getElementById('minimizedCardBtn').style.display = 'none';
+  document.getElementById('quickMoveBtnsWrapper').style.display = 'none';
+}
+
+function openMainBgConfigModal() {
+  document.getElementById('mainBgConfigModal').style.display = 'flex';
+}
+
+function toggleBgGradientMode(isGradient) {
+  document.getElementById('bgColor2Wrapper').style.display = isGradient ? 'block' : 'none';
+  document.getElementById('bgGradientDirWrapper').style.display = isGradient ? 'block' : 'none';
+}
+
+function saveMainBgConfig() {
+  const c1 = document.getElementById('bgPickerColor1').value;
+  const c2 = document.getElementById('bgPickerColor2').value;
+  const isGradient = document.getElementById('bgGradientSwitch').checked;
+  const angle = document.getElementById('bgGradientAngleSelect').value;
+
+  let bgStyle = c1;
+  if (isGradient) {
+    bgStyle = `linear-gradient(${angle}, ${c1}, ${c2})`;
+  }
+
+  applyMainBgStyle(bgStyle);
+  document.getElementById('mainBgConfigModal').style.display = 'none';
+}
+
+function resetMainBgConfig() {
+  document.body.style.background = '';
+  const headerBg = document.querySelector('header > div.absolute.inset-0');
+  if (headerBg) headerBg.style.background = '';
+  document.getElementById('mainBgConfigModal').style.display = 'none';
+}
+
+async function saveUserPreferencesToSupabase() {
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  if (!currentUser || currentUser === "店帳") return;
+
+  const currentCards = [];
+  const gridContainer = document.querySelector('#sys-grid > div.grid');
+  
+  if (!gridContainer) return;
+
+  Array.from(gridContainer.children).forEach((cardEl, index) => {
+    if (cardEl.id && cardEl.id.startsWith('card_')) {
+      const is3x1 = cardEl.classList.contains('col-span-2');
+      const titleEl = cardEl.querySelector('.card-title-text');
+      const descEl = cardEl.querySelector('.card-desc-text');
+      const bgStyle = cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)';
+      
+      currentCards.push({
+        id: cardEl.id,
+        size: is3x1 ? '3x1' : '2x1',
+        color: bgStyle,
+        order: index + 1,
+        hideTitle: titleEl ? (titleEl.style.display === 'none') : false,
+        hideDesc: descEl ? (descEl.style.display === 'none') : false
+      });
+    }
+  });
+
+  const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
+
+  const payload = {
+    staff_name: currentUser,
+    enable_top_btn: isTopEnabled,
+    main_bg_style: document.body.style.background || null,
+    home_cards: currentCards,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    await _supabase.from('user_preferences').upsert(payload, { onConflict: 'staff_name' });
+  } catch (e) {
+    console.error("儲存偏好失敗:", e);
+  }
+}
+
+function handleTopBtnVisibility() {
+  const topBtn = document.getElementById('floatingTopBtn');
+  const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
+
+  if (!topBtn || !isTopEnabled) {
+    if (topBtn) topBtn.style.display = 'none';
+    return;
+  }
+
+  if (window.scrollY > 250) {
+    topBtn.style.display = 'flex';
+  } else {
+    topBtn.style.display = 'none';
+  }
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleUserTopBtn(enabled) {
+  handleTopBtnVisibility();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    loadUserPreferences();
+  }, 300);
+});
   </script>
   <!-- ✨ 首頁初始資料同步專屬：莫蘭迪霧面金句 Loading 遮罩 -->
   <div id="homeInitLoader" style="position: fixed; inset: 0; z-index: 10000; background: rgba(242, 242, 240, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; pointer-events: auto;">
@@ -5999,6 +6547,214 @@ function closeHeroUnreadNoticeModal() {
     <button class="btn btn-light w-100 fw-bold shadow-2xs border-0 py-2" style="background-color: rgba(142, 154, 175, 0.15); color: #4a4e69; border-radius: 12px; font-size: 0.88rem;" onclick="closeHeroUnreadNoticeModal()">
       OK 當沒看到
     </button>
+  </div>
+</div>
+<!-- ✨ 1. 右上角隱藏版系統狀態按鈕 (點擊膠囊開啟隱藏排版編輯) -->
+<div class="status-indicator cursor-pointer" onclick="enableHomeEditMode()" style="background: rgba(245, 240, 232, 0.95); border: 1px solid rgba(91, 42, 48, 0.2); font-family: 'Noto Serif TC', serif; color: #5b2a30; pointer-events: auto !important; z-index: 99999 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" title="系統狀態">
+  <div id="sysDot" class="dot"></div>
+  <span id="sysStatusText">檢查中...</span>
+</div>
+
+<!-- ✨ 2. 首頁排版編輯模式下方控制列 (改至底部 bottom:20px，避開最上方卡片遮擋) -->
+<!-- ✨ 1. 首頁排版編輯模式控制列 (取消按鈕傳入 false 觸發還原快照) -->
+<div id="homeEditModeBar" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10500; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border: 1.5px solid rgba(91,42,48,0.2);" class="align-items-center gap-2 flex-wrap justify-content-center">
+  <span class="font-serif-tc fw-bold text-sm text-[#3e2723] me-1">🎨 排版編輯模式</span>
+  
+  <button class="btn btn-sm btn-outline-dark fw-bold px-2 py-0.5 rounded-pill" style="font-size:0.75rem;" onclick="openMainBgConfigModal()">背景色</button>
+
+  <!-- TOP 回頂按鈕開關 (獨立框選與微型極簡化版) -->
+    <div class="mb-3 text-start p-2 rounded bg-light border" style="font-size: 0.75rem;">
+      <label class="fw-bold text-muted mb-1 d-block" style="font-size: 0.72rem;">啟用TOP按鈕</label>
+      <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
+        <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="userTopBtnSwitch" onchange="toggleUserTopBtn(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
+        <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="userTopBtnSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">Off/On</label>
+      </div>
+    </div>
+
+  <button class="btn btn-sm btn-success fw-bold px-3 py-1 rounded-pill" onclick="disableHomeEditMode(true)">完成並儲存</button>
+  <button class="btn btn-sm btn-outline-secondary fw-bold px-2.5 py-1 rounded-pill" style="font-size:0.78rem;" onclick="disableHomeEditMode(false)">取消變更</button>
+</div>
+
+<!-- ✨ 3. 右下角懸浮按鈕群 (收起時的小圓圖 + ⬅️ ➡️ 快速移動鈕 + TOP 回頂鈕) -->
+<div id="floatingControlsWrapper" style="position: fixed; bottom: 25px; right: 20px; z-index: 9990; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+  
+  <!-- 收起時顯示在小圓圖上方：往前與往後移動快速鈕 -->
+  <div id="quickMoveBtnsWrapper" style="display: none; flex-direction: column; gap: 6px; align-items: center;">
+    <button type="button" class="btn btn-sm btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0" style="width: 38px; height: 38px; font-size: 15px; border: 1.5px solid #fff;" onclick="moveCardOrder(-1)" title="向前移動">⬅️</button>
+    <button type="button" class="btn btn-sm btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0" style="width: 38px; height: 38px; font-size: 15px; border: 1.5px solid #fff;" onclick="moveCardOrder(1)" title="向後移動">➡️</button>
+  </div>
+
+  <!-- 收起時的小圓圖懸浮按鈕 (點擊展開完整 Modal) -->
+  <div id="minimizedCardBtn" onclick="restoreCardConfigModal()" class="shadow-lg transition-all duration-300" style="display: none; width: 46px; height: 46px; border-radius: 50%; background: #84a59d; color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #ffffff; font-weight: bold; font-size: 1.1rem;" title="點擊展開方塊設定">
+    ⚙️
+  </div>
+
+  <!-- TOP 懸浮回頂鈕 -->
+  <div id="floatingTopBtn" onclick="scrollToTop()" class="shadow-lg transition-all duration-300" style="display: none; width: 46px; height: 46px; border-radius: 50%; background: rgba(91, 42, 48, 0.85); backdrop-filter: blur(6px); color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 1.5px solid rgba(255, 255, 255, 0.4); font-weight: bold; font-size: 0.8rem;">
+    TOP
+  </div>
+</div>
+
+<!-- ✨ 4. 方塊客製化 Modal (無背景霧化，帶有 🔽 收起鈕) -->
+<div id="cardConfigModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.15) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; z-index: 11000 !important;">
+  <div class="modal-body" style="max-width: 400px; width: 92%; max-height: 88vh; overflow-y: auto; background: rgba(250, 250, 249, 0.98); border: 1.5px solid rgba(91,42,48,0.2);">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+      <h5 class="fw-bold mb-0 font-serif-tc text-[#3e2723]" id="configModalTitle">方塊客製化設定</h5>
+      <button type="button" class="btn btn-sm btn-outline-dark fw-bold rounded-pill py-0.5 px-2.5" style="font-size:0.75rem;" onclick="minimizeCardConfigModal()">🔽 收起</button>
+    </div>
+    
+    <input type="hidden" id="configCardId">
+
+    <!-- 1. 順序調整 -->
+    <div class="mb-3 text-start">
+      <label class="small fw-bold text-muted mb-1">調整方塊顯示位置</label>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-bold" onclick="moveCardOrder(-1)">⬅️ 向前移動</button>
+        <button type="button" class="btn btn-sm btn-outline-dark flex-grow-1 fw-bold" onclick="moveCardOrder(1)">➡️ 向後移動</button>
+      </div>
+    </div>
+
+    <!-- 2. 比例尺寸切換 -->
+    <div class="mb-3 text-start">
+      <label class="small fw-bold text-muted mb-1">選擇方塊尺寸</label>
+      <div class="row g-2">
+        <div class="col-6">
+          <div id="sizeBox_3x1" onclick="setTempCardSize('3x1')" class="size-preview-box p-2 border rounded text-center cursor-pointer transition-all" style="background:#f8f9fa;">
+            <div class="mx-auto rounded bg-[#84a59d] opacity-75 mb-1" style="width:100%; height:26px;"></div>
+            <span class="small fw-bold" style="font-size:0.75rem;">(寬格)</span>
+          </div>
+        </div>
+        <div class="col-6">
+          <div id="sizeBox_2x1" onclick="setTempCardSize('2x1')" class="size-preview-box p-2 border rounded text-center cursor-pointer transition-all" style="background:#f8f9fa;">
+            <div class="mx-auto rounded bg-[#84a59d] opacity-75 mb-1" style="width:50%; height:26px;"></div>
+            <span class="small fw-bold" style="font-size:0.75rem;">(標準格)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 文字內容隱藏設定 (微型極簡化版) -->
+    <div class="mb-3 text-start p-2 rounded bg-light border" style="font-size: 0.75rem;">
+      <label class="fw-bold text-muted mb-1 d-block" style="font-size: 0.72rem;">文字隱藏設定</label>
+      <div class="d-flex justify-content-between align-items-center gap-2">
+        <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
+          <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="hideTitleSwitch" onchange="toggleHideTitle(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
+          <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="hideTitleSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">隱藏標題</label>
+        </div>
+        <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
+          <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="hideDescSwitch" onchange="toggleHideDesc(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
+          <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="hideDescSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">隱藏備註</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 色彩切換模式 -->
+    <div class="mb-3 text-start">
+      <label class="small fw-bold text-muted mb-1">莫蘭迪經典預設色</label>
+      <div class="d-flex flex-wrap gap-2 mb-3" id="colorPaletteContainer">
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(132, 165, 157, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(132, 165, 157, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(163, 177, 138, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(163, 177, 138, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(154, 140, 152, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(154, 140, 152, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(74, 78, 105, 0.3)')" style="width:26px; height:26px; border-radius:50%; background:rgba(74, 78, 105, 0.7);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(229, 152, 155, 0.4)')" style="width:26px; height:26px; border-radius:50%; background:rgba(229, 152, 155, 0.8);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(181, 131, 141, 0.35)')" style="width:26px; height:26px; border-radius:50%; background:rgba(181, 131, 141, 0.75);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(231, 111, 81, 0.25)')" style="width:26px; height:26px; border-radius:50%; background:rgba(231, 111, 81, 0.75);"></div>
+        <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(217, 83, 79, 0.15)')" style="width:26px; height:26px; border-radius:50%; background:rgba(217, 83, 79, 0.75);"></div>
+      </div>
+
+      <!-- 自由調色盤：微型極簡化版 (包含雙色漸層開關與文字縮小) -->
+      <div class="p-2.5 rounded bg-light border">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold text-dark" style="font-size: 0.72rem;">🖌️ 自由調色 / 漸層設定</span>
+          
+          <!-- ✨ 雙色漸層開關微型化 -->
+          <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
+            <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="gradientSwitch" onchange="toggleGradientMode(this.checked)" style="width: 2.2rem !important; height: 1.1rem !important;">
+            <label class="form-check-label fw-bold text-dark ms-1.5 cursor-pointer" for="gradientSwitch" style="font-size: 0.72rem; padding-left: 4px; line-height: 1.1rem;">雙色漸層</label>
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-center mb-2">
+          <div class="col-6">
+            <label class="small text-muted d-block" style="font-size:0.68rem;">色彩 1</label>
+            <input type="color" id="pickerColor1" class="form-control form-control-color w-100 p-0 border-0" value="#84a59d" onchange="updateCustomColorPreview()">
+          </div>
+          <div class="col-6" id="color2Wrapper" style="display:none;">
+            <label class="small text-muted d-block" style="font-size:0.68rem;">漸層色彩 2</label>
+            <input type="color" id="pickerColor2" class="form-control form-control-color w-100 p-0 border-0" value="#a3b2a6" onchange="updateCustomColorPreview()">
+          </div>
+        </div>
+
+        <!-- 漸層角度選單 -->
+        <div class="mb-2" id="gradientDirWrapper" style="display:none;">
+          <label class="small text-muted d-block" style="font-size:0.68rem;">漸層方向</label>
+          <select id="gradientAngleSelect" class="form-select form-select-sm" onchange="updateCustomColorPreview()" style="font-size:0.72rem; padding: 2px 6px;">
+            <option value="135deg">斜向 (135° ↖ 到 ↘)</option>
+            <option value="180deg">垂直 (180° ⬆ 到 ⬇)</option>
+            <option value="90deg">水平 (90° ⬅ 到 ➡️)</option>
+            <option value="45deg">反斜 (45° ↙ 到 ↗)</option>
+          </select>
+        </div>
+
+        <!-- 透明度滑桿 -->
+        <div>
+          <label class="small text-muted d-flex justify-content-between align-items-center" style="font-size:0.68rem;">
+            <span>不透明度</span><span id="opacityValDisplay" class="fw-bold text-dark" style="font-size:0.72rem;">40%</span>
+          </label>
+          <input type="range" class="custom-opacity-range mt-1" id="pickerOpacity" min="10" max="100" value="40" oninput="updateCustomColorPreview()">
+        </div>
+      </div>
+    </div>
+
+    <div class="d-grid gap-2">
+      <button class="btn btn-success fw-bold" onclick="confirmSingleCardConfig()">套用變更</button>
+      <button class="btn btn-light" onclick="cancelSingleCardConfig()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✨ 5. 全局主畫面背景客製化 Modal -->
+<div id="mainBgConfigModal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.15) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; z-index: 11000 !important;">
+  <div class="modal-body" style="max-width: 360px; width: 90%; background: rgba(250, 250, 249, 0.98); border: 1.5px solid rgba(91,42,48,0.2);">
+    <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">主畫面背景色彩</h5>
+
+    <div class="p-3 rounded bg-light border mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="small fw-bold text-dark">背景漸層配色</span>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="bgGradientSwitch" onchange="toggleBgGradientMode(this.checked)">
+          <label class="form-check-label small fw-bold" for="bgGradientSwitch">雙色背景</label>
+        </div>
+      </div>
+
+      <div class="row g-2 align-items-center mb-2">
+        <div class="col-6">
+          <label class="small text-muted d-block" style="font-size:0.7rem;">背景色 1</label>
+          <input type="color" id="bgPickerColor1" class="form-control form-control-color w-100 p-0 border-0" value="#f2f2f0">
+        </div>
+        <div class="col-6" id="bgColor2Wrapper" style="display:none;">
+          <label class="small text-muted d-block" style="font-size:0.7rem;">背景色 2</label>
+          <input type="color" id="bgPickerColor2" class="form-control form-control-color w-100 p-0 border-0" value="#e1e2de">
+        </div>
+      </div>
+
+      <div class="mb-1" id="bgGradientDirWrapper" style="display:none;">
+        <label class="small text-muted d-block" style="font-size:0.7rem;">漸層方向</label>
+        <select id="bgGradientAngleSelect" class="form-select form-select-sm" style="font-size:0.75rem;">
+          <option value="135deg">斜向 (135° ↖ 到 ↘)</option>
+          <option value="180deg">垂直 (180° ⬆ 到 ⬇)</option>
+          <option value="90deg">水平 (90° ⬅ 到 ➡️)</option>
+          <option value="45deg">反斜 (45° ↙ 到 ↗)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="d-grid gap-2">
+      <button class="btn btn-success fw-bold" onclick="saveMainBgConfig()">套用背景色彩</button>
+      <button class="btn btn-outline-secondary" onclick="resetMainBgConfig()">恢復預設背景</button>
+      <button class="btn btn-light" onclick="document.getElementById('mainBgConfigModal').style.display='none'">取消</button>
+    </div>
   </div>
 </div>
 </body>
