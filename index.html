@@ -6030,71 +6030,201 @@ const DEFAULT_HOME_CARDS = [
   { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 12, hideTitle: false, hideDesc: false }
 ];
 
+// ================= 100% 成功還原：Supabase 偏好讀取與套用修復邏輯 =================
+
+// ================= 精準對應 Supabase 表格 6 大欄位控制邏輯 =================
+// 欄位規格：id, staff_name, enable_top_btn, top_btn_position, home_cards, updated_at
+
+// 1. 從 Supabase 讀取並套用偏好
 async function loadUserPreferences() {
-  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  let currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  if (!currentUser) {
+    const staffSelect = document.getElementById("staffSelect") || document.getElementById("currentStaffSelect");
+    if (staffSelect && staffSelect.value) currentUser = staffSelect.value.trim();
+  }
+  if (!currentUser && window.currentStaffName) currentUser = window.currentStaffName.trim();
+
+  console.log("🔍 [偏好載入] 最終確認當前使用者:", `'${currentUser}'`);
+
   if (!currentUser || currentUser === "店帳") {
-    applyUserPreferences({ enable_top_btn: true, home_cards: DEFAULT_HOME_CARDS });
+    console.warn("⚠️ 未抓到有效員工姓名（或為店帳），暫時套用預設首頁排版");
+    applyUserPreferences({ enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
     return;
   }
 
   try {
-    const { data } = await _supabase
+    const { data, error } = await _supabase
       .from('user_preferences')
-      .select('*')
+      .select('id, staff_name, enable_top_btn, top_btn_position, home_cards, updated_at')
       .eq('staff_name', currentUser)
-      .single();
+      .maybeSingle();
 
-    if (data) {
+    if (error) {
+      console.error("❌ Supabase 讀取失敗:", error);
+      applyUserPreferences({ enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
+      return;
+    }
+
+    if (data && data.home_cards && Array.isArray(data.home_cards) && data.home_cards.length > 0) {
+      console.log("🎉 成功從 Supabase 取得個人排版資料:", data);
       userHomePreferences = data;
       applyUserPreferences(data);
     } else {
-      const defaultPref = { staff_name: currentUser, enable_top_btn: true, home_cards: DEFAULT_HOME_CARDS };
-      applyUserPreferences(defaultPref);
+      console.log("ℹ️ 該使用者尚無雲端偏好紀錄，套用預設值");
+      applyUserPreferences({ staff_name: currentUser, enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
     }
   } catch (e) {
-    applyUserPreferences({ enable_top_btn: true, home_cards: DEFAULT_HOME_CARDS });
+    console.error("❌ 讀取偏好發生未預期異常:", e);
+    applyUserPreferences({ enable_top_btn: true, top_btn_position: "bottom-right", home_cards: DEFAULT_HOME_CARDS });
   }
 }
 
+// 2. 套用偏好至畫面 DOM
 function applyUserPreferences(pref) {
   const cards = pref.home_cards || DEFAULT_HOME_CARDS;
   const gridContainer = document.querySelector('#sys-grid > div.grid');
   if (!gridContainer) return;
 
-  cards.sort((a, b) => a.order - b.order);
+  // 按 order 排序
+  cards.sort((a, b) => (a.order || 0) - (b.order || 0));
 
   cards.forEach(c => {
     const cardEl = document.getElementById(c.id);
     if (cardEl) {
+      // 尺寸
       applyCardSizeStyle(cardEl, c.size || '2x1');
 
+      // 文字隱藏
       const titleEl = cardEl.querySelector('.card-title-text');
       const descEl = cardEl.querySelector('.card-desc-text');
       if (titleEl) titleEl.style.display = c.hideTitle ? 'none' : '';
       if (descEl) descEl.style.display = c.hideDesc ? 'none' : '';
 
-      if (c.color && c.color.includes('gradient')) {
-        cardEl.style.background = c.color;
-      } else if (c.color) {
-        cardEl.style.background = '';
-        cardEl.style.backgroundColor = c.color;
+      // 色彩
+      if (c.color) {
+        if (c.color.includes('gradient')) {
+          cardEl.style.background = c.color;
+        } else {
+          cardEl.style.background = '';
+          cardEl.style.backgroundColor = c.color;
+        }
+        cardEl.style.borderColor = c.color;
       }
-      cardEl.style.borderColor = c.color;
 
       gridContainer.appendChild(cardEl);
     }
   });
 
-  if (pref.main_bg_style) {
-    applyMainBgStyle(pref.main_bg_style);
-  }
-
+  // 開關與位置
   const topSwitch = document.getElementById('userTopBtnSwitch');
   if (topSwitch) topSwitch.checked = pref.enable_top_btn !== false;
   
   handleTopBtnVisibility();
-  window.addEventListener('scroll', handleTopBtnVisibility);
 }
+
+// ✨ 終極強效版：徹底不使用 upsert，絕不觸發 on_conflict=staff_name
+async function saveUserPreferencesToSupabase() {
+  let currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  if (!currentUser) {
+    const staffSelect = document.getElementById("staffSelect") || document.getElementById("currentStaffSelect");
+    if (staffSelect && staffSelect.value) currentUser = staffSelect.value.trim();
+  }
+  if (!currentUser && window.currentStaffName) currentUser = window.currentStaffName.trim();
+
+  if (!currentUser || currentUser === "店帳") {
+    alert("⚠️ 未抓到有效員工姓名（或當前為店帳），無法同步至雲端！");
+    return;
+  }
+
+  const currentCards = [];
+  const gridContainer = document.querySelector('#sys-grid > div.grid');
+  if (!gridContainer) return;
+
+  Array.from(gridContainer.children).forEach((cardEl, index) => {
+    if (cardEl.id && cardEl.id.startsWith('card_')) {
+      const is3x1 = cardEl.classList.contains('col-span-2');
+      const titleEl = cardEl.querySelector('.card-title-text');
+      const descEl = cardEl.querySelector('.card-desc-text');
+      const bgStyle = cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)';
+      
+      currentCards.push({
+        id: cardEl.id,
+        size: is3x1 ? '3x1' : '2x1',
+        color: bgStyle,
+        order: index + 1,
+        hideTitle: titleEl ? (titleEl.style.display === 'none') : false,
+        hideDesc: descEl ? (descEl.style.display === 'none') : false
+      });
+    }
+  });
+
+  const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
+
+  const payload = {
+    staff_name: currentUser,
+    enable_top_btn: isTopEnabled,
+    top_btn_position: "right",
+    home_cards: currentCards,
+    updated_at: new Date().toISOString()
+  };
+
+  console.log("📤 [準備寫入 Supabase] 封包資料:", payload);
+
+  try {
+    // 1. 查詢該員工是否已有紀錄
+    const { data: existingData, error: selectError } = await _supabase
+      .from('user_preferences')
+      .select('id')
+      .eq('staff_name', currentUser)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error("❌ 查詢舊資料失敗:", selectError);
+    }
+
+    let resultError = null;
+
+    if (existingData && existingData.id) {
+      // 2A. 若已存在舊資料 ➔ 執行純 UPDATE
+      console.log(`🔄 找到同仁 『${currentUser}』 既有紀錄 (id: ${existingData.id})，執行更新...`);
+      const { error: updateError } = await _supabase
+        .from('user_preferences')
+        .update(payload)
+        .eq('id', existingData.id);
+      
+      resultError = updateError;
+    } else {
+      // 2B. 若無舊資料 ➔ 執行純 INSERT
+      console.log(`➕ 尚未有 『${currentUser}』 的紀錄，執行新增...`);
+      const { error: insertError } = await _supabase
+        .from('user_preferences')
+        .insert([payload]);
+
+      resultError = insertError;
+    }
+
+    if (resultError) {
+      console.error("❌ Supabase 寫入失敗詳情:", resultError);
+      alert(`❌ 寫入失敗！錯誤訊息：\n${resultError.message}`);
+    } else {
+      console.log("✅ 成功同步至 Supabase 資料庫！");
+      alert(`🎉 『${currentUser}』 的個人首頁客製化排版已成功同步至雲端！`);
+    }
+
+  } catch (e) {
+    console.error("❌ 執行寫入時發生未預期異常:", e);
+    alert(`❌ 寫入異常：${e.message}`);
+  }
+}
+
+
+// 4. ✨ 關鍵修復：確保初始化是在 DOM 與 Supabase 載入完成後進行
+window.addEventListener('DOMContentLoaded', () => {
+  // 延遲 500ms 確保 Supabase SDK 與登入者名稱 (current_staff_name) 已經完全寫入本地
+  setTimeout(() => {
+    loadUserPreferences();
+  }, 500);
+});
 
 function applyMainBgStyle(bgStyle) {
   document.body.style.background = bgStyle + ' !important';
@@ -6450,49 +6580,7 @@ function resetMainBgConfig() {
   document.getElementById('mainBgConfigModal').style.display = 'none';
 }
 
-async function saveUserPreferencesToSupabase() {
-  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
-  if (!currentUser || currentUser === "店帳") return;
 
-  const currentCards = [];
-  const gridContainer = document.querySelector('#sys-grid > div.grid');
-  
-  if (!gridContainer) return;
-
-  Array.from(gridContainer.children).forEach((cardEl, index) => {
-    if (cardEl.id && cardEl.id.startsWith('card_')) {
-      const is3x1 = cardEl.classList.contains('col-span-2');
-      const titleEl = cardEl.querySelector('.card-title-text');
-      const descEl = cardEl.querySelector('.card-desc-text');
-      const bgStyle = cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)';
-      
-      currentCards.push({
-        id: cardEl.id,
-        size: is3x1 ? '3x1' : '2x1',
-        color: bgStyle,
-        order: index + 1,
-        hideTitle: titleEl ? (titleEl.style.display === 'none') : false,
-        hideDesc: descEl ? (descEl.style.display === 'none') : false
-      });
-    }
-  });
-
-  const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
-
-  const payload = {
-    staff_name: currentUser,
-    enable_top_btn: isTopEnabled,
-    main_bg_style: document.body.style.background || null,
-    home_cards: currentCards,
-    updated_at: new Date().toISOString()
-  };
-
-  try {
-    await _supabase.from('user_preferences').upsert(payload, { onConflict: 'staff_name' });
-  } catch (e) {
-    console.error("儲存偏好失敗:", e);
-  }
-}
 
 function handleTopBtnVisibility() {
   const topBtn = document.getElementById('floatingTopBtn');
