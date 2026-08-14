@@ -551,16 +551,6 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
         </div>
-        <!-- 13. 新增自訂方塊範例 (請自行修改 ID、標題、圖示與跳轉行為) -->
-<div id="card_customFeature" onclick="window.open('https://schedule0088.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(132, 165, 157, 0.3); border-color: rgba(132, 165, 157, 0.4);">
-  <div class="card-more-btn" onclick="openCardConfigModal('card_customFeature', event)">•••</div>
-  <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-    <iconify-icon icon="ph:star-duotone"></iconify-icon>
-  </div>
-  <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">班表系統</h3>
-  <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">排假。</p>
-</div>
-
         <!-- 7. 失聯關懷 -->
         <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
@@ -569,6 +559,25 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           </div>
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
+        </div>
+        <!-- 7. 失聯關懷 -->
+        <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
+        </div>
+
+        <!-- ✨ 8. 排班囉 (移到失聯關懷後面) -->
+        <div id="card_customFeature" onclick="window.open('https://schedule0088.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(132, 165, 157, 0.3); border-color: rgba(132, 165, 157, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_customFeature', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:star-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">排班囉</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">自動化班表</p>
         </div>
         
         <!-- 8. 特殊處理 -->
@@ -6036,23 +6045,22 @@ let userHomePreferences = null;
 let editModeBackupSnapshot = null;
 let singleCardBackupSnapshot = null;
 
-// ================= 修改 DEFAULT_HOME_CARDS (納入新方塊設定) =================
 const DEFAULT_HOME_CARDS = [
-  { id: "card_consultation", size: "3x1", color: "rgba(132, 165, 157, 0.4)", order: 1, hideTitle: false, hideDesc: false },
-  { id: "card_appointment", size: "2x1", color: "rgba(163, 177, 138, 0.4)", order: 2, hideTitle: false, hideDesc: false },
-  { id: "card_handover", size: "2x1", color: "rgba(154, 140, 152, 0.4)", order: 3, hideTitle: false, hideDesc: false },
-  { id: "card_searchPage", size: "3x1", color: "rgba(74, 78, 105, 0.3)", order: 4, hideTitle: false, hideDesc: false },
-  { id: "card_sectionChildrenSearch", size: "3x1", color: "rgba(229, 152, 155, 0.4)", order: 5, hideTitle: false, hideDesc: false },
-  { id: "card_sopPage", size: "2x1", color: "rgba(181, 131, 141, 0.35)", order: 6, hideTitle: false, hideDesc: false },
-  { id: "card_lostCare", size: "2x1", color: "rgba(231, 111, 81, 0.25)", order: 7, hideTitle: false, hideDesc: false },
-  { id: "card_specialProcessPage", size: "2x1", color: "rgba(217, 83, 79, 0.15)", order: 8, hideTitle: false, hideDesc: false },
-  { id: "card_systemSettings", size: "2x1", color: "rgba(181, 131, 141, 0.15)", order: 9, hideTitle: false, hideDesc: false },
-  { id: "card_showlens", size: "2x1", color: "rgba(132, 165, 157, 0.25)", order: 10, hideTitle: false, hideDesc: false },
-  { id: "card_adminPlatform", size: "2x1", color: "rgba(154, 140, 152, 0.25)", order: 11, hideTitle: false, hideDesc: false },
-  { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 12, hideTitle: false, hideDesc: false },
-  // 新方塊登記於此
-  { id: "card_customFeature", size: "2x1", color: "rgba(132, 165, 157, 0.3)", order: 13, hideTitle: false, hideDesc: false }
-];
+      { id: "card_consultation", size: "3x1", color: "rgba(132, 165, 157, 0.4)", order: 1, hideTitle: false, hideDesc: false },
+      { id: "card_appointment", size: "2x1", color: "rgba(163, 177, 138, 0.4)", order: 2, hideTitle: false, hideDesc: false },
+      { id: "card_handover", size: "2x1", color: "rgba(154, 140, 152, 0.4)", order: 3, hideTitle: false, hideDesc: false },
+      { id: "card_searchPage", size: "3x1", color: "rgba(74, 78, 105, 0.3)", order: 4, hideTitle: false, hideDesc: false },
+      { id: "card_sectionChildrenSearch", size: "3x1", color: "rgba(229, 152, 155, 0.4)", order: 5, hideTitle: false, hideDesc: false },
+      { id: "card_sopPage", size: "2x1", color: "rgba(181, 131, 141, 0.35)", order: 6, hideTitle: false, hideDesc: false },
+      { id: "card_lostCare", size: "2x1", color: "rgba(231, 111, 81, 0.25)", order: 7, hideTitle: false, hideDesc: false },
+      // 調整順序讓 customFeature 在 lostCare 後面
+      { id: "card_customFeature", size: "2x1", color: "rgba(132, 165, 157, 0.3)", order: 8, hideTitle: false, hideDesc: false },
+      { id: "card_specialProcessPage", size: "2x1", color: "rgba(217, 83, 79, 0.15)", order: 9, hideTitle: false, hideDesc: false },
+      { id: "card_systemSettings", size: "2x1", color: "rgba(181, 131, 141, 0.15)", order: 10, hideTitle: false, hideDesc: false },
+      { id: "card_showlens", size: "2x1", color: "rgba(132, 165, 157, 0.25)", order: 11, hideTitle: false, hideDesc: false },
+      { id: "card_adminPlatform", size: "2x1", color: "rgba(154, 140, 152, 0.25)", order: 12, hideTitle: false, hideDesc: false },
+      { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 13, hideTitle: false, hideDesc: false }
+    ];
 
 // ================= 100% 成功儲存與還原背景色彩修復腳本 =================
 
