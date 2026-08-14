@@ -540,7 +540,6 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">兒控大檔查詢</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">就兒控檔案。</p>
         </div>
-
         <!-- 6. 工作 SOP 知識庫 -->
         <div id="card_sopPage" onclick="showPage('sopPage')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(181, 131, 141, 0.35); border-color: rgba(181, 131, 141, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_sopPage', event)">•••</div>
@@ -551,26 +550,8 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
         </div>
-        <!-- 7. 失聯關懷 -->
-        <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
-          <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
-          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
-          </div>
-          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
-          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
-        </div>
-        <!-- 7. 失聯關懷 -->
-        <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
-          <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
-          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
-            <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
-          </div>
-          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
-          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
-        </div>
 
-        <!-- ✨ 8. 排班囉 (移到失聯關懷後面) -->
+        <!-- ✨ 7. 排班囉 (排在失聯關懷前面) -->
         <div id="card_customFeature" onclick="window.open('https://schedule0088.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(132, 165, 157, 0.3); border-color: rgba(132, 165, 157, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_customFeature', event)">•••</div>
           <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
@@ -579,7 +560,16 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">排班囉</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">自動化班表</p>
         </div>
-        
+
+        <!-- 8. 失聯關懷 -->
+        <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
+          <div class="card-more-btn" onclick="openCardConfigModal('card_lostCare', event)">•••</div>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#e76f51]/10 flex justify-center items-center mb-2 md:mb-6 text-[#e76f51] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:heart-break-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">失聯關懷</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">失能中...。</p>
+        </div>
         <!-- 8. 特殊處理 -->
         <div id="card_specialProcessPage" onclick="openSpecialAuth()" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#d9534f]/60 relative" style="background-color: rgba(217, 83, 79, 0.15); border-color: rgba(217, 83, 79, 0.3);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_specialProcessPage', event)">•••</div>
@@ -599,26 +589,34 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">系統</h3>
           <p class="card-desc-text hidden md:block font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">管理員工、醫師、標籤、維護開關與安全性。</p>
         </div>
-
         <!-- 10. 鏡片演示 -->
-        <div id="card_showlens" onclick="window.open('https://showlens.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group relative" style="background-color: rgba(132, 165, 157, 0.25);">
+        <div id="card_showlens" onclick="window.open('https://showlens.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(132, 165, 157, 0.25); border-color: rgba(132, 165, 157, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_showlens', event)">•••</div>
-          <div class="card-icon-box text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:package-duotone"></iconify-icon></div>
-          <h3 class="card-title-text font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">鏡片演示</h3>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:package-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">鏡片演示</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">鏡片功能與光學展示。</p>
         </div>
 
         <!-- 11. 管理平台 -->
-        <div id="card_adminPlatform" onclick="window.open('https://script.google.com/macros/s/AKfycbwQukzFIXRcCWYj19176al4oCqPJyuxoRYY4xXLL8R2b3T50c6CM6ihALLCrwP-GNoy/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group relative" style="background-color: rgba(154, 140, 152, 0.25);">
+        <div id="card_adminPlatform" onclick="window.open('https://script.google.com/macros/s/AKfycbwQukzFIXRcCWYj19176al4oCqPJyuxoRYY4xXLL8R2b3T50c6CM6ihALLCrwP-GNoy/exec', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(154, 140, 152, 0.25); border-color: rgba(154, 140, 152, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_adminPlatform', event)">•••</div>
-          <div class="card-icon-box text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:gear-duotone"></iconify-icon></div>
-          <h3 class="card-title-text font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">管理平台</h3>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:gear-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">管理平台</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">後台管理平台操作。</p>
         </div>
 
         <!-- 12. 隱眼驗配 -->
-        <div id="card_rgpSystem" onclick="window.open('https://0088rgp-system.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-3 md:p-4 rounded-xl md:rounded-2xl flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 group relative" style="background-color: rgba(74, 78, 105, 0.2);">
+        <div id="card_rgpSystem" onclick="window.open('https://0088rgp-system.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(74, 78, 105, 0.2); border-color: rgba(74, 78, 105, 0.3);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_rgpSystem', event)">•••</div>
-          <div class="card-icon-box text-[#5b2a30] text-xl md:text-2xl"><iconify-icon icon="ph:eyeglasses-duotone"></iconify-icon></div>
-          <h3 class="card-title-text font-serif-tc text-[12px] md:text-lg font-bold text-[#3e2723] tracking-wide m-0 whitespace-nowrap">隱眼驗配</h3>
+          <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+            <iconify-icon icon="ph:eyeglasses-duotone"></iconify-icon>
+          </div>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">隱眼驗配</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">硬式/軟式隱眼驗配試算。</p>
         </div>
 
       </div>
@@ -6045,16 +6043,16 @@ let userHomePreferences = null;
 let editModeBackupSnapshot = null;
 let singleCardBackupSnapshot = null;
 
-const DEFAULT_HOME_CARDS = [
+// ================= 預設首頁卡片清單 (正確順序：排班囉在失聯關懷前面) =================
+    const DEFAULT_HOME_CARDS = [
       { id: "card_consultation", size: "3x1", color: "rgba(132, 165, 157, 0.4)", order: 1, hideTitle: false, hideDesc: false },
       { id: "card_appointment", size: "2x1", color: "rgba(163, 177, 138, 0.4)", order: 2, hideTitle: false, hideDesc: false },
       { id: "card_handover", size: "2x1", color: "rgba(154, 140, 152, 0.4)", order: 3, hideTitle: false, hideDesc: false },
       { id: "card_searchPage", size: "3x1", color: "rgba(74, 78, 105, 0.3)", order: 4, hideTitle: false, hideDesc: false },
       { id: "card_sectionChildrenSearch", size: "3x1", color: "rgba(229, 152, 155, 0.4)", order: 5, hideTitle: false, hideDesc: false },
       { id: "card_sopPage", size: "2x1", color: "rgba(181, 131, 141, 0.35)", order: 6, hideTitle: false, hideDesc: false },
-      { id: "card_lostCare", size: "2x1", color: "rgba(231, 111, 81, 0.25)", order: 7, hideTitle: false, hideDesc: false },
-      // 調整順序讓 customFeature 在 lostCare 後面
-      { id: "card_customFeature", size: "2x1", color: "rgba(132, 165, 157, 0.3)", order: 8, hideTitle: false, hideDesc: false },
+      { id: "card_customFeature", size: "2x1", color: "rgba(132, 165, 157, 0.3)", order: 7, hideTitle: false, hideDesc: false },
+      { id: "card_lostCare", size: "2x1", color: "rgba(231, 111, 81, 0.25)", order: 8, hideTitle: false, hideDesc: false },
       { id: "card_specialProcessPage", size: "2x1", color: "rgba(217, 83, 79, 0.15)", order: 9, hideTitle: false, hideDesc: false },
       { id: "card_systemSettings", size: "2x1", color: "rgba(181, 131, 141, 0.15)", order: 10, hideTitle: false, hideDesc: false },
       { id: "card_showlens", size: "2x1", color: "rgba(132, 165, 157, 0.25)", order: 11, hideTitle: false, hideDesc: false },
@@ -6106,52 +6104,58 @@ async function loadUserPreferences() {
   }
 }
 
-// 2. ✨ 核心修復：套用偏好至畫面 (補回被遺漏的背景套用邏輯)
 function applyUserPreferences(pref) {
-  if (!pref) return;
+      if (!pref) return;
 
-  // (A) 套用主畫面背景色彩
-  if (pref.main_bg_style) {
-    applyMainBgStyle(pref.main_bg_style);
-  }
-
-  // (B) 套用卡片尺寸、色彩、順序與隱藏
-  const cards = pref.home_cards || DEFAULT_HOME_CARDS;
-  const gridContainer = document.querySelector('#sys-grid > div.grid');
-  if (gridContainer) {
-    cards.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-    cards.forEach(c => {
-      const cardEl = document.getElementById(c.id);
-      if (cardEl) {
-        applyCardSizeStyle(cardEl, c.size || '2x1');
-
-        const titleEl = cardEl.querySelector('.card-title-text');
-        const descEl = cardEl.querySelector('.card-desc-text');
-        if (titleEl) titleEl.style.display = c.hideTitle ? 'none' : '';
-        if (descEl) descEl.style.display = c.hideDesc ? 'none' : '';
-
-        if (c.color) {
-          if (c.color.includes('gradient')) {
-            cardEl.style.background = c.color;
-          } else {
-            cardEl.style.background = '';
-            cardEl.style.backgroundColor = c.color;
-          }
-          cardEl.style.borderColor = c.color;
-        }
-
-        gridContainer.appendChild(cardEl);
+      if (pref.main_bg_style) {
+        applyMainBgStyle(pref.main_bg_style);
       }
-    });
-  }
 
-  // (C) 套用 TOP 懸浮鈕
-  const topSwitch = document.getElementById('userTopBtnSwitch');
-  if (topSwitch) topSwitch.checked = pref.enable_top_btn !== false;
-  
-  handleTopBtnVisibility();
-}
+      // ✨ 自動補齊舊儲存紀錄中缺少的新卡片
+      let cards = pref.home_cards ? [...pref.home_cards] : [...DEFAULT_HOME_CARDS];
+      
+      DEFAULT_HOME_CARDS.forEach(defCard => {
+        if (!cards.some(c => c.id === defCard.id)) {
+          cards.push({ ...defCard });
+        }
+      });
+
+      const gridContainer = document.querySelector('#sys-grid > div.grid');
+      if (gridContainer) {
+        // 依據 order 排序
+        cards.sort((a, b) => {
+          const defA = DEFAULT_HOME_CARDS.find(d => d.id === a.id);
+          const defB = DEFAULT_HOME_CARDS.find(d => d.id === b.id);
+          const orderA = a.order !== undefined ? a.order : (defA ? defA.order : 99);
+          const orderB = b.order !== undefined ? b.order : (defB ? defB.order : 99);
+          return orderA - orderB;
+        });
+
+        cards.forEach(c => {
+          const cardEl = document.getElementById(c.id);
+          if (cardEl) {
+            applyCardSizeStyle(cardEl, c.size || '2x1');
+
+            const titleEl = cardEl.querySelector('.card-title-text');
+            const descEl = cardEl.querySelector('.card-desc-text');
+            if (titleEl) titleEl.style.display = c.hideTitle ? 'none' : '';
+            if (descEl) descEl.style.display = c.hideDesc ? 'none' : '';
+
+            if (c.color) {
+              if (c.color.includes('gradient')) {
+                cardEl.style.background = c.color;
+              } else {
+                cardEl.style.background = '';
+                cardEl.style.backgroundColor = c.color;
+              }
+              cardEl.style.borderColor = c.color;
+            }
+
+            gridContainer.appendChild(cardEl);
+          }
+        });
+      }
+    }
 
 // ✨ 全域暫存：確保 100% 記住背景色彩字串
 let currentMainBgStyle = null;
@@ -6187,95 +6191,76 @@ function saveMainBgConfig() {
   document.getElementById('mainBgConfigModal').style.display = 'none';
 }
 
-// 3. ✨ 儲存至 Supabase (雙重保險抓取背景，絕對不傳 null)
 async function saveUserPreferencesToSupabase() {
-  let currentUser = (localStorage.getItem("current_staff_name") || "").trim();
-  if (!currentUser) {
-    const staffSelect = document.getElementById("staffSelect") || document.getElementById("currentStaffSelect");
-    if (staffSelect && staffSelect.value) currentUser = staffSelect.value.trim();
-  }
-  if (!currentUser && window.currentStaffName) currentUser = window.currentStaffName.trim();
+      let currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+      if (!currentUser || currentUser === "店帳") {
+        alert("⚠️ 未抓到有效員工姓名（或當前為店帳），無法同步至雲端！");
+        return;
+      }
 
-  if (!currentUser || currentUser === "店帳") {
-    alert("⚠️ 未抓到有效員工姓名（或當前為店帳），無法同步至雲端！");
-    return;
-  }
+      const currentCards = [];
+      const gridContainer = document.querySelector('#sys-grid > div.grid');
+      if (!gridContainer) return;
 
-  const currentCards = [];
-  const gridContainer = document.querySelector('#sys-grid > div.grid');
-  if (!gridContainer) return;
-
-  Array.from(gridContainer.children).forEach((cardEl, index) => {
-    if (cardEl.id && cardEl.id.startsWith('card_')) {
-      const is3x1 = cardEl.classList.contains('col-span-2');
-      const titleEl = cardEl.querySelector('.card-title-text');
-      const descEl = cardEl.querySelector('.card-desc-text');
-      const bgStyle = cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)';
-      
-      currentCards.push({
-        id: cardEl.id,
-        size: is3x1 ? '3x1' : '2x1',
-        color: bgStyle,
-        order: index + 1,
-        hideTitle: titleEl ? (titleEl.style.display === 'none') : false,
-        hideDesc: descEl ? (descEl.style.display === 'none') : false
+      Array.from(gridContainer.children).forEach((cardEl, index) => {
+        if (cardEl.id && cardEl.id.startsWith('card_')) {
+          const is3x1 = cardEl.classList.contains('col-span-2');
+          const titleEl = cardEl.querySelector('.card-title-text');
+          const descEl = cardEl.querySelector('.card-desc-text');
+          const bgStyle = cardEl.style.background || cardEl.style.backgroundColor || 'rgba(132, 165, 157, 0.4)';
+          
+          currentCards.push({
+            id: cardEl.id,
+            size: is3x1 ? '3x1' : '2x1',
+            color: bgStyle,
+            order: index + 1,
+            hideTitle: titleEl ? (titleEl.style.display === 'none') : false,
+            hideDesc: descEl ? (descEl.style.display === 'none') : false
+          });
+        }
       });
+
+      const bgToSave = currentMainBgStyle || document.body.style.background || null;
+
+      const payload = {
+        staff_name: currentUser,
+        main_bg_style: bgToSave,
+        home_cards: currentCards,
+        updated_at: new Date().toISOString()
+      };
+
+      try {
+        const { data: existingData } = await _supabase
+          .from('user_preferences')
+          .select('id')
+          .eq('staff_name', currentUser)
+          .maybeSingle();
+
+        let resultError = null;
+
+        if (existingData && existingData.id) {
+          const { error: updateError } = await _supabase
+            .from('user_preferences')
+            .update(payload)
+            .eq('id', existingData.id);
+          resultError = updateError;
+        } else {
+          const { error: insertError } = await _supabase
+            .from('user_preferences')
+            .insert([payload]);
+          resultError = insertError;
+        }
+
+        if (resultError) {
+          alert(`❌ 寫入失敗！錯誤訊息：\n${resultError.message}`);
+        } else {
+          alert(`🎉 『${currentUser}』 的個人首頁排版已成功儲存至雲端！`);
+        }
+
+      } catch (e) {
+        alert(`❌ 寫入異常：${e.message}`);
+      }
     }
-  });
-
-  const isTopEnabled = document.getElementById('userTopBtnSwitch') ? document.getElementById('userTopBtnSwitch').checked : true;
-
-  // ✨ 雙重防呆抓取：優先拿全域變數 currentMainBgStyle
-  const bgToSave = currentMainBgStyle || document.body.style.background || null;
-
-  const payload = {
-    staff_name: currentUser,
-    enable_top_btn: isTopEnabled,
-    top_btn_position: "right",
-    main_bg_style: bgToSave, // 100% 帶入背景色彩字串
-    home_cards: currentCards,
-    updated_at: new Date().toISOString()
-  };
-
-  console.log("📤 [寫入發送封包驗證]:", payload);
-
-  try {
-    const { data: existingData, error: selectError } = await _supabase
-      .from('user_preferences')
-      .select('id')
-      .eq('staff_name', currentUser)
-      .maybeSingle();
-
-    if (selectError) console.error("❌ 查詢舊資料失敗:", selectError);
-
-    let resultError = null;
-
-    if (existingData && existingData.id) {
-      const { error: updateError } = await _supabase
-        .from('user_preferences')
-        .update(payload)
-        .eq('id', existingData.id);
-      resultError = updateError;
-    } else {
-      const { error: insertError } = await _supabase
-        .from('user_preferences')
-        .insert([payload]);
-      resultError = insertError;
-    }
-
-    if (resultError) {
-      console.error("❌ Supabase 寫入失敗詳情:", resultError);
-      alert(`❌ 寫入失敗！錯誤訊息：\n${resultError.message}`);
-    } else {
-      console.log("✅ 成功寫入 Supabase 資料庫！回傳封包:", payload);
-      alert(`🎉 『${currentUser}』 的個人首頁排版與背景色彩已成功同步至雲端！`);
-    }
-
-  } catch (e) {
-    console.error("❌ 執行寫入時發生未預期異常:", e);
-    alert(`❌ 寫入異常：${e.message}`);
-  }
-}
 
 // 3. 背景 Modal 點擊「恢復預設背景」
 function resetMainBgConfig() {
@@ -6928,29 +6913,22 @@ function toggleAllQHToSelection() {
   <div id="sysDot" class="dot"></div>
   <span id="sysStatusText">檢查中...</span>
 </div>
-
-<!-- ✨ 首頁排版編輯模式下方控制列 (極簡微型膠囊版，完全不遮擋卡片) -->
+<!-- ✨ 首頁排版編輯模式下方控制列 (已移除 TOP 開關) -->
 <div id="homeEditModeBar" style="display: none; position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10500; background: rgba(250, 250, 249, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); border: 1px solid rgba(91,42,48,0.18);" class="align-items-center gap-1.5 flex-nowrap">
   <span class="font-serif-tc fw-bold text-xs text-[#3e2723] whitespace-nowrap" style="font-size: 11px;">🎨 編輯模式</span>
   
   <button class="btn btn-sm btn-outline-dark fw-bold px-2 py-0 rounded-pill" style="font-size:11px; height: 22px; line-height: 1.2;" onclick="openMainBgConfigModal()">🌄 背景</button>
 
-  <div class="form-check form-switch m-0 p-0 d-flex align-items-center" style="min-height: auto;">
-    <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="userTopBtnSwitch" onchange="toggleUserTopBtn(this.checked)" style="width: 1.8rem !important; height: 0.9rem !important;">
-    <label class="form-check-label fw-bold text-dark ms-1 cursor-pointer" style="font-size: 10px; padding-left: 2px; line-height: 1;" for="userTopBtnSwitch">TOP</label>
-  </div>
-
-  <button class="btn btn-sm btn-success fw-bold px-2.5 py-0 rounded-pill ms-1" style="font-size: 8px; height: 22px; line-height: 1.2; background-color: #84a59d; border: none;" onclick="disableHomeEditMode(true)">儲存</button>
-  <button class="btn btn-sm btn-outline-secondary fw-bold px-2 py-0 rounded-pill" style="font-size: 8px; height: 22px; line-height: 1.2;" onclick="disableHomeEditMode(false)">取消</button>
+  <button class="btn btn-sm btn-success fw-bold px-2.5 py-0 rounded-pill ms-1" style="font-size: 11px; height: 22px; line-height: 1.2; background-color: #84a59d; border: none;" onclick="disableHomeEditMode(true)">儲存</button>
+  <button class="btn btn-sm btn-outline-secondary fw-bold px-2 py-0 rounded-pill" style="font-size: 11px; height: 22px; line-height: 1.2;" onclick="disableHomeEditMode(false)">取消</button>
 </div>
 
-<!-- ✨ 右下角手機專屬：懸浮客製化控制膠囊群 (含收起純圖示按鈕) -->
+<!-- ✨ 右下角控制面板 (已移除 floatingTopBtn) -->
 <div id="floatingControlsWrapper" style="position: fixed; bottom: 20px; right: 15px; z-index: 11000; display: flex; flex-direction: column; align-items: end; gap: 8px;">
 
-  <!-- ✨ 點擊 ... 後浮現的右側直立式客製化控制膠囊 -->
+  <!-- 點擊 ... 後浮現的控制膠囊 -->
   <div id="floatingCardConfigPanel" class="shadow-lg p-2.5 rounded-4 bg-white bg-opacity-95 border border-secondary border-opacity-20 flex-column gap-2" style="display: none; width: 210px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 0.72rem;">
     
-    <!-- 標題與 🔽 收起鈕 -->
     <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
       <span class="fw-bold text-[#3e2723]" id="floatingPanelTitle" style="font-size: 0.75rem;">⚙️ 方塊設定</span>
       <button type="button" class="btn btn-sm btn-outline-dark fw-bold rounded-pill p-0 px-1.5" style="font-size: 0.65rem; height: 18px; line-height: 1;" onclick="minimizeFloatingConfigPanel()">🔽</button>
@@ -6968,7 +6946,7 @@ function toggleAllQHToSelection() {
       <button id="btnSize2x1" type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 fw-bold py-1" style="font-size: 0.7rem;" onclick="setTempCardSize('2x1')">2x1 標準</button>
     </div>
 
-    <!-- 3. 文字隱藏開關 (微型框選) -->
+    <!-- 3. 文字隱藏開關 -->
     <div class="p-1.5 rounded bg-light border">
       <div class="d-flex justify-content-between align-items-center mb-1">
         <span class="fw-bold text-muted" style="font-size: 0.68rem;">標題</span>
@@ -6984,7 +6962,7 @@ function toggleAllQHToSelection() {
       </div>
     </div>
 
-    <!-- 4. 色彩快速選取與展開調色 -->
+    <!-- 4. 色彩選取 -->
     <div>
       <div class="d-flex justify-content-between align-items-center mb-1">
         <span class="fw-bold text-muted" style="font-size: 0.68rem;">配色</span>
@@ -7001,7 +6979,6 @@ function toggleAllQHToSelection() {
         <div class="color-dot cursor-pointer" onclick="applyPreColor('rgba(217, 83, 79, 0.15)')" style="width:22px; height:22px; border-radius:50%; background:rgba(217, 83, 79, 0.75);"></div>
       </div>
 
-      <!-- 展開的進階調色盤 -->
       <div id="advancedPickerWrapper" class="mt-2 p-1.5 rounded bg-light border" style="display:none;">
         <div class="d-flex justify-content-between align-items-center mb-1">
           <span class="fw-bold" style="font-size:0.65rem;">雙色漸層</span>
@@ -7028,21 +7005,16 @@ function toggleAllQHToSelection() {
       </div>
     </div>
 
-    <!-- 確定與取消按鈕 -->
+    <!-- 確定與取消 -->
     <div class="d-flex gap-1 mt-1">
       <button class="btn btn-sm btn-success flex-grow-1 fw-bold py-1" style="font-size:0.7rem; background-color:#84a59d; border:none;" onclick="confirmSingleCardConfig()">套用</button>
       <button class="btn btn-sm btn-light flex-grow-1 fw-bold py-1" style="font-size:0.7rem;" onclick="cancelSingleCardConfig()">取消</button>
     </div>
   </div>
 
-  <!-- ✨ 收起後顯示的「純圖示 ⚙️ 懸浮鈕」 (點擊即可重新展開) -->
+  <!-- 收起後顯示的 ⚙️ 懸浮鈕 -->
   <div id="minimizedCardBtn" onclick="restoreFloatingConfigPanel()" class="shadow-lg transition-all duration-300" style="display: none; width: 42px; height: 42px; border-radius: 50%; background: #84a59d; color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #ffffff; font-weight: bold; font-size: 1.1rem;" title="展開方塊設定">
     ⚙️
-  </div>
-
-  <!-- TOP 懸浮回頂鈕 -->
-  <div id="floatingTopBtn" onclick="scrollToTop()" class="shadow-lg transition-all duration-300" style="display: none; width: 42px; height: 42px; border-radius: 50%; background: rgba(91, 42, 48, 0.85); backdrop-filter: blur(6px); color: #ffffff; align-items: center; justify-content: center; cursor: pointer; border: 1.5px solid rgba(255, 255, 255, 0.4); font-weight: bold; font-size: 0.75rem;">
-    TOP
   </div>
 </div>
 
