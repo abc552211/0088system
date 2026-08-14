@@ -551,6 +551,15 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">工作 SOP 知識庫</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">工作注意事項與 SOP。</p>
         </div>
+        <!-- 13. 新增自訂方塊範例 (請自行修改 ID、標題、圖示與跳轉行為) -->
+<div id="card_customFeature" onclick="window.open('https://schedule0088.abc552211.workers.dev/', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(132, 165, 157, 0.3); border-color: rgba(132, 165, 157, 0.4);">
+  <div class="card-more-btn" onclick="openCardConfigModal('card_customFeature', event)">•••</div>
+  <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
+    <iconify-icon icon="ph:star-duotone"></iconify-icon>
+  </div>
+  <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">班表系統</h3>
+  <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">排假。</p>
+</div>
 
         <!-- 7. 失聯關懷 -->
         <div id="card_lostCare" onclick="window.open('https://i.ibb.co/ch1HqXPy/EE377-ED0-87-B2-4047-B7-E9-1-BDF6-BF82957.jpg', '_blank')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group border-[1.5px] hover:border-[#e76f51]/60 relative" style="background-color: rgba(231, 111, 81, 0.25); border-color: rgba(231, 111, 81, 0.4);">
@@ -787,9 +796,15 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
         <img id="qhImagePreview" style="max-height: 120px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
         
         <div class="row">
-          <div class="col-6"><label class="small text-muted fw-bold">交接人</label><select id="qhFrom" class="form-select form-select-sm"></select></div>
-          <div class="col-6"><label class="small text-muted fw-bold">接交人</label><select id="qhTo" class="form-select form-select-sm"></select></div>
-        </div>
+  <div class="col-12 mb-2"><label class="small text-muted fw-bold">交接人</label><select id="qhFrom" class="form-select form-select-sm"></select></div>
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <label class="small text-muted fw-bold">接收人 (可複選)</label>
+      <button type="button" class="btn btn-sm p-0 text-primary border-0 bg-transparent" style="font-size: 0.75rem;" onclick="toggleAllQHToSelection()">選取全員</button>
+    </div>
+    <div id="qhToTagContainer" class="d-flex flex-wrap gap-1.5 p-2 rounded bg-white bg-opacity-60 border"></div>
+  </div>
+</div>
         
         <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
           <div class="form-check form-switch">
@@ -957,9 +972,15 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
         <img id="hImagePreview" style="max-height: 150px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
         
         <div class="row">
-          <div class="col-6"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
-          <div class="col-6"><label class="small text-muted fw-bold">接交人</label><select id="hTo" class="form-select"></select></div>
-        </div>
+  <div class="col-12 mb-2"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <label class="small text-muted fw-bold">接收人 (可複選)</label>
+      <button type="button" class="btn btn-sm p-0 text-primary border-0 bg-transparent" style="font-size: 0.75rem;" onclick="toggleAllHToSelection()">選取全員</button>
+    </div>
+    <div id="hToTagContainer" class="d-flex flex-wrap gap-1.5 p-2 rounded bg-white bg-opacity-60 border"></div>
+  </div>
+</div>
         
         <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
           <div class="form-check form-switch">
@@ -1646,10 +1667,12 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           arr.forEach(i => { if(i) el.add(new Option(i, i)); });
         };
 
-        resetAndFill('cStaff', cache.staff, '-請選擇-');
-        resetAndFill('hFrom', cache.staff, '-請選擇-');
-        resetAndFill('hTo', cache.staff, '-請選擇-');
-        resetAndFill('sStaff', cache.staff, '-請選擇-');
+        // 搜尋 loadData 裡的 resetAndFill('hTo'...) 並替換：
+resetAndFill('cStaff', cache.staff, '-請選擇-');
+resetAndFill('hFrom', cache.staff, '-請選擇-');
+resetAndFill('sStaff', cache.staff, '-請選擇-');
+renderStaffCheckboxTags('hToTagContainer', cache.staff);
+renderStaffCheckboxTags('qhToTagContainer', cache.staff);
 
         const docEl = document.getElementById('cDoctor');
         if (docEl) { docEl.innerHTML = '<option value="">-請選擇-</option>'; cache.doctors.forEach(i => docEl.add(new Option(i, i))); }
@@ -2816,70 +2839,75 @@ async function updateHomeSopBadge() {
       }
     }
 
-    async function submitHand() {
-      const fromStaff = document.getElementById('hFrom').value;
-      const toStaff = document.getElementById('hTo').value;
-      if (!fromStaff || !toStaff) { alert("⚠️ 請確實選擇交接人與接交人！"); return; }
+    // ================= 修改 submitHand 支援複數接交人 =================
+async function submitHand() {
+  const fromStaff = document.getElementById('hFrom').value;
+  const toStaffList = getSelectedStaffTags('hToTagContainer');
+  if (!fromStaff || toStaffList.length === 0) { 
+    alert("⚠️ 請確實選擇交接人與至少一位接收人！"); 
+    return; 
+  }
+  const toStaff = toStaffList.join(', ');
 
-      const isDelay = document.getElementById('hDelaySwitch').checked;
-      const isNoNotify = document.getElementById('hNoNotify').checked;
-      
-      let delayTimeStr = null;
-      if (isDelay) {
-        const rawTime = document.getElementById('hDelayTime').value;
-        if (!rawTime) { alert("請設定延遲推播時間"); return; }
-        delayTimeStr = rawTime.replace('T', ' '); 
-      }
+  const isDelay = document.getElementById('hDelaySwitch').checked;
+  const isNoNotify = document.getElementById('hNoNotify').checked;
+  
+  let delayTimeStr = null;
+  if (isDelay) {
+    const rawTime = document.getElementById('hDelayTime').value;
+    if (!rawTime) { alert("請設定延遲推播時間"); return; }
+    delayTimeStr = rawTime.replace('T', ' '); 
+  }
 
-      const t = document.getElementById('hType').value;
-      const hContentValue = document.getElementById('hContent').value;
-      const hPhoneValue = document.getElementById('hPhone').value;
+  const t = document.getElementById('hType').value;
+  const hContentValue = document.getElementById('hContent').value;
+  const hPhoneValue = document.getElementById('hPhone').value;
 
-      const pad = (n) => n < 10 ? '0' + n : n;
-      const timeStr = `${pad(document.getElementById('hHour').value)}:${pad(document.getElementById('hMin').value)}`;
-      let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
-      if (t.includes('指定')) finalContent += ` ${timeStr}`;
+  const pad = (n) => n < 10 ? '0' + n : n;
+  const timeStr = `${pad(document.getElementById('hHour').value)}:${pad(document.getElementById('hMin').value)}`;
+  let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
+  if (t.includes('指定')) finalContent += ` ${timeStr}`;
 
-      let finalPushStatus = isNoNotify ? 'None' : 'Pending';
+  let finalPushStatus = isNoNotify ? 'None' : 'Pending';
 
-      document.getElementById('loadingOverlay').style.display = 'flex';
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
-      const hImgInput = document.getElementById('hImage');
-      const base64Image = hImgInput ? (hImgInput.dataset.compressed || null) : null;
+  const hImgInput = document.getElementById('hImage');
+  const base64Image = hImgInput ? (hImgInput.dataset.compressed || null) : null;
 
-      const payload = {
-        type: t,
-        target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無',
-        content: finalContent,
-        from_staff: fromStaff,
-        to_staff: toStaff,
-        is_delay: isDelay,
-        delay_time: delayTimeStr,
-        is_no_notify: isNoNotify,
-        push_status: finalPushStatus,
-        image_url: base64Image
-      };
+  const payload = {
+    type: t,
+    target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無',
+    content: finalContent,
+    from_staff: fromStaff,
+    to_staff: toStaff,
+    is_delay: isDelay,
+    delay_time: delayTimeStr,
+    is_no_notify: isNoNotify,
+    push_status: finalPushStatus,
+    image_url: base64Image
+  };
 
-      try {
-        const { data, error } = await _supabase.from('handovers').insert([payload]).select();
-        document.getElementById('loadingOverlay').style.display = 'none';
-        if (error) throw error;
+  try {
+    const { data, error } = await _supabase.from('handovers').insert([payload]).select();
+    document.getElementById('loadingOverlay').style.display = 'none';
+    if (error) throw error;
 
-        if (t.includes('指定')) {
-          const calTime = payload.target_date.replace(/\//g, '-');
-          const title = `[${t}]${hContentValue}-${toStaff}`;
-          autoSyncCalendar('handovers', data[0].id, title, calTime);
-        }
-
-        alert("🎉 工作交接登記成功！");
-        loadData();
-        clearAllInputs();
-        showPage('home');
-      } catch(e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("登記交接失敗: " + e.message);
-      }
+    if (t.includes('指定')) {
+      const calTime = payload.target_date.replace(/\//g, '-');
+      const title = `[${t}]${hContentValue}-${toStaff}`;
+      autoSyncCalendar('handovers', data[0].id, title, calTime);
     }
+
+    alert("🎉 工作交接登記成功！");
+    loadData();
+    clearAllInputs();
+    showPage('home');
+  } catch(e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("登記交接失敗: " + e.message);
+  }
+}
 
     async function delHand() { 
       const r = document.getElementById('hDelSelect').value; 
@@ -5732,127 +5760,120 @@ function openDayAppListModal(dateKey) {
       document.getElementById('qhDelayTime').value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`; 
     }
 
-    function jumpToHandoverAdd(dateKey) {
-      if (!dateKey) return;
-      tempQuickAddDate = dateKey.replace(/-/g, '/'); // 格式化為 2026/08/05
-      
-      closeDayAppListModal(); // 關閉當日清單彈窗
-      
-      // 清空與初始化表單欄位
-      document.getElementById('qhDateDisplay').value = tempQuickAddDate;
-      document.getElementById('qhContent').value = '';
-      document.getElementById('qhPhone').value = '';
-      document.getElementById('qhImage').value = '';
-      document.getElementById('qhImagePreview').style.display = 'none';
-      document.getElementById('qhImagePreview').src = '';
-      document.getElementById('qhNoNotify').checked = false;
-      document.getElementById('qhDelaySwitch').checked = false;
-      document.getElementById('qhDelayArea').style.display = 'none';
-      document.getElementById('qhDelayTime').value = '';
-      
-      const qImgInput = document.getElementById('qhImage');
-      if (qImgInput) qImgInput.removeAttribute('data-compressed');
+    // ================= 修改 jumpToHandoverAdd 與 submitQuickHandover =================
+function jumpToHandoverAdd(dateKey) {
+  if (!dateKey) return;
+  tempQuickAddDate = dateKey.replace(/-/g, '/');
+  
+  closeDayAppListModal();
+  
+  document.getElementById('qhDateDisplay').value = tempQuickAddDate;
+  document.getElementById('qhContent').value = '';
+  document.getElementById('qhPhone').value = '';
+  document.getElementById('qhImage').value = '';
+  document.getElementById('qhImagePreview').style.display = 'none';
+  document.getElementById('qhImagePreview').src = '';
+  document.getElementById('qhNoNotify').checked = false;
+  document.getElementById('qhDelaySwitch').checked = false;
+  document.getElementById('qhDelayArea').style.display = 'none';
+  document.getElementById('qhDelayTime').value = '';
+  
+  const qImgInput = document.getElementById('qhImage');
+  if (qImgInput) qImgInput.removeAttribute('data-compressed');
 
-      // 載入人員下拉選單
-      const fromSel = document.getElementById('qhFrom');
-      const toSel = document.getElementById('qhTo');
-      fromSel.innerHTML = '<option value="">-請選擇-</option>';
-      toSel.innerHTML = '<option value="">-請選擇-</option>';
-      
-      cache.staff.forEach(s => { 
-        if(s) {
-          fromSel.add(new Option(s, s)); 
-          toSel.add(new Option(s, s)); 
-        }
-      });
-      
-      // 預設代入登入者身分
-      const currentStaff = localStorage.getItem("current_staff_name");
-      if (currentStaff && cache.staff.includes(currentStaff)) {
-        fromSel.value = currentStaff;
-      } else {
-        fromSel.value = "";
-      }
+  const fromSel = document.getElementById('qhFrom');
+  fromSel.innerHTML = '<option value="">-請選擇-</option>';
+  cache.staff.forEach(s => { 
+    if(s) fromSel.add(new Option(s, s)); 
+  });
+  
+  const currentStaff = localStorage.getItem("current_staff_name");
+  if (currentStaff && cache.staff.includes(currentStaff)) {
+    fromSel.value = currentStaff;
+  } else {
+    fromSel.value = "";
+  }
 
-      // 顯示彈窗並 Focus 內容框
-      document.getElementById('quickAddHandoverModal').style.display = 'flex';
-      setTimeout(() => {
-        document.getElementById('qhContent').focus();
-      }, 100);
-    }
+  // 重新渲染日曆快速交接的接收人標籤
+  renderStaffCheckboxTags('qhToTagContainer', cache.staff);
+
+  document.getElementById('quickAddHandoverModal').style.display = 'flex';
+  setTimeout(() => {
+    document.getElementById('qhContent').focus();
+  }, 100);
+}
 
     function closeQuickAddHandoverModal() {
       document.getElementById('quickAddHandoverModal').style.display = 'none';
     }
 
-    // ✨ 完整版快速新增交接送出邏輯 (與原本 submitHand 100% 相同)
-    async function submitQuickHandover() {
-      const fromStaff = document.getElementById('qhFrom').value;
-      const toStaff = document.getElementById('qhTo').value;
-      if (!fromStaff || !toStaff) { alert("⚠️ 請確實選擇交接人與接交人！"); return; }
+   async function submitQuickHandover() {
+  const fromStaff = document.getElementById('qhFrom').value;
+  const toStaffList = getSelectedStaffTags('qhToTagContainer');
+  if (!fromStaff || toStaffList.length === 0) { 
+    alert("⚠️ 請確實選擇交接人與至少一位接收人！"); 
+    return; 
+  }
+  const toStaff = toStaffList.join(', ');
 
-      const isDelay = document.getElementById('qhDelaySwitch').checked;
-      const isNoNotify = document.getElementById('qhNoNotify').checked;
-      
-      let delayTimeStr = null;
-      if (isDelay) {
-        const rawTime = document.getElementById('qhDelayTime').value;
-        if (!rawTime) { alert("請設定延遲推播時間"); return; }
-        delayTimeStr = rawTime.replace('T', ' '); 
-      }
+  const isDelay = document.getElementById('qhDelaySwitch').checked;
+  const isNoNotify = document.getElementById('qhNoNotify').checked;
+  
+  let delayTimeStr = null;
+  if (isDelay) {
+    const rawTime = document.getElementById('qhDelayTime').value;
+    if (!rawTime) { alert("請設定延遲推播時間"); return; }
+    delayTimeStr = rawTime.replace('T', ' '); 
+  }
 
-      const hContentValue = document.getElementById('qhContent').value;
-      const hPhoneValue = document.getElementById('qhPhone').value;
+  const hContentValue = document.getElementById('qhContent').value;
+  const hPhoneValue = document.getElementById('qhPhone').value;
 
-      const pad = (n) => n < 10 ? '0' + n : n;
-      const timeStr = `${pad(document.getElementById('qhHour').value)}:${pad(document.getElementById('qhMin').value)}`;
-      
-      // 與 submitHand 完全相同的內容與電話組合邏輯
-      let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
-      finalContent += ` ${timeStr}`;
+  const pad = (n) => n < 10 ? '0' + n : n;
+  const timeStr = `${pad(document.getElementById('qhHour').value)}:${pad(document.getElementById('qhMin').value)}`;
+  
+  let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
+  finalContent += ` ${timeStr}`;
 
-      let finalPushStatus = isNoNotify ? 'None' : 'Pending';
+  let finalPushStatus = isNoNotify ? 'None' : 'Pending';
 
-      document.getElementById('loadingOverlay').style.display = 'flex';
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
-      const qImgInput = document.getElementById('qhImage');
-      const base64Image = qImgInput ? (qImgInput.dataset.compressed || null) : null;
+  const qImgInput = document.getElementById('qhImage');
+  const base64Image = qImgInput ? (qImgInput.dataset.compressed || null) : null;
 
-      const targetDateStr = `${tempQuickAddDate} ${timeStr}`;
+  const targetDateStr = `${tempQuickAddDate} ${timeStr}`;
 
-      const payload = {
-        type: '指定時間',
-        target_date: targetDateStr,
-        content: finalContent,
-        from_staff: fromStaff,
-        to_staff: toStaff,
-        is_delay: isDelay,
-        delay_time: delayTimeStr,
-        is_no_notify: isNoNotify,
-        push_status: finalPushStatus,
-        image_url: base64Image
-      };
+  const payload = {
+    type: '指定時間',
+    target_date: targetDateStr,
+    content: finalContent,
+    from_staff: fromStaff,
+    to_staff: toStaff,
+    is_delay: isDelay,
+    delay_time: delayTimeStr,
+    is_no_notify: isNoNotify,
+    push_status: finalPushStatus,
+    image_url: base64Image
+  };
 
-      try {
-        const { data, error } = await _supabase.from('handovers').insert([payload]).select();
-        document.getElementById('loadingOverlay').style.display = 'none';
-        if (error) throw error;
+  try {
+    const { data, error } = await _supabase.from('handovers').insert([payload]).select();
+    document.getElementById('loadingOverlay').style.display = 'none';
+    if (error) throw error;
 
-        // 同步寫入 Google 日曆
-        const calTime = targetDateStr.replace(/\//g, '-');
-        const title = `[指定時間]${hContentValue}-${toStaff}`;
-        autoSyncCalendar('handovers', data[0].id, title, calTime);
+    const calTime = targetDateStr.replace(/\//g, '-');
+    const title = `[指定時間]${hContentValue}-${toStaff}`;
+    autoSyncCalendar('handovers', data[0].id, title, calTime);
 
-        alert("🎉 工作交接登記成功！");
-        closeQuickAddHandoverModal();
-        
-        // 重新重繪背景資料與日曆
-        loadData();
-      } catch(e) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("登記交接失敗: " + e.message);
-      }
-    }
+    alert("🎉 工作交接登記成功！");
+    closeQuickAddHandoverModal();
+    loadData();
+  } catch(e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("登記交接失敗: " + e.message);
+  }
+}
     // 找尋對應人員時，做去空白防呆
 function getStaffData(staffName, staffConfig) {
   if (!staffName || !staffConfig) return null;
@@ -6015,6 +6036,7 @@ let userHomePreferences = null;
 let editModeBackupSnapshot = null;
 let singleCardBackupSnapshot = null;
 
+// ================= 修改 DEFAULT_HOME_CARDS (納入新方塊設定) =================
 const DEFAULT_HOME_CARDS = [
   { id: "card_consultation", size: "3x1", color: "rgba(132, 165, 157, 0.4)", order: 1, hideTitle: false, hideDesc: false },
   { id: "card_appointment", size: "2x1", color: "rgba(163, 177, 138, 0.4)", order: 2, hideTitle: false, hideDesc: false },
@@ -6027,7 +6049,9 @@ const DEFAULT_HOME_CARDS = [
   { id: "card_systemSettings", size: "2x1", color: "rgba(181, 131, 141, 0.15)", order: 9, hideTitle: false, hideDesc: false },
   { id: "card_showlens", size: "2x1", color: "rgba(132, 165, 157, 0.25)", order: 10, hideTitle: false, hideDesc: false },
   { id: "card_adminPlatform", size: "2x1", color: "rgba(154, 140, 152, 0.25)", order: 11, hideTitle: false, hideDesc: false },
-  { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 12, hideTitle: false, hideDesc: false }
+  { id: "card_rgpSystem", size: "2x1", color: "rgba(74, 78, 105, 0.2)", order: 12, hideTitle: false, hideDesc: false },
+  // 新方塊登記於此
+  { id: "card_customFeature", size: "2x1", color: "rgba(132, 165, 157, 0.3)", order: 13, hideTitle: false, hideDesc: false }
 ];
 
 // ================= 100% 成功儲存與還原背景色彩修復腳本 =================
@@ -6807,6 +6831,59 @@ window.addEventListener('DOMContentLoaded', () => {
     loadUserPreferences();
   }, 300);
 });
+// ================= 複選人員膠囊渲染輔助函式 =================
+function renderStaffCheckboxTags(containerId, staffList) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  staffList.forEach(name => {
+    if (!name) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm bg-white text-secondary border rounded-pill py-0.5 px-2 staff-tag-btn';
+    btn.style.fontSize = '0.78rem';
+    btn.innerText = name;
+    btn.dataset.staff = name;
+    btn.onclick = function() {
+      this.classList.toggle('bg-white');
+      this.classList.toggle('text-secondary');
+      this.classList.toggle('border');
+      this.classList.toggle('btn-primary');
+      this.classList.toggle('text-white');
+      this.classList.toggle('active');
+    };
+    container.appendChild(btn);
+  });
+}
+
+function getSelectedStaffTags(containerId) {
+  const activeBtns = document.querySelectorAll(`#${containerId} .staff-tag-btn.active`);
+  return Array.from(activeBtns).map(b => b.dataset.staff);
+}
+
+function toggleAllHToSelection() {
+  const btns = document.querySelectorAll('#hToTagContainer .staff-tag-btn');
+  const allActive = Array.from(btns).every(b => b.classList.contains('active'));
+  btns.forEach(btn => {
+    if (allActive) {
+      btn.className = 'btn btn-sm bg-white text-secondary border rounded-pill py-0.5 px-2 staff-tag-btn';
+    } else {
+      btn.className = 'btn btn-sm btn-primary text-white rounded-pill py-0.5 px-2 staff-tag-btn active';
+    }
+  });
+}
+
+function toggleAllQHToSelection() {
+  const btns = document.querySelectorAll('#qhToTagContainer .staff-tag-btn');
+  const allActive = Array.from(btns).every(b => b.classList.contains('active'));
+  btns.forEach(btn => {
+    if (allActive) {
+      btn.className = 'btn btn-sm bg-white text-secondary border rounded-pill py-0.5 px-2 staff-tag-btn';
+    } else {
+      btn.className = 'btn btn-sm btn-primary text-white rounded-pill py-0.5 px-2 staff-tag-btn active';
+    }
+  });
+}
   </script>
   <!-- ✨ 首頁初始資料同步專屬：莫蘭迪霧面金句 Loading 遮罩 -->
   <div id="homeInitLoader" style="position: fixed; inset: 0; z-index: 10000; background: rgba(242, 242, 240, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; pointer-events: auto;">
