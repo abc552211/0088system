@@ -1720,23 +1720,36 @@ renderStaffCheckboxTags('qhToTagContainer', cache.staff);
         const { data: likesData } = await _supabase.from('handover_likes').select('*');
         const { data: commentsData } = await _supabase.from('handover_comments').select('*').order('created_at', { ascending: true });
 
-        cache.handoverList = (handData || []).map(item => ({
-          rowIndex: item.id,
-          id: item.id,
-          type: item.type,
-          targetDate: item.target_date || '無',
-          content: item.content,
-          from: item.from_staff,
-          to: item.to_staff,
-          from_staff: item.from_staff, 
-          to_staff: item.to_staff,     
-          pushStatus: item.push_status,
-          pushTime: item.delay_time,
-          imageUrl: item.image_url || null,
-          likes: (likesData || []).filter(l => l.handover_id === item.id),
-          comments: (commentsData || []).filter(c => c.handover_id === item.id),
-          info: `📥 ${item.to_staff} | 📌 ${item.content.substring(0, 15)}...`
-        }));
+        cache.handoverList = (handData || []).map(item => {
+          let cTimeStr = '';
+          if (item.created_at) {
+            const d = new Date(item.created_at);
+            if (!isNaN(d.getTime())) {
+              const pad = n => String(n).padStart(2, '0');
+              cTimeStr = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            } else {
+              cTimeStr = item.created_at;
+            }
+          }
+          return {
+            rowIndex: item.id,
+            id: item.id,
+            type: item.type,
+            targetDate: item.target_date || '無',
+            content: item.content,
+            from: item.from_staff,
+            to: item.to_staff,
+            from_staff: item.from_staff, 
+            to_staff: item.to_staff,     
+            pushStatus: item.push_status,
+            pushTime: item.delay_time,
+            createdAt: cTimeStr, // ✨ 首次發布時間
+            imageUrl: item.image_url || null,
+            likes: (likesData || []).filter(l => l.handover_id === item.id),
+            comments: (commentsData || []).filter(c => c.handover_id === item.id),
+            info: `📥 ${item.to_staff} | 📌 ${item.content.substring(0, 15)}...`
+          };
+        });
 
         const del = document.getElementById('hDelSelect'); 
         if (del) {
@@ -3916,7 +3929,7 @@ function renderHandoverList() {
       <div class="p-2 bg-white bg-opacity-80 rounded mb-2 border-0 shadow-2xs" style="white-space: pre-wrap; font-size: 0.88rem; line-height: 1.45; color: #2d3748;">${it.content}${hImgHtml}</div>
       ${pushBadge}
       
-      <!-- 📌 第 3 列：底欄資訊 -->
+      <!-- 📌 第 3 列：底欄資訊 (交接人與操作鈕) -->
       <div class="d-flex justify-content-between align-items-center mt-1 pt-1" style="font-size: 0.72rem; color: #718096;">
         <div class="d-flex align-items-center gap-1 text-truncate pe-2">
           <span class="fw-medium text-dark">${it.from}</span>
@@ -3936,9 +3949,14 @@ function renderHandoverList() {
         </div>
       </div>
 
+      <!-- 📌 第 4 列：右下角發布時間 (無多餘裝飾) -->
+      ${it.createdAt ? `
+      <div class="text-end text-muted opacity-75 mt-1" style="font-size: 0.65rem; line-height: 1;">
+        ${it.createdAt}
+      </div>` : ''}
+
       <!-- 💬 展開討論區塊 -->
       <div id="thread_${it.rowIndex}" class="mt-2 pt-2 border-top" style="display: none;">
-        <!-- ✨ 簡約細字按讚名單 (文字即連結) -->
         <div class="mb-2 pe-1 text-muted" style="font-size: 0.72rem; font-weight: 400; color: #4a4e69 !important;">
           ${likeSummaryHtml}
         </div>
