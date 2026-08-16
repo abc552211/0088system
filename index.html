@@ -803,15 +803,12 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
         <img id="qhImagePreview" style="max-height: 120px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
         
         <div class="row">
-  <div class="col-12 mb-2"><label class="small text-muted fw-bold">交接人</label><select id="qhFrom" class="form-select form-select-sm"></select></div>
-  <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <label class="small text-muted fw-bold">接收人 (可複選)</label>
-      <button type="button" class="btn btn-sm p-0 text-primary border-0 bg-transparent" style="font-size: 0.75rem;" onclick="toggleAllQHToSelection()">選取全員</button>
-    </div>
-    <div id="qhToTagContainer" class="d-flex flex-wrap gap-1.5 p-2 rounded bg-white bg-opacity-60 border"></div>
-  </div>
-</div>
+          <div class="col-12 mb-2"><label class="small text-muted fw-bold">交接人</label><select id="qhFrom" class="form-select form-select-sm"></select></div>
+          <div class="col-12">
+            <label class="small text-muted fw-bold mb-1">接收人 (可複選)</label>
+            <div id="qhToTagContainer" class="d-flex flex-wrap gap-1.5 p-2 rounded bg-white bg-opacity-60 border"></div>
+          </div>
+        </div>
         
         <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
           <div class="form-check form-switch">
@@ -979,15 +976,12 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
         <img id="hImagePreview" style="max-height: 150px; display: none; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ccc;">
         
         <div class="row">
-  <div class="col-12 mb-2"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
-  <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <label class="small text-muted fw-bold">接收人 (可複選)</label>
-      <button type="button" class="btn btn-sm p-0 text-primary border-0 bg-transparent" style="font-size: 0.75rem;" onclick="toggleAllHToSelection()">選取全員</button>
-    </div>
-    <div id="hToTagContainer" class="d-flex flex-wrap gap-1.5 p-2 rounded bg-white bg-opacity-60 border"></div>
-  </div>
-</div>
+          <div class="col-12 mb-2"><label class="small text-muted fw-bold">交接人</label><select id="hFrom" class="form-select"></select></div>
+          <div class="col-12">
+            <label class="small text-muted fw-bold mb-1">接收人 (可複選)</label>
+            <div id="hToTagContainer" class="d-flex flex-wrap gap-1.5 p-2 rounded bg-white bg-opacity-60 border"></div>
+          </div>
+        </div>
         
         <div class="mt-3 p-3 rounded border bg-white bg-opacity-50">
           <div class="form-check form-switch">
@@ -1356,8 +1350,8 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
       
       <!-- 搜尋狀態切換膠囊 -->
       <div class="d-flex justify-content-center align-items-center p-1 rounded-pill shadow-inner mb-3" style="background-color: rgba(142, 154, 175, 0.15);">
-        <button id="btnHSSearchAll" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchHSSearchStatus('all')" style="font-size: 0.85rem; background-color: transparent;">全部</button>
-        <button id="btnHSSearchUnclosed" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 transition-all" onclick="switchHSSearchStatus('unclosed')" style="font-size: 0.85rem; background-color: #ffffff; color: #3e2723; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">未結案</button>
+        <button id="btnHSSearchAll" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 transition-all" onclick="switchHSSearchStatus('all')" style="font-size: 0.85rem; background-color: #ffffff; color: #3e2723; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">全部</button>
+        <button id="btnHSSearchUnclosed" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchHSSearchStatus('unclosed')" style="font-size: 0.85rem; background-color: transparent;">未結案</button>
         <button id="btnHSSearchClosed" class="btn btn-sm rounded-pill flex-grow-1 fw-bold py-1 border-0 text-muted transition-all" onclick="switchHSSearchStatus('closed')" style="font-size: 0.85rem; background-color: transparent;">已結案</button>
       </div>
 
@@ -1673,13 +1667,22 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           el.innerHTML = `<option value="">${defaultTxt}</option>`;
           arr.forEach(i => { if(i) el.add(new Option(i, i)); });
         };
+        resetAndFill('cStaff', cache.staff, '-請選擇-');
+        resetAndFill('hFrom', cache.staff, '-請選擇-');
+        resetAndFill('qhFrom', cache.staff, '-請選擇-');
+        resetAndFill('sStaff', cache.staff, '-請選擇-');
 
-        // 搜尋 loadData 裡的 resetAndFill('hTo'...) 並替換：
-resetAndFill('cStaff', cache.staff, '-請選擇-');
-resetAndFill('hFrom', cache.staff, '-請選擇-');
-resetAndFill('sStaff', cache.staff, '-請選擇-');
-renderStaffCheckboxTags('hToTagContainer', cache.staff);
-renderStaffCheckboxTags('qhToTagContainer', cache.staff);
+        const currentStaff = localStorage.getItem("current_staff_name");
+        if (currentStaff) {
+          const hFromEl = document.getElementById('hFrom');
+          if (hFromEl && cache.staff.includes(currentStaff)) hFromEl.value = currentStaff;
+          const qhFromEl = document.getElementById('qhFrom');
+          if (qhFromEl && cache.staff.includes(currentStaff)) qhFromEl.value = currentStaff;
+        }
+
+        renderStaffCheckboxTags('hToTagContainer', cache.staff);
+        renderStaffCheckboxTags('qhToTagContainer', cache.staff);
+        
 
         const docEl = document.getElementById('cDoctor');
         if (docEl) { docEl.innerHTML = '<option value="">-請選擇-</option>'; cache.doctors.forEach(i => docEl.add(new Option(i, i))); }
@@ -3831,9 +3834,26 @@ function renderHandoverList() {
   // 6. 渲染卡片清單
   sortedList.forEach((it, index) => { 
     const isTimed = String(it.type || '').includes("指定"); 
+    const isTrack = String(it.type || '').includes("追蹤");
     const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date(); 
     let cardClass = isTimed ? "handover-card-timed" : (String(it.type || '').includes("物流") ? "handover-card-logistics" : "handover-card-track"); 
     if (isOverdue) cardClass += " handover-overdue"; 
+
+    // ✨ 計算追蹤天數：依據首次建立時間 (createdAt) 計算與今日差距天數
+    let dateDisplay = it.targetDate || '無';
+    if (isTrack) {
+      if (it.createdAt) {
+        const createDate = new Date(it.createdAt.split(' ')[0]);
+        const nowDate = new Date();
+        nowDate.setHours(0, 0, 0, 0);
+        createDate.setHours(0, 0, 0, 0);
+        const diffTime = nowDate.getTime() - createDate.getTime();
+        const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+        dateDisplay = `${diffDays} 天`;
+      } else {
+        dateDisplay = `0 天`;
+      }
+    }
     
     let pushBadge = '';
     const pStatus = String(it.pushStatus || '').trim();
@@ -3920,7 +3940,7 @@ function renderHandoverList() {
           <button class="btn btn-sm btn-outline-success py-0 px-1.5 flex-shrink-0" style="font-size: 0.7rem; border-color: #84a59d; color: #84a59d; line-height: 1.4;" onclick="closeHandoverCase(${it.rowIndex})">✅</button>
           ${unreadBadgeHtml}
           <span class="badge text-white flex-shrink-0" style="font-size: 0.68rem; padding: 2px 5px;">${it.type}${isOverdue ? ' (逾期)' : ''}</span>
-          <span class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} text-truncate" style="font-size: 0.7rem;">📅 ${it.targetDate || '無'}</span>
+          <span class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} text-truncate" style="font-size: 0.7rem;">📅 ${dateDisplay}</span>
         </div>
         <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" class="text-muted opacity-60 flex-shrink-0 ms-1" style="cursor:pointer; font-size:0.78rem;">📤</div>
       </div>
@@ -4649,7 +4669,7 @@ function renderHandoverList() {
         alert("結案失敗: " + e.message);
       }
     }
-    let currentHSSearchStatus = 'unclosed';
+    let currentHSSearchStatus = 'all';
 
     function switchHSSearchStatus(status) {
       currentHSSearchStatus = status;
@@ -4678,7 +4698,7 @@ function renderHandoverList() {
     function openHandoverSearch() {
       document.getElementById('handoverSearchInput').value = '';
       document.getElementById('handoverSearchResults').innerHTML = '<div class="text-center text-muted small py-3">請輸入關鍵字進行模糊搜尋 (系統保持防呆不提供直接編輯)</div>';
-      switchHSSearchStatus('unclosed');
+      switchHSSearchStatus('all');
       document.getElementById('handoverSearchModal').style.display = 'flex';
     }
 
@@ -6842,11 +6862,12 @@ window.addEventListener('DOMContentLoaded', () => {
     loadUserPreferences();
   }, 300);
 });
-// ================= 複選人員膠囊渲染輔助函式 =================
+// ================= 複選人員膠囊渲染與全員互斥防呆 =================
 function renderStaffCheckboxTags(containerId, staffList) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = '';
+
   staffList.forEach(name => {
     if (!name) return;
     const btn = document.createElement('button');
@@ -6855,7 +6876,27 @@ function renderStaffCheckboxTags(containerId, staffList) {
     btn.style.fontSize = '0.78rem';
     btn.innerText = name;
     btn.dataset.staff = name;
+
     btn.onclick = function() {
+      const isAllBtn = (name === '全員');
+      const willBeActive = !this.classList.contains('active');
+
+      if (willBeActive) {
+        if (isAllBtn) {
+          // 點選「全員」：取消同容器內其他所有個人標籤
+          container.querySelectorAll('.staff-tag-btn').forEach(b => {
+            b.className = 'btn btn-sm bg-white text-secondary border rounded-pill py-0.5 px-2 staff-tag-btn';
+          });
+        } else {
+          // 點選任一個別人員：取消「全員」標籤
+          const allTagBtn = Array.from(container.querySelectorAll('.staff-tag-btn')).find(b => b.dataset.staff === '全員');
+          if (allTagBtn) {
+            allTagBtn.className = 'btn btn-sm bg-white text-secondary border rounded-pill py-0.5 px-2 staff-tag-btn';
+          }
+        }
+      }
+
+      // 切換自身樣式
       this.classList.toggle('bg-white');
       this.classList.toggle('text-secondary');
       this.classList.toggle('border');
@@ -6863,6 +6904,7 @@ function renderStaffCheckboxTags(containerId, staffList) {
       this.classList.toggle('text-white');
       this.classList.toggle('active');
     };
+
     container.appendChild(btn);
   });
 }
