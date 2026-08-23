@@ -500,15 +500,15 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">任何諮詢客人來這邊新增，大姐頭仔說必須留紀錄。</p>
         </div>
 
-        <!-- 2. 預約狀態更新 -->
+        <!-- 2. 行事曆 -->
         <div id="card_appointment" onclick="showPage('appointment')" class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-1 group relative" style="background-color: rgba(163, 177, 138, 0.4); border-color: rgba(163, 177, 138, 0.4);">
           <div class="card-more-btn" onclick="openCardConfigModal('card_appointment', event)">•••</div>
           <div id="homeOverdueBadge" class="absolute top-2 right-2 shadow-sm" style="display: none; z-index: 20; background-color: #84a59d !important; color: #ffffff !important; border: 1px solid #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 9999px; letter-spacing: 0.5px;">0筆預約</div>
           <div class="card-icon-box w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-[#5b2a30]/10 flex justify-center items-center mb-2 md:mb-6 text-[#5b2a30] text-2xl md:text-3xl group-hover:scale-110 transition-transform duration-500">
             <iconify-icon icon="ph:calendar-check-duotone"></iconify-icon>
           </div>
-          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">預約狀態更新</h3>
-          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">更新狀態，留個痕跡。</p>
+          <h3 class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">行事曆</h3>
+          <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">班表、預約與任務總覽。</p>
         </div>
 
         <!-- 3. 工作交接清單 -->
@@ -692,7 +692,7 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
     <!-- 替換 #appointment 頁面內的控制列 -->
 <div class="card p-3 md:p-4 mb-4" style="background: rgba(255, 250, 240, 0.98) !important;">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">指定時間任務</h4>
+    <h4 class="mb-0 font-serif-tc font-bold text-[#3e2723]" style="font-size: 1.2rem;">行事曆</h4>
     
     <!-- ✨ 簡約微光圓形下載圖示按鈕 -->
     <button onclick="exportMyShiftsToICS()" 
@@ -3494,9 +3494,9 @@ function renderCalendarView() {
       } else if (cleanShift.includes('營業')) {
         // 店帳營業
         shiftBadgeStyle = 'background-color: rgba(224, 242, 254, 0.85); color: #0369a1; font-weight: 600;';
-      } else {
-        // 預設其他班別
-        shiftBadgeStyle = 'background-color: rgba(243, 244, 246, 0.85); color: #374151; font-weight: 600;';
+      } else if (cleanShift !== '') {
+        // ✨ 其他自訂假別（公、病、事、特等）：淺草綠底 + 黑字
+        shiftBadgeStyle = 'background-color: rgba(220, 252, 231, 0.95); color: #111827; font-weight: 600;';
       }
     }
 
