@@ -1746,11 +1746,12 @@ input[type=range].custom-opacity-range::-webkit-slider-thumb {
             to_staff: item.to_staff,     
             pushStatus: item.push_status,
             pushTime: item.delay_time,
-            createdAt: cTimeStr, // ✨ 首次發布時間
+            createdAt: cTimeStr,
+            createdAtRaw: item.created_at, // 保存原始時間欄位以利精確比對
             imageUrl: item.image_url || null,
             likes: (likesData || []).filter(l => l.handover_id === item.id),
             comments: (commentsData || []).filter(c => c.handover_id === item.id),
-            info: `📥 ${item.to_staff} | 📌 ${item.content.substring(0, 15)}...`
+            info: `接收: ${item.to_staff} | 內容: ${item.content.substring(0, 15)}...`
           };
         });
 
@@ -2867,7 +2868,7 @@ async function submitHand() {
   const fromStaff = document.getElementById('hFrom').value;
   const toStaffList = getSelectedStaffTags('hToTagContainer');
   if (!fromStaff || toStaffList.length === 0) { 
-    alert("⚠️ 請確實選擇交接人與至少一位接收人！"); 
+    alert("請確實選擇交接人與至少一位接收人！"); 
     return; 
   }
   const toStaff = toStaffList.join(', ');
@@ -2913,7 +2914,6 @@ async function submitHand() {
 
   try {
     const { data, error } = await _supabase.from('handovers').insert([payload]).select();
-    document.getElementById('loadingOverlay').style.display = 'none';
     if (error) throw error;
 
     if (t.includes('指定')) {
@@ -2922,10 +2922,11 @@ async function submitHand() {
       autoSyncCalendar('handovers', data[0].id, title, calTime);
     }
 
-    alert("🎉 工作交接登記成功！");
-    loadData();
+    alert("工作交接登記成功！");
     clearAllInputs();
-    showPage('home');
+    switchHandTab(1);
+    await loadData();
+    document.getElementById('loadingOverlay').style.display = 'none';
   } catch(e) {
     document.getElementById('loadingOverlay').style.display = 'none';
     alert("登記交接失敗: " + e.message);
@@ -3942,7 +3943,26 @@ function renderHandoverList() {
           <span class="badge text-white flex-shrink-0" style="font-size: 0.68rem; padding: 2px 5px;">${it.type}${isOverdue ? ' (逾期)' : ''}</span>
           <span class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} text-truncate" style="font-size: 0.7rem;">📅 ${dateDisplay}</span>
         </div>
-        <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" class="text-muted opacity-60 flex-shrink-0 ms-1" style="cursor:pointer; font-size:0.78rem;">📤</div>
+        <div class="d-flex align-items-center gap-2">
+          ${(() => {
+            const fromStaff = String(it.from || it.from_staff || '').trim();
+            const isCreator = (fromStaff === currentUser && currentUser !== '');
+            let isWithin3Hours = false;
+            if (it.createdAtRaw || it.createdAt) {
+              const timeToParse = it.createdAtRaw || it.createdAt.replace(/\//g, '-');
+              const createdDate = new Date(timeToParse);
+              if (!isNaN(createdDate.getTime())) {
+                const diffHours = (new Date() - createdDate) / (1000 * 60 * 60);
+                if (diffHours >= 0 && diffHours <= 3) isWithin3Hours = true;
+              }
+            }
+            return (isCreator && isWithin3Hours)
+              ? `<button class="btn btn-sm p-0 border-0 bg-transparent text-primary fw-bold" style="font-size: 0.75rem;" onclick="openEditHandoverModal(${it.rowIndex}, \`${it.content.replace(/`/g, '\\`')}\`)">編輯</button>
+                 <button class="btn btn-sm p-0 border-0 bg-transparent text-danger fw-bold ms-1" style="font-size: 0.75rem;" onclick="deleteHandoverWithin3Hours(${it.rowIndex})">刪除</button>`
+              : '';
+          })()}
+          <div onclick="shareCard('hcard_${index}', '交接_${it.to}')" class="text-muted opacity-60 flex-shrink-0 ms-1" style="cursor:pointer; font-size:0.78rem;">📤</div>
+        </div>
       </div>
       
       <!-- 📌 第 2 列：核心內容區 -->
@@ -6937,6 +6957,82 @@ function toggleAllQHToSelection() {
     }
   });
 }
+// 開啟編輯交接 Modal
+function openEditHandoverModal(id, content) {
+  document.getElementById('editHandoverId').value = id;
+  document.getElementById('editHandoverContentInput').value = content;
+  document.getElementById('editHandoverModal').style.display = 'flex';
+}
+
+// 關閉編輯交接 Modal
+function closeEditHandoverModal() {
+  document.getElementById('editHandoverModal').style.display = 'none';
+}
+
+// 送出編輯交接內容並重置按讚紀錄（要求重新閱讀）
+async function submitEditHandover() {
+  const handoverId = document.getElementById('editHandoverId').value;
+  const newContent = document.getElementById('editHandoverContentInput').value.trim();
+  const currentUser = localStorage.getItem("current_staff_name") || "";
+
+  if (!newContent) {
+    alert("請輸入交接內容");
+    return;
+  }
+
+  document.getElementById('loadingText').innerText = "更新交接內容中...";
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  try {
+    // 1. 更新 handovers 資料表中的內容
+    const { error: updateError } = await _supabase
+      .from('handovers')
+      .update({ content: newContent })
+      .eq('id', handoverId);
+
+    if (updateError) throw updateError;
+
+    // 2. 清除除了發起人以外的所有已讀按讚紀錄，重置其他人為未讀
+    await _supabase
+      .from('handover_likes')
+      .delete()
+      .eq('handover_id', handoverId)
+      .neq('staff_name', currentUser);
+
+    document.getElementById('loadingOverlay').style.display = 'none';
+    closeEditHandoverModal();
+    alert("交接內容已更新，相關人員需重新閱讀確認！");
+
+    // 3. 重新加載資料更新畫面
+    await loadData();
+  } catch (e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("修改失敗: " + e.message);
+  }
+}
+// 3小時內發起人刪除交接項目
+async function deleteHandoverWithin3Hours(handoverId) {
+  if (!confirm("確定要刪除這筆交接項目嗎？此操作無法復原。")) return;
+
+  document.getElementById('loadingText').innerText = "正在刪除交接項目...";
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  try {
+    // 同步清除關聯的點讚與留言
+    await _supabase.from('handover_likes').delete().eq('handover_id', handoverId);
+    await _supabase.from('handover_comments').delete().eq('handover_id', handoverId);
+
+    const { error } = await _supabase.from('handovers').delete().eq('id', handoverId);
+    if (error) throw error;
+
+    await loadData();
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("交接項目已成功刪除。");
+  } catch (e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("刪除失敗: " + e.message);
+  }
+}
   </script>
   <!-- ✨ 首頁初始資料同步專屬：莫蘭迪霧面金句 Loading 遮罩 -->
   <div id="homeInitLoader" style="position: fixed; inset: 0; z-index: 10000; background: rgba(242, 242, 240, 0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; pointer-events: auto;">
@@ -7118,6 +7214,23 @@ function toggleAllQHToSelection() {
       <button class="btn btn-success fw-bold" onclick="saveMainBgConfig()">套用背景色彩</button>
       <button class="btn btn-outline-secondary" onclick="resetMainBgConfig()">恢復預設背景</button>
       <button class="btn btn-light" onclick="document.getElementById('mainBgConfigModal').style.display='none'">取消</button>
+    </div>
+  </div>
+</div>
+<!-- 編輯交接內容 Modal -->
+<div id="editHandoverModal" class="modal-overlay" style="display:none; z-index: 10600 !important;">
+  <div class="modal-body" style="max-width: 480px; width: 92%; max-height: 85vh; overflow-y: auto;">
+    <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">✏️ 編輯工作交接</h5>
+    <input type="hidden" id="editHandoverId">
+    
+    <label class="small fw-bold text-muted">交接內容</label>
+    <div class="clear-wrapper mb-3">
+      <textarea id="editHandoverContentInput" class="form-control" rows="4"></textarea>
+    </div>
+    
+    <div class="d-grid gap-2">
+      <button class="btn btn-success fw-bold" onclick="submitEditHandover()">確認修改並重置已閱</button>
+      <button class="btn btn-light" onclick="closeEditHandoverModal()">取消</button>
     </div>
   </div>
 </div>
