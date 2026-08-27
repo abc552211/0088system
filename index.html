@@ -2158,7 +2158,16 @@
     let specialUnreachedData = [];
 
     const GAS_CALENDAR_URL = "https://script.google.com/macros/s/AKfycbwyB4bj_j36fQTyjNsL8nl1UGrSLh1NhDCMPFJ2EgNd3SDYqMbzREGsRTZVWsM52ouxng/exec";
+    let isViewingMyUnclosed = false; // 記錄當前是否處於「我的未結案」視圖
 
+// 統一的搜尋結果重新加載器（保持目前視角與捲軸位置）
+async function refreshCurrentSearchView() {
+  if (isViewingMyUnclosed) {
+    await doMyUnclosedSearch(true);
+  } else {
+    await doSearch(true);
+  }
+}
     async function autoSyncCalendar(tableName, recordId, title, timeStr) {
       try {
         const response = await fetch(GAS_CALENDAR_URL, {
@@ -2956,40 +2965,39 @@
       initSelectors();
       document.getElementById('careModal').style.display = 'flex';
     }
-    // ✨ 全新：一鍵查詢「我的未結案」 (包含原服務人與參與關懷的關係人)
-    async function doMyUnclosedSearch(keepScroll = false) {
+    // 一鍵查詢「我的未結案」
+    async function doMyUnclosedSearch(keepScroll = false) { 
       const currentUser = localStorage.getItem("current_staff_name") || "";
       if (!currentUser) return alert("請先解鎖裝置以識別身分");
 
+      isViewingMyUnclosed = true; // 標記目前為「我的未結案」狀態
+
       if (keepScroll) lastSearchScroll = window.scrollY; else lastSearchScroll = 0;
 
-      document.getElementById('loadingOverlay').style.display = 'flex';
-      const resDiv = document.getElementById('searchResults');
-      if (!keepScroll) resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索關係人未結案中...</div>';
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      const resDiv = document.getElementById('searchResults'); 
+      if (!keepScroll) resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索關係人未結案中...</div>'; 
 
       try {
-        // 先抓出所有未結案的資料
         const { data, error } = await _supabase.from('consultations')
           .select('*')
           .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.');
-
+        
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
-        // 前端精準過濾：自己是服務人、最新關懷人、或是曾在關懷紀錄留名的
         let filteredData = (data || []).filter(r => {
-          const sStaff = r.staff || '';
-          const cStaff = r.care_staff || '';
-          const cNote = r.care_note || '';
-          return sStaff === currentUser || cStaff === currentUser || cNote.includes(currentUser);
+            const sStaff = r.staff || '';
+            const cStaff = r.care_staff || '';
+            const cNote = r.care_note || '';
+            return sStaff === currentUser || cStaff === currentUser || cNote.includes(currentUser);
         });
 
-        if (filteredData.length === 0) {
-          resDiv.innerHTML = '<div class="alert alert-success text-center">🎉 太棒了！您目前沒有任何未結案的紀錄</div>';
-          return;
+        if (filteredData.length === 0) { 
+          resDiv.innerHTML = '<div class="alert alert-success text-center">🎉 太棒了！您目前沒有任何未結案的紀錄</div>'; 
+          return; 
         }
 
-        // 依照建立時間排序 (舊的排前面優先處理)
         filteredData.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         allSearchData = filteredData.map(item => ({
@@ -3003,11 +3011,11 @@
           staff: item.staff,
           doctor: item.doctor,
           isAppoint: item.is_appoint,
-          appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0, 16) : '',
-          imageUrl: item.image_url || "",
+          appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
+          imageUrl: item.image_url || "", 
           salesNote: item.sales_note || "",
           careTimeRaw: item.care_time || null,
-          careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0, 16) : '',
+          careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
           careNote: item.care_note,
           careStaff: item.care_staff || "",
           note: item.note,
@@ -3015,11 +3023,11 @@
         }));
 
         if (!keepScroll) {
-          currentActiveFilter = '全部';
+          currentActiveFilter = '全部'; 
         }
 
-        renderSearchFilterTabs();
-        applySearchFilterAndRender(true);
+        renderSearchFilterTabs(); 
+        applySearchFilterAndRender(true); 
 
         if (keepScroll && lastSearchScroll > 0) {
           setTimeout(() => window.scrollTo(0, lastSearchScroll), 50);
@@ -3030,24 +3038,27 @@
       }
     }
 
-    async function doSearch(keepScroll = false) {
-      const q = {
-        barcode: document.getElementById('sBarcode').value.trim(),
-        name: document.getElementById('sName').value.trim(),
-        phone: document.getElementById('sPhone').value.trim(),
+    async function doSearch(keepScroll = false) { 
+      if (!keepScroll) {
+        isViewingMyUnclosed = false; // 手動點擊開始搜尋時，切換為一般條件搜尋模式
+      }
+
+      const q = { 
+        barcode: document.getElementById('sBarcode').value.trim(), 
+        name: document.getElementById('sName').value.trim(), 
+        phone: document.getElementById('sPhone').value.trim(), 
         birthday: document.getElementById('sBirth').value.trim(),
         staff: document.getElementById('sStaff').value,
         tags: Array.from(document.querySelectorAll('#sTagContainer .active')).map(b => b.innerText)
-      };
-
-      if (!keepScroll && !q.barcode && !q.name && !q.phone && !q.birthday && !q.staff && q.tags.length === 0) { alert("請輸入或選擇查詢條件"); return; }
-
-      // ✨ 紀錄維持目前的捲軸高度
+      }; 
+      
+      if(!keepScroll && !q.barcode && !q.name && !q.phone && !q.birthday && !q.staff && q.tags.length === 0) { alert("請輸入或選擇查詢條件"); return; } 
+      
       if (keepScroll) lastSearchScroll = window.scrollY; else lastSearchScroll = 0;
 
-      document.getElementById('loadingOverlay').style.display = 'flex';
-      const resDiv = document.getElementById('searchResults');
-      if (!keepScroll) resDiv.innerHTML = '<div class="text-center py-3">🔍 搜尋中...</div>';
+      document.getElementById('loadingOverlay').style.display = 'flex'; 
+      const resDiv = document.getElementById('searchResults'); 
+      if(!keepScroll) resDiv.innerHTML = '<div class="text-center py-3">🔍 搜尋中...</div>'; 
 
       try {
         let query = _supabase.from('consultations').select('*');
@@ -3082,26 +3093,24 @@
           staff: item.staff,
           doctor: item.doctor,
           isAppoint: item.is_appoint,
-          appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0, 16) : '',
-          imageUrl: item.image_url || "",
+          appointTime: item.appoint_time ? item.appoint_time.replace('T', ' ').substring(0,16) : '',
+          imageUrl: item.image_url || "", 
           salesNote: item.sales_note || "",
           careTimeRaw: item.care_time || null,
-          careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0, 16) : '',
+          careTime: item.care_time ? item.care_time.replace('T', ' ').substring(0,16) : '',
           careNote: item.care_note,
           careStaff: item.care_staff || "",
           note: item.note,
           createdAt: item.created_at ? (String(item.created_at).includes('T') ? new Date(item.created_at).toLocaleString('zh-TW') : item.created_at) : '無'
         }));
 
-        // ✨ 核心修正：若為關懷後更新，不強制重置頁籤為「全部」，而是維持住 currentActiveFilter
         if (!keepScroll) {
-          currentActiveFilter = '全部';
+          currentActiveFilter = '全部'; 
         }
 
-        renderSearchFilterTabs();
-        applySearchFilterAndRender(true);
+        renderSearchFilterTabs(); 
+        applySearchFilterAndRender(true); 
 
-        // ✨ 恢復捲軸位置
         if (keepScroll && lastSearchScroll > 0) {
           setTimeout(() => window.scrollTo(0, lastSearchScroll), 50);
         }
@@ -3204,7 +3213,9 @@
         if (error) throw error;
         alert("🎉 條碼補登成功！");
         closeUpdateModal();
-        doSearch(true);
+        // 原本是 doSearch(true);
+        await refreshCurrentSearchView();
+        await updateHomeConsultBadge();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("補登失敗: " + e.message);
@@ -3314,7 +3325,9 @@
           }
           alert("🎉 關懷紀錄累積儲存成功！");
 
-          doSearch(true); // 保留頁面位置與視角
+          // 原本是 doSearch(true);
+          await refreshCurrentSearchView();
+          await updateHomeConsultBadge();
         } catch (e) {
           document.getElementById('loadingOverlay').style.display = 'none';
           alert("儲存失敗: " + e.message);
@@ -3352,7 +3365,8 @@
         if (error) throw error;
 
         alert("🎉 最新一筆關懷內容已成功修改！");
-        doSearch(true);
+        // 原本是 doSearch(true);
+        await refreshCurrentSearchView();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("修改關懷失敗: " + e.message);
@@ -3388,7 +3402,9 @@
         if (error) throw error;
 
         alert("🗑️ 最新關懷紀錄已移除！");
-        doSearch(true);
+        // 原本是 doSearch(true);
+        await refreshCurrentSearchView();
+        await updateHomeConsultBadge();
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("刪除失敗: " + e.message);
@@ -3532,7 +3548,8 @@
           document.getElementById('loadingOverlay').style.display = 'none';
           if (error) throw error;
           alert("🎉 客戶資料修改成功！");
-          doSearch(true);
+          // 原本是 doSearch(true);
+          await refreshCurrentSearchView();
         } catch (e) {
           document.getElementById('loadingOverlay').style.display = 'none';
           alert("修改失敗: " + e.message);
@@ -4241,45 +4258,54 @@
       gridContainer.innerHTML = html;
     }
 
-    // 1. 點擊清單卡片彈出處理 Modal
-    function selectAppCard(index, id, name, type = 'consult') {
-      const list = getMergedAppAndHandoverList(currentAppStaffFilter);
-      const it = list[index];
-      if (!it) return;
+    // 1. 點擊清單卡片彈出處理 Modal（支援截圖分享）
+function selectAppCard(index, id, name, type = 'consult') {
+  const list = getMergedAppAndHandoverList(currentAppStaffFilter);
+  const it = list[index];
+  if (!it) return;
 
-      currentSelectedAppIndex = index; // ✨ 提早設定，讓後續函式可抓取判定
-      const isHandover = (it.itemType === 'handover');
-      const appInfoEl = document.getElementById('appInfo');
+  currentSelectedAppIndex = index;
+  const isHandover = (it.itemType === 'handover');
+  const appInfoEl = document.getElementById('appInfo');
 
-      // Reset modal state
-      document.getElementById('appChangeTimeSwitch').checked = false;
-      document.getElementById('appNote').value = "";
-      document.getElementById('appStatus').value = "";
-      document.querySelector('label[for="appChangeTimeSwitch"]').innerHTML = isHandover ? '🔄 修改交接預定時間' : '🔄 客戶要改期';
+  // Reset modal state
+  document.getElementById('appChangeTimeSwitch').checked = false;
+  document.getElementById('appNote').value = "";
+  document.getElementById('appStatus').value = "";
+  document.querySelector('label[for="appChangeTimeSwitch"]').innerHTML = isHandover ? '🔄 修改交接預定時間' : '🔄 客戶要改期';
 
-      // 觸發切換狀態
-      toggleAppChangeMode(false);
+  toggleAppChangeMode(false);
 
-      if (!isHandover) {
-        // 諮詢預約處理介面
-        document.getElementById('appNoteArea').style.display = 'block';
+  if (!isHandover) {
+    // 諮詢預約處理介面（加入右上角 📤 截圖分享按鈕）
+    document.getElementById('appNoteArea').style.display = 'block';
 
-        let contentHtml = `🎯 <b>正處理諮詢對象：</b> ${name}<br>💬 <b>原登記需求：</b> ${it.event || '無'}`;
-        appInfoEl.innerHTML = contentHtml;
-      } else {
-        // ⏰ 指定時間交接處理介面：隱藏備註
-        document.getElementById('appNoteArea').style.display = 'none';
+    let timeStr = it.eventTime ? it.eventTime.replace('T', ' ').substring(0, 16) : '未定';
+    let contentHtml = `
+      <div style="position: relative;">
+        <div onclick="shareCard('appInfo', '預約_${it.name}')" style="position: absolute; top: -5px; right: -5px; cursor: pointer; opacity: 0.6; font-size: 1.1rem; z-index: 10;" title="截圖分享">📤</div>
+        🎯 <b>待赴約對象：</b> ${it.name}<br>
+        📞 <b>聯絡電話：</b> ${it.phone || '無'}<br>
+        ⏰ <b>預約時間：</b> ${timeStr}<br>
+        👤 <b>服務人員：</b> ${it.staff || '未註記'}<br>
+        💬 <b>登記需求：</b> ${it.event || '無'}
+      </div>
+    `;
+    appInfoEl.innerHTML = contentHtml;
+  } else {
+    // 指定時間交接處理介面（加入右上角 📤 截圖分享按鈕）
+    document.getElementById('appNoteArea').style.display = 'none';
 
-        const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
-        const hasLiked = it.likes.some(l => l.staff_name === currentUser);
-        const likeIcon = hasLiked ? '❤️' : '🤍';
-        const likedNames = it.likes.map(l => l.staff_name).join(', ');
-        const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
+    const currentUser = localStorage.getItem("current_staff_name") || "未知身分";
+    const hasLiked = (it.likes || []).some(l => l.staff_name === currentUser);
+    const likeIcon = hasLiked ? '❤️' : '🤍';
+    const likedNames = (it.likes || []).map(l => l.staff_name).join(', ');
+    const likeTooltip = likedNames ? `已按讚：${likedNames}` : '尚未有人按讚';
 
-        let commentsHtml = it.comments.map(c => {
-          const cTime = new Date(c.created_at);
-          const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth() + 1).padStart(2, '0')}/${String(cTime.getDate()).padStart(2, '0')} ${String(cTime.getHours()).padStart(2, '0')}:${String(cTime.getMinutes()).padStart(2, '0')}`;
-          return `
+    let commentsHtml = (it.comments || []).map(c => {
+      const cTime = new Date(c.created_at);
+      const formattedTime = isNaN(cTime) ? c.created_at : `${cTime.getFullYear()}/${String(cTime.getMonth()+1).padStart(2,'0')}/${String(cTime.getDate()).padStart(2,'0')} ${String(cTime.getHours()).padStart(2,'0')}:${String(cTime.getMinutes()).padStart(2,'0')}`;
+      return `
         <div class="mb-2 p-2 bg-white rounded border border-secondary border-opacity-10 small">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <span class="fw-bold text-[#5b2a30]">👤 ${c.commenter}</span>
@@ -4294,11 +4320,12 @@
             </div>
           ` : ''}
         </div>`;
-        }).join('');
+    }).join('');
 
-        let cardHtml = `
-      <div class="p-2 mb-2 rounded bg-white" style="border-left: 5px solid #a89a9f;">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+    let cardHtml = `
+      <div class="p-2 mb-2 rounded bg-white" style="border-left: 5px solid #a89a9f; position: relative;">
+        <div onclick="shareCard('appInfo', '交接_${it.to}')" style="position: absolute; top: 8px; right: 8px; cursor: pointer; opacity: 0.6; font-size: 1.1rem; z-index: 10;" title="截圖分享">📤</div>
+        <div class="d-flex justify-content-between align-items-center mb-2 pe-4">
           <button class="btn btn-sm btn-outline-success py-0 px-2 shadow-sm" style="font-size: 0.75rem;" onclick="closeHandoverCase(${it.id}); closeAppDetailModal();">✅ 結案歸檔</button>
           <span class="badge text-white" style="background-color: #a89a9f;">⏰ ${it.type}</span>
         </div>
@@ -4310,11 +4337,11 @@
         
         <div class="d-flex align-items-center mt-2 p-2 rounded gap-2" style="background-color: rgba(168, 154, 159, 0.12);">
           <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-[#d9534f] shadow-sm rounded-pill" title="${likeTooltip}" onclick="toggleHandoverLike(${it.id})">
-            ${likeIcon} ${it.likes.length}
+            ${likeIcon} ${(it.likes || []).length}
           </button>
           <button class="btn btn-sm bg-white border-0 py-0 px-2 fw-bold text-muted shadow-sm rounded-pill d-flex align-items-center position-relative" onclick="toggleHandoverComments(${it.id})">
-            💬 ${it.comments.length} 則留言 🔽
-            ${(!hasLiked && it.comments.length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
+            💬 ${(it.comments || []).length} 則留言 🔽
+            ${(!hasLiked && (it.comments || []).length > 0) ? `<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px;"></span>` : ''}
           </button>
         </div>
 
@@ -4335,10 +4362,10 @@
       </div>
     `;
 
-        appInfoEl.innerHTML = cardHtml;
-      }
-      document.getElementById('appDetailModal').style.display = 'flex';
-    }
+    appInfoEl.innerHTML = cardHtml;
+  }
+  document.getElementById('appDetailModal').style.display = 'flex';
+}
 
     function closeAppDetailModal() {
       document.getElementById('appDetailModal').style.display = 'none';
