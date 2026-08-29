@@ -3043,11 +3043,20 @@ async function refreshCurrentSearchView() {
         isViewingMyUnclosed = false; // 手動點擊開始搜尋時，切換為一般條件搜尋模式
       }
 
+      let birthVal = document.getElementById('sBirth').value.trim();
+      
+      // 自動轉換：若輸入為連打 7 碼純數字（例如 1001005），自動切成 100/10/05
+      let formattedBirth = birthVal;
+      if (birthVal.length === 7 && !isNaN(birthVal) && !birthVal.includes('/')) {
+        formattedBirth = `${birthVal.substring(0, 3)}/${birthVal.substring(3, 5)}/${birthVal.substring(5, 7)}`;
+      }
+
       const q = { 
         barcode: document.getElementById('sBarcode').value.trim(), 
         name: document.getElementById('sName').value.trim(), 
         phone: document.getElementById('sPhone').value.trim(), 
-        birthday: document.getElementById('sBirth').value.trim(),
+        birthday: birthVal,
+        formattedBirthday: formattedBirth,
         staff: document.getElementById('sStaff').value,
         tags: Array.from(document.querySelectorAll('#sTagContainer .active')).map(b => b.innerText)
       }; 
@@ -3065,7 +3074,16 @@ async function refreshCurrentSearchView() {
         if (q.barcode) query = query.eq('barcode', q.barcode);
         if (q.name) query = query.ilike('name', `%${q.name}%`);
         if (q.phone) query = query.eq('phone', q.phone);
-        if (q.birthday) query = query.eq('birthday', q.birthday);
+        
+        // 支援 7 碼自動轉換格式與舊版純數字格式兼容比對
+        if (q.birthday) {
+          if (q.birthday !== q.formattedBirthday) {
+            query = query.or(`birthday.eq.${q.formattedBirthday},birthday.eq.${q.birthday}`);
+          } else {
+            query = query.eq('birthday', q.birthday);
+          }
+        }
+        
         if (q.staff) query = query.eq('staff', q.staff);
         if (q.tags.length > 0) {
           q.tags.forEach(tag => { query = query.ilike('event', `%[${tag}]%`); });
