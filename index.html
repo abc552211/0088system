@@ -2351,7 +2351,13 @@ async function refreshCurrentSearchView() {
           const el = document.getElementById(id);
           if (!el) return;
           el.innerHTML = `<option value="">${defaultTxt}</option>`;
-          arr.forEach(i => { if (i) el.add(new Option(i, i)); });
+          arr.forEach(i => { 
+            if (i) {
+              // 若為發起人/服務人員選單，排除「全員」
+              if ((id === 'hFrom' || id === 'qhFrom' || id === 'cStaff' || id === 'sStaff') && i === '全員') return;
+              el.add(new Option(i, i)); 
+            }
+          });
         };
         resetAndFill('cStaff', cache.staff, '-請選擇-');
         resetAndFill('hFrom', cache.staff, '-請選擇-');
@@ -3959,53 +3965,54 @@ async function refreshCurrentSearchView() {
     // ================= 預約狀態處理：雙向相容資料宣告與強制日期格式化 =================
 
     function getMergedAppAndHandoverList(filterMode) {
-      const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
+  
+  // 1. 諮詢預約列表
+  let rawConsults = (cache.appointList || []).map(it => ({
+    ...it,
+    itemType: 'consult',
+    eventTime: it.appoint_time
+  }));
 
-      // 1. 諮詢預約列表
-      let rawConsults = (cache.appointList || []).map(it => ({
-        ...it,
-        itemType: 'consult',
-        eventTime: it.appoint_time
-      }));
+  // 2. 篩選指定時間交接
+  let rawHandovers = (cache.handoverList || [])
+    .filter(h => h.type && String(h.type).includes('指定') && h.targetDate && h.targetDate !== '無')
+    .map(h => {
+      const fromS = String(h.from_staff || h.from || '').trim();
+      const toS = String(h.to_staff || h.to || '').trim();
+      let cleanTimeStr = String(h.targetDate).trim().replace(/\//g, '-').replace('T', ' ');
+      
+      return {
+        ...h,
+        id: h.rowIndex,
+        itemType: 'handover',
+        from: fromS,
+        to: toS,
+        name: `📥 交接：${toS}`,
+        staff: toS,
+        eventTime: cleanTimeStr,
+        event: h.content
+      };
+    });
 
-      // 2. 篩選指定時間交接 (✨ 修正：移除錯誤的提早過濾，確保資料池完整)
-      let rawHandovers = (cache.handoverList || [])
-        .filter(h => h.type && String(h.type).includes('指定') && h.targetDate && h.targetDate !== '無')
-        .map(h => {
-          const fromS = String(h.from_staff || h.from || '').trim();
-          const toS = String(h.to_staff || h.to || '').trim();
-          let cleanTimeStr = String(h.targetDate).trim().replace(/\//g, '-').replace('T', ' ');
+  // 3. 過濾人員（支援多位接收人包含判斷）
+  if (filterMode === 'mine' && currentUser) {
+    rawConsults = rawConsults.filter(it => String(it.staff || '').trim() === currentUser);
+    rawHandovers = rawHandovers.filter(h => {
+      const fromS = String(h.from || '').trim();
+      const toS = String(h.to || '').trim();
+      const toList = toS.split(/[,，、\s]+/).map(s => s.trim());
+      return toList.includes(currentUser) || toS.includes(currentUser) || fromS === currentUser || toS.includes('全員');
+    });
+  }
 
-          return {
-            ...h,
-            id: h.rowIndex,
-            itemType: 'handover',
-            from: fromS,
-            to: toS,
-            name: `📥 交接：${toS}`,
-            staff: toS,
-            eventTime: cleanTimeStr,
-            event: h.content
-          };
-        });
-
-      // 3. 過濾人員 (✨ 修正：只有在明確要求 filterMode === 'mine' 時，才篩選自己的任務)
-      if (filterMode === 'mine' && currentUser) {
-        rawConsults = rawConsults.filter(it => String(it.staff || '').trim() === currentUser);
-        rawHandovers = rawHandovers.filter(h => {
-          const fromS = String(h.from || '').trim();
-          const toS = String(h.to || '').trim();
-          return toS === currentUser || fromS === currentUser || toS.includes('全員');
-        });
-      }
-
-      // 4. 排序
-      return [...rawConsults, ...rawHandovers].sort((a, b) => {
-        const tA = a.eventTime ? new Date(String(a.eventTime).replace(/-/g, '/')) : new Date(0);
-        const tB = b.eventTime ? new Date(String(b.eventTime).replace(/-/g, '/')) : new Date(0);
-        return tA - tB;
-      });
-    }
+  // 4. 排序
+  return [...rawConsults, ...rawHandovers].sort((a, b) => {
+    const tA = a.eventTime ? new Date(String(a.eventTime).replace(/-/g, '/')) : new Date(0);
+    const tB = b.eventTime ? new Date(String(b.eventTime).replace(/-/g, '/')) : new Date(0);
+    return tA - tB;
+  });
+}
 
     // 升級「清單模式」渲染
     function renderAppSelect() {
@@ -4430,12 +4437,14 @@ function selectAppCard(index, id, name, type = 'consult') {
       const currentUser = (localStorage.getItem("current_staff_name") || "").trim();
 
       // 精準判斷交接是否與當前登入者相關
-      const checkIsRelated = (it) => {
-        if (!currentUser || currentUser === "店帳") return true;
-        const fromS = String(it.from || it.from_staff || '').trim();
-        const toS = String(it.to || it.to_staff || '').trim();
-        return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
-      };
+      // 精準判斷交接是否與當前登入者相關（支援多接收人清單比對）
+  const checkIsRelated = (it) => {
+    if (!currentUser || currentUser === "店帳") return true; 
+    const fromS = String(it.from || it.from_staff || '').trim();
+    const toS = String(it.to || it.to_staff || '').trim();
+    const toList = toS.split(/[,，、\s]+/).map(s => s.trim());
+    return toList.includes(currentUser) || toS.includes(currentUser) || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
+  };
 
       // 1. 依據過濾篩選清單
       let displayList = cache.handoverList;
@@ -6802,10 +6811,11 @@ function renderDayAppModalCards(dateKey) {
       try {
         // 1. 檢查未讀交接數量
         const checkIsHandoverRelated = (it) => {
-          const fromS = String(it.from || it.from_staff || '').trim();
-          const toS = String(it.to || it.to_staff || '').trim();
-          return toS === currentUser || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
-        };
+      const fromS = String(it.from || it.from_staff || '').trim();
+      const toS = String(it.to || it.to_staff || '').trim();
+      const toList = toS.split(/[,，、\s]+/).map(s => s.trim());
+      return toList.includes(currentUser) || toS.includes(currentUser) || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
+    };
 
         const unreadHandoverCount = (cache.handoverList || []).filter(it =>
           checkIsHandoverRelated(it) && !it.likes.some(l => l.staff_name === currentUser)
