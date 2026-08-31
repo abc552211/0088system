@@ -2149,6 +2149,13 @@
     const SUPABASE_KEY = "sb_publishable_dsxxWLXxfbTHmXOfmEUUfA_Y8h1tykR";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // 🔗 跨專案直接連線【客戶追蹤總表資料庫】(讀取 customers 資料表)
+    const CLIENTS_SUPABASE_URL = "https://wycoyydhcaeuabaelwdo.supabase.co";
+    const CLIENTS_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5Y295eWRoY2FldWFiYWVsd2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDk2MDUsImV4cCI6MjEwMzQ4NTYwNX0.fkTge9-CHTIIYhQOfMpEmkRM9vOleM6rGd-h4sYDzjw";
+    const _clientsSupabase = (typeof supabase !== 'undefined' && supabase.createClient) 
+      ? supabase.createClient(CLIENTS_SUPABASE_URL, CLIENTS_SUPABASE_KEY) 
+      : null;
+
     let allSearchData = [];
     let filteredSearchData = [];
     let currentRenderIndex = 0;
@@ -3453,93 +3460,187 @@ async function refreshCurrentSearchView() {
 
     async function doChildrenSearch() {
       const q = {
-        barcode: document.getElementById('cControlID').value.trim(),
-        name: document.getElementById('cControlName').value.trim(),
-        phone: document.getElementById('cControlPhone').value.trim(),
+        code: document.getElementById('cControlID').value.trim().toLowerCase(),
+        name: document.getElementById('cControlName').value.trim().toLowerCase(),
+        phone: document.getElementById('cControlPhone').value.trim().replace(/\D/g, ''),
         birthday: document.getElementById('cControlBirth').value.trim()
       };
-      if (!q.barcode && !q.name && !q.phone && !q.birthday) { alert("請輸入查詢條件"); return; }
+      
+      if (!q.code && !q.name && !q.phone && !q.birthday) { 
+        alert("請輸入至少一項查詢條件（編號/姓名/電話/生日）！"); 
+        return; 
+      }
+
+      const clientDb = _clientsSupabase || _supabase;
 
       document.getElementById('loadingOverlay').style.display = 'flex';
       const resDiv = document.getElementById('childrenSearchResults');
-      resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索中...</div>';
+      resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索客戶追蹤總庫中...</div>';
 
       try {
-        let query = _supabase.from('children_control').select('*');
-        if (q.barcode) query = query.eq('id', q.barcode);
-        if (q.name) query = query.ilike('name', `%${q.name}%`);
-        if (q.phone) query = query.eq('phone', q.phone);
-
-        // ✨ 新增：將 7 碼民國年 (例如 1001010) 轉為西元年 (2011/10/10) 進行搜尋
-        if (q.birthday) {
-          let searchBirth = q.birthday;
-          if (searchBirth.length === 7 && !isNaN(searchBirth)) {
-            const gregYear = parseInt(searchBirth.substring(0, 3), 10) + 1911;
-            searchBirth = `${gregYear}/${searchBirth.substring(3, 5)}/${searchBirth.substring(5, 7)}`;
-          }
-          // 防呆：同時相容資料庫可能是 yyyy/mm/dd 或 yyyy-mm-dd 格式
-          query = query.or(`birthday.eq.${searchBirth},birthday.eq.${searchBirth.replace(/\//g, '-')}`);
-        }
-
-        const { data, error } = await query;
+        // 從新專案的 customers 資料表撈取資料 (含 od_lens_photo 與 os_lens_photo)
+        const { data, error } = await clientDb.from('customers').select('*');
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
-        if (!data || data.length === 0) {
-          resDiv.innerHTML = '<div class="alert alert-warning">查無資料</div>';
+        // 本地多維度精準比對過濾
+        const filtered = (data || []).filter(c => {
+          const cCode = String(c.code || '').toLowerCase();
+          const cName = String(c.name || '').toLowerCase();
+          const cPhone = String(c.phone || '').replace(/\D/g, '');
+          const cBirthday = String(c.birthday || '').trim();
+          const cBirthDigits = cBirthday.replace(/\D/g, '');
+
+          if (q.code && !cCode.includes(q.code)) return false;
+          if (q.name && !cName.includes(q.name)) return false;
+          if (q.phone && !cPhone.includes(q.phone)) return false;
+
+          if (q.birthday) {
+            const qClean = q.birthday.replace(/\D/g, '');
+            // 去除民國年份開頭的 0 (例如: 0870119 -> 870119)
+            const qTrimZero = qClean.startsWith('0') ? qClean.substring(1) : qClean;
+            const cTrimZero = cBirthDigits.startsWith('0') ? cBirthDigits.substring(1) : cBirthDigits;
+
+            const isDirectMatch = cBirthday.includes(q.birthday);
+            const isDigitMatch = cBirthDigits.includes(qClean) || qClean.includes(cBirthDigits);
+            const isTrimMatch = cTrimZero.includes(qTrimZero) || qTrimZero.includes(cTrimZero);
+
+            if (!isDirectMatch && !isDigitMatch && !isTrimMatch) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          resDiv.innerHTML = '<div class="alert alert-warning text-center">查無符合條件的客戶資料</div>';
           return;
         }
 
-        let h = '';
-        data.forEach((r, index) => {
-          // ✨ 新增：將資料庫的西元年 (yyyy/mm/dd) 轉回民國年顯示
-          let displayBirth = r.birthday || '無';
-          if (displayBirth !== '無') {
-            const parts = displayBirth.includes('/') ? displayBirth.split('/') : displayBirth.split('-');
-            if (parts.length === 3) {
-              const y = parseInt(parts[0], 10);
-              if (!isNaN(y) && y > 1911) {
-                displayBirth = `${y - 1911}/${parts[1]}/${parts[2]}`;
+        let h = `<div class="text-muted small mb-2 fw-bold text-end">共找到 <span class="text-[#d9534f]">${filtered.length}</span> 筆客戶</div>`;
+
+        filtered.forEach((r, index) => {
+          const resId = `ccard_${index}`;
+          const isStop = (r.overdueDays === '停用' || r.fdModify === '停用');
+          const statusBadge = isStop 
+            ? '<span class="badge bg-danger text-white px-2">停用</span>' 
+            : `<span class="badge bg-[#84a59d] text-white px-2">${r.product || '待建檔'}</span>`;
+
+          const odTime = r.odDuration || r.odChangeDate || '-';
+          const osTime = r.osDuration || r.osChangeDate || '-';
+          const lastVisit = r.lastVisit || '-';
+          const overdue = r.overdueDays || '-';
+
+          // 眼軸追蹤資料
+          const hasAl = (r.alOD || r.alOS || r.alCheckDate);
+          const alHtml = hasAl ? `
+            <div class="p-2 mb-2 bg-white bg-opacity-70 rounded border border-secondary border-opacity-10 small">
+              <div class="d-flex justify-content-between text-muted" style="font-size:0.75rem;">
+                <span><b>眼軸檢測日:</b> ${r.alCheckDate || '-'}</span>
+                <span><b>OD:</b> ${r.alOD || '-'} mm ｜ <b>OS:</b> ${r.alOS || '-'} mm</span>
+              </div>
+            </div>` : '';
+
+          // 鏡片照片顯示區塊 (點擊直接全螢幕放大預覽)
+          const hasOdPhoto = Boolean(r.od_lens_photo);
+          const hasOsPhoto = Boolean(r.os_lens_photo);
+          let photoSectionHtml = '';
+
+          if (hasOdPhoto || hasOsPhoto) {
+            photoSectionHtml = `
+              <div class="mt-2 mb-2 p-2 rounded bg-white bg-opacity-90 border border-secondary border-opacity-15">
+                <div class="fw-bold small text-muted mb-1.5" style="font-size: 0.75rem;">📷 鏡片照片紀錄 (點擊放大)</div>
+                <div class="d-flex gap-2">
+                  ${hasOdPhoto ? `
+                    <div class="flex-1 text-center" style="min-width: 0;">
+                      <div class="small fw-bold text-[#16a34a] mb-1" style="font-size: 0.72rem;">OD 右眼</div>
+                      <img src="${r.od_lens_photo}" onclick="openImageViewer('${r.od_lens_photo}')" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" alt="OD 鏡片照片">
+                    </div>` : ''}
+                  ${hasOsPhoto ? `
+                    <div class="flex-1 text-center" style="min-width: 0;">
+                      <div class="small fw-bold text-[#2563eb] mb-1" style="font-size: 0.72rem;">OS 左眼</div>
+                      <img src="${r.os_lens_photo}" onclick="openImageViewer('${r.os_lens_photo}')" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);" alt="OS 鏡片照片">
+                    </div>` : ''}
+                </div>
+              </div>`;
+          }
+
+          // 售服或備註
+          // 動態計算售服距今時間 (例如: 1月0天前)
+          let serviceDiffStr = '';
+          if (r.serviceDate && r.serviceDate.includes('/')) {
+            const sp = r.serviceDate.split('/');
+            const sDate = new Date(parseInt(sp[0], 10), parseInt(sp[1], 10) - 1, parseInt(sp[2], 10));
+            if (!isNaN(sDate.getTime())) {
+              const now = new Date();
+              const diffDays = Math.max(0, Math.floor((now.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24)));
+              const yCnt = Math.floor(diffDays / 365);
+              const mCnt = Math.floor((diffDays % 365) / 30);
+              const dCnt = diffDays % 30;
+
+              if (yCnt > 0) {
+                serviceDiffStr = ` (${yCnt}年${mCnt}月${dCnt}天前)`;
+              } else if (mCnt > 0) {
+                serviceDiffStr = ` (${mCnt}月${dCnt}天前)`;
+              } else {
+                serviceDiffStr = ` (${dCnt}天前)`;
               }
             }
           }
 
-          h += `<div class="result-card mb-4 children-card" id="ccard_${index}" style="position:relative;">
-            <div onclick="shareCard('ccard_${index}', '兒控_${r.name}')" style="position:absolute; top:40px; right:8px; cursor:pointer; opacity:0.6; font-size:0.8rem; z-index:5;">📤</div>
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h4 class="fw-bold mb-0 text-[#5b2a30] font-serif-tc">${r.name}</h4>
-              <span class="badge bg-[#b5838d] text-white px-2">${r.product || '未設商品'}</span>
-            </div>
-            <div class="row g-1 mb-2 small">
-              <div class="col-6"><b>🎂 生日:</b> ${displayBirth}</div><div class="col-6"><b>📞 電話:</b> ${r.phone}</div>
-              <div class="col-6"><b>📅 上次回診:</b> ${r.last_visit}</div><div class="col-6 text-danger fw-bold"><b>⏳ 未回天數:</b> ${r.days_not_back}</div>
-            </div>
-            <div class="row g-2 mb-2 p-2 rounded bg-white bg-opacity-70 border border-secondary border-opacity-10 small">
-              <div class="col-6 border-end">
-                <div class="fw-bold text-[#84a59d]">👁️ OD</div>
-                <div>取件: ${r.od_pickup}</div><div>使用: ${r.od_days}d</div><div>年月: ${r.od_ym}</div>
+          // 售服或備註 (無空括號，美觀呈現)
+          const serviceHtml = r.serviceDate ? `<div class="text-muted small mt-1">售服日：${r.serviceDate}${serviceDiffStr}</div>` : '';
+          const remarkHtml = r.longRemark ? `<div class="p-2 bg-white bg-opacity-80 rounded small mt-1 border" style="white-space: pre-wrap;"><b>備註：</b>${r.longRemark}</div>` : '';
+
+          h += `
+            <div class="result-card mb-3 children-card ${isStop ? 'opacity-75' : ''}" id="${resId}" style="position:relative; background: rgba(255,255,255,0.92);">
+              <div onclick="shareCard('${resId}', '兒控_${r.name}')" style="position:absolute; top:12px; right:12px; cursor:pointer; opacity:0.6; font-size:1.1rem; z-index:5;" title="截圖分享">📤</div>
+
+              <div class="d-flex justify-content-between align-items-center mb-2 pe-4">
+                <div class="d-flex align-items-center gap-2">
+                  <h4 class="fw-bold mb-0 text-[#5b2a30] font-serif-tc">${r.name}</h4>
+                  <span class="text-muted small">(${r.code})</span>
+                </div>
+                ${statusBadge}
               </div>
-              <div class="col-6 pl-2">
-                <div class="fw-bold text-[#84a59d]">👁️ OS</div>
-                <div>取件: ${r.os_pickup}</div><div>使用: ${r.os_days}d</div><div>年月: ${r.os_ym}</div>
+
+              <div class="row g-1 mb-2 small">
+                <div class="col-6"><b>生日:</b> ${r.birthday || '-'}</div>
+                <div class="col-6 text-[#87A96B] fw-bold"><b>電話:</b> ${r.phone || '-'}</div>
+                <div class="col-6"><b>最近回診:</b> ${lastVisit}</div>
+                <div class="col-6 text-danger fw-bold"><b>未回天數:</b> ${overdue}</div>
               </div>
-            </div>
-            <div class="p-2 bg-white bg-opacity-40 rounded small border border-secondary border-opacity-10">
-              <div class="row g-1">
-                <div class="col-4">AL日: ${r.al_date}</div><div class="col-4">AL(OD): ${r.al_od}</div><div class="col-4">AL(OS): ${r.al_os}</div>
+
+              <!-- 鏡片使用時間 -->
+              <div class="row g-2 mb-2 p-2 rounded bg-white bg-opacity-80 border border-secondary border-opacity-10 small">
+                <div class="col-6 border-end">
+                  <div class="fw-bold text-[#16a34a]">OD 鏡片</div>
+                  <div>換片日: ${r.odChangeDate || '-'}</div>
+                  <div>時間: <b>${odTime}</b></div>
+                </div>
+                <div class="col-6 ps-2">
+                  <div class="fw-bold text-[#2563eb]">OS 鏡片</div>
+                  <div>換片日: ${r.osChangeDate || '-'}</div>
+                  <div>時間: <b>${osTime}</b></div>
+                </div>
               </div>
-            </div>
-            <div class="mt-2 small text-muted text-end">
-              <span class="fw-bold" style="color:#d9534f;">🔔 聯繫日期: ${r.result}</span>
-              <span class="me-1">| 🆔: ${r.id} |</span>
-              <span class="badge bg-white text-dark border me-1">${r.staff}</span>
-            </div>
-          </div>`;
+
+              ${photoSectionHtml}
+              ${alHtml}
+              ${remarkHtml}
+              ${serviceHtml}
+
+              <div class="mt-2 small text-muted text-end border-top pt-1" style="font-size:0.75rem;">
+                首次取件：${r.firstPickup || '-'} ｜ 總療程：${r.totalDuration || '-'}
+              </div>
+            </div>`;
         });
+
         resDiv.innerHTML = h;
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
-        alert("查詢出錯: " + e.message);
+        alert("查詢出錯: " + (e.message || e));
       }
     }
     function openEditCustomerModal(rowIndex, name, birth, phone) {
