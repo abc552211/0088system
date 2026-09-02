@@ -1034,7 +1034,7 @@
             諮詢記錄這邊查，有空自己要來追蹤更新。</p>
         </div>
 
-        <!-- 5. 兒控大檔查詢 -->
+        <!-- 5. 客戶大檔查詢 -->
         <div id="card_sectionChildrenSearch" onclick="showPage('sectionChildrenSearch')"
           class="sys-card opacity-0 cursor-pointer glass-vintage-card p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col items-center text-center col-span-2 lg:col-span-2 group relative"
           style="background-color: rgba(229, 152, 155, 0.4); border-color: rgba(229, 152, 155, 0.4);">
@@ -1044,7 +1044,7 @@
             🌳</div>
           <h3
             class="card-title-text font-serif-tc text-[15px] md:text-2xl font-bold text-[#3e2723] mb-1 md:mb-3 tracking-wider">
-            兒控大檔查詢</h3>
+            客戶大檔查詢</h3>
           <p class="card-desc-text font-serif-tc text-[#5b2a30]/70 leading-relaxed text-sm md:text-base">就兒控檔案。</p>
         </div>
         <!-- 6. 工作 SOP 知識庫 -->
@@ -1694,7 +1694,7 @@
       onclick="showPage('home')">🔙 返回選單</button>
     <div class="card p-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">🌳兒控大檔查詢</h4>
+        <h4 class="mb-0">🌳大檔查詢</h4>
         <span id="childrenDbStatusPill" class="badge" style="background-color: rgba(132, 165, 157, 0.2); color: #4a4e69; font-size: 0.8rem; border: 1px solid rgba(132, 165, 157, 0.4);">連線檢查中...</span>
       </div>
       <label class="small fw-bold text-muted">依編號(條碼A00000)</label>
@@ -3579,7 +3579,38 @@ async function refreshCurrentSearchView() {
           const lastVisit = r.lastVisit || '-';
           const overdue = r.overdueDays || '-';
 
+          // ★ 自動計算總療程時間 (以首次取件 firstPickup 為準，自動換算 年/月/天)
+          let calcTotalDuration = '-';
+          if (r.firstPickup && r.firstPickup.includes('/')) {
+            const fpParts = r.firstPickup.split('/');
+            if (fpParts.length >= 3) {
+              const fpYear = parseInt(fpParts[0], 10);
+              // 相容民國年與西元年
+              const fullYear = fpYear < 1900 ? fpYear + 1911 : fpYear;
+              const fpDate = new Date(fullYear, parseInt(fpParts[1], 10) - 1, parseInt(fpParts[2], 10));
+              
+              if (!isNaN(fpDate.getTime())) {
+                const nowDate = new Date();
+                const diffDays = Math.max(0, Math.floor((nowDate.getTime() - fpDate.getTime()) / (1000 * 60 * 60 * 24)));
+                const yCnt = Math.floor(diffDays / 365);
+                const mCnt = Math.floor((diffDays % 365) / 30);
+                const dCnt = diffDays % 30;
+                
+                if (yCnt > 0) {
+                  calcTotalDuration = `${yCnt}年 ${mCnt}月 ${dCnt}天`;
+                } else if (mCnt > 0) {
+                  calcTotalDuration = `${mCnt}月 ${dCnt}天`;
+                } else {
+                  calcTotalDuration = `${dCnt}天`;
+                }
+              }
+            }
+          } else if (r.odDuration) {
+            calcTotalDuration = r.odDuration;
+          }
+
           // 眼軸追蹤資料
+
           const hasAl = (r.alOD || r.alOS || r.alCheckDate);
           const alHtml = hasAl ? `
             <div class="p-2 mb-2 bg-white bg-opacity-70 rounded border border-secondary border-opacity-10 small">
@@ -3677,7 +3708,7 @@ async function refreshCurrentSearchView() {
               ${serviceHtml}
 
               <div class="mt-2 small text-muted text-end border-top pt-1" style="font-size:0.75rem;">
-                首次取件：${r.firstPickup || '-'} ｜ 總療程：${r.totalDuration || '-'}
+                首次取件：${r.firstPickup || '-'} ｜ 總療程：<b>${calcTotalDuration}</b>
               </div>
             </div>`;
         });
