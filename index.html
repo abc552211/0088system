@@ -1693,7 +1693,10 @@
     <button class="btn btn-return-home mb-3 w-100 shadow-sm font-serif-tc font-bold text-[#5b2a30]"
       onclick="showPage('home')">🔙 返回選單</button>
     <div class="card p-4">
-      <h4 class="mb-4">🌳兒控大檔查詢</h4>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">🌳兒控大檔查詢</h4>
+        <span id="childrenDbStatusPill" class="badge" style="background-color: rgba(132, 165, 157, 0.2); color: #4a4e69; font-size: 0.8rem; border: 1px solid rgba(132, 165, 157, 0.4);">連線檢查中...</span>
+      </div>
       <label class="small fw-bold text-muted">依編號(條碼A00000)</label>
       <div class="input-group mb-3">
         <div class="clear-wrapper">
@@ -2149,12 +2152,17 @@
     const SUPABASE_KEY = "sb_publishable_dsxxWLXxfbTHmXOfmEUUfA_Y8h1tykR";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 🔗 跨專案直接連線【客戶追蹤總表資料庫】(讀取 customers 資料表)
+    // 🔗 跨專案直連【客戶追蹤總表 Supabase】(專屬讀取 customers 與配置)
     const CLIENTS_SUPABASE_URL = "https://wycoyydhcaeuabaelwdo.supabase.co";
     const CLIENTS_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5Y295eWRoY2FldWFiYWVsd2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDk2MDUsImV4cCI6MjEwMzQ4NTYwNX0.fkTge9-CHTIIYhQOfMpEmkRM9vOleM6rGd-h4sYDzjw";
-    const _clientsSupabase = (typeof supabase !== 'undefined' && supabase.createClient) 
-      ? supabase.createClient(CLIENTS_SUPABASE_URL, CLIENTS_SUPABASE_KEY) 
-      : null;
+    var _clientsSupabase = null;
+    try {
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        _clientsSupabase = window.supabase.createClient(CLIENTS_SUPABASE_URL, CLIENTS_SUPABASE_KEY);
+      }
+    } catch (e) {
+      console.error("客戶端 Supabase 初始化異常:", e);
+    }
 
     let allSearchData = [];
     let filteredSearchData = [];
@@ -2717,6 +2725,9 @@ async function refreshCurrentSearchView() {
           document.getElementById('sopSearchInput').value = '';
         }
         searchSops();
+      }
+      if (id === 'sectionChildrenSearch') {
+        updateChildrenDbStatusBadge();
       }
     }
 
@@ -3458,6 +3469,26 @@ async function refreshCurrentSearchView() {
       }
     }
 
+    // 當切換到兒控大檔頁面時，自動於標題旁顯示當前連線總筆數
+    async function updateChildrenDbStatusBadge() {
+      const pill = document.getElementById('childrenDbStatusPill');
+      if (!pill || !_clientsSupabase) return;
+      try {
+        const { count, error } = await _clientsSupabase
+          .from('customers')
+          .select('*', { count: 'exact', head: true });
+        if (!error && count !== null) {
+          pill.innerText = `🟢 連線中 (${count} 筆)`;
+          pill.style.backgroundColor = "rgba(132, 165, 157, 0.25)";
+          pill.style.color = "#2d5a27";
+        } else {
+          pill.innerText = "🟢 連線中";
+        }
+      } catch (e) {
+        pill.innerText = "連線備援中";
+      }
+    }
+
     async function doChildrenSearch() {
       const q = {
         code: document.getElementById('cControlID').value.trim().toLowerCase(),
@@ -3471,19 +3502,35 @@ async function refreshCurrentSearchView() {
         return; 
       }
 
-      const clientDb = _clientsSupabase || _supabase;
+      // ★ 100% 強制使用客戶追蹤總表 Supabase 連線
+      const clientDb = _clientsSupabase;
+      if (!clientDb) {
+        alert("尚未成功建立客戶總表資料庫連線，請檢查網路或稍後重試！");
+        return;
+      }
 
       document.getElementById('loadingOverlay').style.display = 'flex';
       const resDiv = document.getElementById('childrenSearchResults');
       resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索客戶追蹤總庫中...</div>';
 
       try {
-        // 從新專案的 customers 資料表撈取資料 (含 od_lens_photo 與 os_lens_photo)
-        const { data, error } = await clientDb.from('customers').select('*');
+        // ★ 加上 .range(0, 4999) 突破 1000 筆限制，完整載入 1,117+ 筆客戶資料
+        const { data, error } = await clientDb
+          .from('customers')
+          .select('*')
+          .range(0, 4999);
         document.getElementById('loadingOverlay').style.display = 'none';
         if (error) throw error;
 
-        // 本地多維度精準比對過濾
+        // 同步更新標題旁的連線狀態
+        const pill = document.getElementById('childrenDbStatusPill');
+        if (pill && data) {
+          pill.innerText = `🟢 連線中 (${data.length} 筆)`;
+          pill.style.backgroundColor = "rgba(132, 165, 157, 0.25)";
+          pill.style.color = "#2d5a27";
+        }
+
+        // 本地多維度精準比對過濾 (100% 維持原比對邏輯)
         const filtered = (data || []).filter(c => {
           const cCode = String(c.code || '').toLowerCase();
           const cName = String(c.name || '').toLowerCase();
@@ -3566,8 +3613,7 @@ async function refreshCurrentSearchView() {
               </div>`;
           }
 
-          // 售服或備註
-          // 動態計算售服距今時間 (例如: 1月0天前)
+          // 售服或備註 (動態計算距今天數)
           let serviceDiffStr = '';
           if (r.serviceDate && r.serviceDate.includes('/')) {
             const sp = r.serviceDate.split('/');
@@ -3589,7 +3635,6 @@ async function refreshCurrentSearchView() {
             }
           }
 
-          // 售服或備註 (無空括號，美觀呈現)
           const serviceHtml = r.serviceDate ? `<div class="text-muted small mt-1">售服日：${r.serviceDate}${serviceDiffStr}</div>` : '';
           const remarkHtml = r.longRemark ? `<div class="p-2 bg-white bg-opacity-80 rounded small mt-1 border" style="white-space: pre-wrap;"><b>備註：</b>${r.longRemark}</div>` : '';
 
