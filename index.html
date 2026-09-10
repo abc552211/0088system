@@ -3677,6 +3677,8 @@ async function refreshCurrentSearchView() {
         return;
       }
 
+      const loadingTxt = document.getElementById('loadingText');
+      if (loadingTxt) loadingTxt.innerText = "🔍 檢索兒控資料中...";
       document.getElementById('loadingOverlay').style.display = 'flex';
       const resDiv = document.getElementById('childrenSearchResults');
       resDiv.innerHTML = '<div class="text-center py-3">🔍 檢索客戶追蹤總庫中...</div>';
@@ -3711,6 +3713,8 @@ async function refreshCurrentSearchView() {
           if (q.phone && !cPhone.includes(q.phone)) return false;
 
           if (q.birthday) {
+            if (!cBirthDigits) return false; // 客戶無生日資料時直接排除，防止比對空字串誤判
+
             const qClean = q.birthday.replace(/\D/g, '');
             // 去除民國年份開頭的 0 (例如: 0870119 -> 870119)
             const qTrimZero = qClean.startsWith('0') ? qClean.substring(1) : qClean;
@@ -6172,20 +6176,165 @@ function selectAppCard(index, id, name, type = 'consult') {
         alert("留言失敗: " + e.message);
       }
     }
-    // ================= 圖片放大預覽功能 =================
+    // ================= 圖片放大預覽功能 (雙指同步縮放平移 + 放開回彈) =================
+    let isZoomInitialized = false;
+    let zoomScale = 1;
+    let zoomPosX = 0;
+    let zoomPosY = 0;
+    let isPinching = false;
+    let isPanning = false;
+    let initialDistance = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+
+    function getTouchesDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    function updateZoomTransform() {
+      const img = document.getElementById('viewerModalImg');
+      if (img) {
+        img.style.transform = `translate3d(${zoomPosX}px, ${zoomPosY}px, 0) scale(${zoomScale})`;
+      }
+    }
+
+    function resetZoomState(animate = false) {
+      const img = document.getElementById('viewerModalImg');
+      if (!img) return;
+      zoomScale = 1;
+      zoomPosX = 0;
+      zoomPosY = 0;
+      isPinching = false;
+      isPanning = false;
+      if (animate) {
+        img.style.transition = 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
+        updateZoomTransform();
+        setTimeout(() => { if (img) img.style.transition = 'none'; }, 280);
+      } else {
+        img.style.transition = 'none';
+        updateZoomTransform();
+      }
+    }
+
+    function initPinchZoom() {
+      if (isZoomInitialized) return;
+      const container = document.getElementById('zoomContainer');
+      const img = document.getElementById('viewerModalImg');
+      if (!container || !img) return;
+
+      let lastPinchCenter = { x: 0, y: 0 };
+
+      const getTouchesCenter = (touches, rect) => {
+        return {
+          x: (touches[0].clientX + touches[1].clientX) / 2 - rect.left - rect.width / 2,
+          y: (touches[0].clientY + touches[1].clientY) / 2 - rect.top - rect.height / 2
+        };
+      };
+
+      const springBackToReset = () => {
+        img.style.transition = 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
+        zoomScale = 1;
+        zoomPosX = 0;
+      0;
+        zoomPosY = 0;
+        updateZoomTransform();
+        setTimeout(() => {
+          if (img) img.style.transition = 'none';
+        }, 280);
+      };
+
+      container.addEventListener('touchstart', (e) => {
+        img.style.transition = 'none';
+        const rect = container.getBoundingClientRect();
+
+        if (e.touches.length === 2) {
+          isPinching = true;
+          isPanning = false;
+          initialDistance = getTouchesDistance(e.touches);
+          lastPinchCenter = getTouchesCenter(e.touches, rect);
+        } else if (e.touches.length === 1) {
+          if (zoomScale > 1.05) {
+            isPanning = true;
+            isPinching = false;
+            startPanX = e.touches[0].clientX - zoomPosX;
+            startPanY = e.touches[0].clientY - zoomPosY;
+          }
+        }
+      }, { passive: false });
+
+      container.addEventListener('touchmove', (e) => {
+        const rect = container.getBoundingClientRect();
+
+        if (isPinching && e.touches.length === 2) {
+          e.preventDefault();
+          const currentDistance = getTouchesDistance(e.touches);
+          const currentCenter = getTouchesCenter(e.touches, rect);
+
+          if (initialDistance > 0) {
+            const factor = currentDistance / initialDistance;
+            const newScale = Math.min(Math.max(0.7, zoomScale * factor), 6);
+
+            const scaleRatio = newScale / zoomScale;
+            zoomPosX = currentCenter.x - (currentCenter.x - zoomPosX) * scaleRatio;
+            zoomPosY = currentCenter.y - (currentCenter.y - zoomPosY) * scaleRatio;
+
+            const panDeltaX = currentCenter.x - lastPinchCenter.x;
+            const panDeltaY = currentCenter.y - lastPinchCenter.y;
+            zoomPosX += panDeltaX;
+            zoomPosY += panDeltaY;
+
+            zoomScale = newScale;
+            initialDistance = currentDistance;
+            lastPinchCenter = currentCenter;
+
+            updateZoomTransform();
+          }
+        } else if (isPanning && e.touches.length === 1 && zoomScale > 1.05) {
+          e.preventDefault();
+          zoomPosX = e.touches[0].clientX - startPanX;
+          zoomPosY = e.touches[0].clientY - startPanY;
+          updateZoomTransform();
+        }
+      }, { passive: false });
+
+      container.addEventListener('touchend', (e) => {
+        if (e.touches.length === 1 && zoomScale > 1.05) {
+          isPinching = false;
+          isPanning = true;
+          startPanX = e.touches[0].clientX - zoomPosX;
+          startPanY = e.touches[0].clientY - zoomPosY;
+        }
+
+        if (e.touches.length === 0) {
+          isPinching = false;
+          isPanning = false;
+          if (zoomScale !== 1 || zoomPosX !== 0 || zoomPosY !== 0) {
+            springBackToReset();
+          }
+        }
+      });
+
+      isZoomInitialized = true;
+    }
+
     function openImageViewer(url) {
       if (!url) return;
       const modal = document.getElementById('imageViewerModal');
       const img = document.getElementById('viewerModalImg');
       if (modal && img) {
+        resetZoomState(false);
         img.src = url;
         modal.style.display = 'flex';
+        initPinchZoom();
       }
     }
 
     function closeImageViewer() {
       const modal = document.getElementById('imageViewerModal');
       if (modal) {
+        resetZoomState(false);
         modal.style.display = 'none';
       }
     }
@@ -8342,7 +8491,8 @@ function renderDayAppModalCards(dateKey) {
     async function deleteHandoverWithin3Hours(handoverId) {
       if (!confirm("確定要刪除這筆交接項目嗎？此操作無法復原。")) return;
 
-      document.getElementById('loadingText').innerText = "正在刪除交接項目...";
+      const loadingEl = document.getElementById('loadingText');
+      if (loadingEl) loadingEl.innerText = "正在刪除交接項目...";
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
@@ -8359,6 +8509,9 @@ function renderDayAppModalCards(dateKey) {
       } catch (e) {
         document.getElementById('loadingOverlay').style.display = 'none';
         alert("刪除失敗: " + e.message);
+      } finally {
+        // 還原預設文字，避免後續其他功能呼叫時文字殘留
+        if (loadingEl) loadingEl.innerText = "處理中，請稍候...";
       }
     }
   </script>
