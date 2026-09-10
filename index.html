@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdn.jsdelivr.net/npm/zxing-js-library@0.18.6/executable/zxing.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <link rel="icon" href="https://drive.google.com/uc?export=view&id=1mrHpfJjvpuwHPDHF41lFlnaygvMwv53Q" type="image/png">
   <link rel="apple-touch-icon" href="https://i.postimg.cc/d0mwmM8H/LOGO-she-ji.png">
@@ -21,13 +20,11 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap"
     rel="stylesheet">
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 
   <style>
     :root {
@@ -63,6 +60,8 @@
       --handover-track-accent: #93a285;
       --handover-logistics-bg: rgba(226, 234, 241, 0.85);
       --handover-logistics-accent: #7d8b9e;
+      --handover-limited-bg: rgba(238, 232, 244, 0.9);
+      --handover-limited-accent: #9d8189;
     }
 
     /* ✨ 強制還原透明度滑桿的軌道與球紐 */
@@ -497,6 +496,16 @@
 
     .handover-card-logistics .badge {
       background-color: var(--handover-logistics-accent) !important;
+      color: #fff !important;
+    }
+
+    .handover-card-limited {
+      background-color: var(--handover-limited-bg) !important;
+      border-left: 6px solid var(--handover-limited-accent) !important;
+    }
+
+    .handover-card-limited .badge {
+      background-color: var(--handover-limited-accent) !important;
       color: #fff !important;
     }
 
@@ -1549,6 +1558,7 @@
           <option value="指定時間">1. 指定時間</option>
           <option value="追蹤工作">2. 追蹤工作</option>
           <option value="物流">3. 物流</option>
+          <option value="限時">4. 限時</option>
         </select>
 
         <div id="hDateArea">
@@ -1561,6 +1571,18 @@
           <div class="date-row mt-1">
             <select id="hHour" class="form-select"></select><span class="text-muted">點</span>
             <select id="hMin" class="form-select"></select><span class="text-muted">分</span>
+          </div>
+        </div>
+
+        <div id="hLimitedDateArea" style="display:none;" class="mb-3 p-3 rounded" style="background-color: var(--handover-limited-bg); border: 1px solid var(--handover-limited-accent);">
+          <label class="small fw-bold text-[#5b2a30] mb-2 d-block">限時交接有效區間設定</label>
+          <div class="mb-2">
+            <span class="small fw-bold text-muted d-block mb-1">起始時間 (預設今日此刻)</span>
+            <input type="datetime-local" id="hLimitedStart" class="form-control form-control-sm">
+          </div>
+          <div>
+            <span class="small fw-bold text-muted d-block mb-1">截止時間 (預設 3 天後此刻，到期失效)</span>
+            <input type="datetime-local" id="hLimitedEnd" class="form-control form-control-sm">
           </div>
         </div>
 
@@ -2148,21 +2170,143 @@
   </div>
 
   <script>
-    const SUPABASE_URL = "https://niytitszugkfsfdwlwqt.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_dsxxWLXxfbTHmXOfmEUUfA_Y8h1tykR";
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ★ 安全防護：兩組 Supabase 金鑰已收攏至 Cloudflare Worker 後端，前端零曝光
+    const API_BASE_URL = "https://0088mainsystem-security.abc552211.workers.dev";
 
-    // 🔗 跨專案直連【客戶追蹤總表 Supabase】(專屬讀取 customers 與配置)
-    const CLIENTS_SUPABASE_URL = "https://wycoyydhcaeuabaelwdo.supabase.co";
-    const CLIENTS_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5Y295eWRoY2FldWFiYWVsd2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDk2MDUsImV4cCI6MjEwMzQ4NTYwNX0.fkTge9-CHTIIYhQOfMpEmkRM9vOleM6rGd-h4sYDzjw";
-    var _clientsSupabase = null;
-    try {
-      if (window.supabase && typeof window.supabase.createClient === 'function') {
-        _clientsSupabase = window.supabase.createClient(CLIENTS_SUPABASE_URL, CLIENTS_SUPABASE_KEY);
-      }
-    } catch (e) {
-      console.error("客戶端 Supabase 初始化異常:", e);
+    // 建造完全相容 Supabase 鏈式語法（.from().select().insert().update().delete().eq()...）的精確代理客戶端
+    function createSupabaseWorkerBridge() {
+      const buildQuery = (table) => {
+        let method = 'GET';
+        let bodyData = null;
+        let selectCols = '*';
+        let preferHeader = 'return=representation';
+        let queryFilters = [];
+        let orderRule = '';
+        let limitVal = null;
+        let countMode = null;
+
+        const builder = {
+          select: (cols = '*', opts = {}) => {
+            selectCols = cols;
+            if (opts.count) countMode = opts.count;
+            return builder;
+          },
+          insert: (payload) => {
+            method = 'POST';
+            bodyData = payload;
+            return builder;
+          },
+          update: (payload) => {
+            method = 'PATCH';
+            bodyData = payload;
+            return builder;
+          },
+          upsert: (payload) => {
+            method = 'POST';
+            bodyData = payload;
+            preferHeader = 'resolution=merge-duplicates,return=representation';
+            return builder;
+          },
+          delete: () => {
+            method = 'DELETE';
+            return builder;
+          },
+          eq: (col, val) => {
+            queryFilters.push(`${encodeURIComponent(col)}=eq.${encodeURIComponent(val)}`);
+            return builder;
+          },
+          neq: (col, val) => {
+            queryFilters.push(`${encodeURIComponent(col)}=neq.${encodeURIComponent(val)}`);
+            return builder;
+          },
+          in: (col, vals) => {
+            queryFilters.push(`${encodeURIComponent(col)}=in.(${vals.map(v => encodeURIComponent(v)).join(',')})`);
+            return builder;
+          },
+          or: (cond) => {
+            queryFilters.push(`or=(${encodeURIComponent(cond)})`);
+            return builder;
+          },
+          ilike: (col, val) => {
+            queryFilters.push(`${encodeURIComponent(col)}=ilike.${encodeURIComponent(val)}`);
+            return builder;
+          },
+          order: (col, { ascending = true } = {}) => {
+            orderRule = `order=${encodeURIComponent(col)}.${ascending ? 'asc' : 'desc'}`;
+            return builder;
+          },
+          limit: (n) => {
+            limitVal = n;
+            return builder;
+          },
+          single: async () => {
+            const res = await builder.execute();
+            if (res.error) return { data: null, error: res.error };
+            return { data: Array.isArray(res.data) ? (res.data[0] || null) : res.data, error: null };
+          },
+          maybeSingle: async () => {
+            const res = await builder.execute();
+            if (res.error) return { data: null, error: res.error };
+            return { data: Array.isArray(res.data) ? (res.data[0] || null) : res.data, error: null };
+          },
+          then: (resolve, reject) => {
+            return builder.execute().then(resolve, reject);
+          },
+          execute: async () => {
+            let url = `${API_BASE_URL}/api/db/${table}?select=${encodeURIComponent(selectCols)}`;
+            if (queryFilters.length > 0) url += `&${queryFilters.join('&')}`;
+            if (orderRule) url += `&${orderRule}`;
+            if (limitVal !== null) url += `&limit=${limitVal}`;
+
+            const headers = {
+              'Content-Type': 'application/json',
+              'Prefer': preferHeader
+            };
+
+            const opts = { method, headers };
+            if (bodyData) opts.body = JSON.stringify(bodyData);
+
+            try {
+              const response = await fetch(url, opts);
+              if (!response.ok) {
+                const errText = await response.text();
+                return { data: null, error: { message: errText } };
+              }
+              const result = await response.json();
+              return { data: result, error: null, count: Array.isArray(result) ? result.length : null };
+            } catch (err) {
+              return { data: null, error: { message: err.message || err } };
+            }
+          }
+        };
+
+        return builder;
+      };
+
+      return {
+        from: (table) => buildQuery(table)
+      };
     }
+
+    const _supabase = createSupabaseWorkerBridge();
+
+    // 跨庫兒控客戶總庫客戶端代理
+    const _clientsSupabase = {
+      from: (table) => ({
+        select: () => ({
+          range: async (start, end) => {
+            try {
+              const res = await fetch(`${API_BASE_URL}/api/clients/customers`);
+              if (!res.ok) throw new Error("讀取兒控總庫失敗");
+              const data = await res.json();
+              return { data: Array.isArray(data) ? data : [], error: null, count: Array.isArray(data) ? data.length : 0 };
+            } catch (err) {
+              return { data: null, error: { message: err.message || err } };
+            }
+          }
+        })
+      })
+    };
 
     let allSearchData = [];
     let filteredSearchData = [];
@@ -2236,7 +2380,15 @@ async function refreshCurrentSearchView() {
     function clearInput(id) { document.getElementById(id).value = ""; document.getElementById(id).focus(); }
 
     function changeHandoverType(val) {
-      document.getElementById('hDateArea').style.display = val.includes('指定') ? 'block' : 'none';
+      const isTimed = val.includes('指定');
+      const isLimited = val.includes('限時');
+      document.getElementById('hDateArea').style.display = isTimed ? 'block' : 'none';
+      const limitedDiv = document.getElementById('hLimitedDateArea');
+      if (limitedDiv) {
+        limitedDiv.style.display = isLimited ? 'block' : 'none';
+        if (isLimited) initLimitedTimeDefaults();
+      }
+
       const phoneInput = document.getElementById('hPhone');
       const phoneLabel = document.getElementById('hPhoneLabel');
 
@@ -2253,6 +2405,17 @@ async function refreshCurrentSearchView() {
         phoneInput.readOnly = false;
         phoneInput.value = "";
       }
+    }
+
+    function initLimitedTimeDefaults() {
+      const now = new Date();
+      const end = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const pad = n => String(n).padStart(2, '0');
+      const toDtStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const startEl = document.getElementById('hLimitedStart');
+      const endEl = document.getElementById('hLimitedEnd');
+      if (startEl && !startEl.value) startEl.value = toDtStr(now);
+      if (endEl && !endEl.value) endEl.value = toDtStr(end);
     }
 
     async function updateSystemStatus() {
@@ -2399,36 +2562,40 @@ async function refreshCurrentSearchView() {
         renderTagButtons('cTagContainer', cache.tags);
         renderTagButtons('sTagContainer', cache.tags);
 
-        // 讀取班表資料 (schedules)
-        const { data: shiftData } = await _supabase.from('schedules').select('*');
-        cache.shiftList = shiftData || [];
+        // 平行化讀取：班表、預約、交接提醒、交接主檔、按讚、留言 (同時發送，耗時取決於最慢一筆)
+        const [
+          shiftRes,
+          appRes,
+          handForAppRes,
+          handRes,
+          likesRes,
+          commentsRes
+        ] = await Promise.all([
+          _supabase.from('schedules').select('*'),
+          _supabase.from('consultations')
+            .select('*')
+            .eq('is_appoint', '是')
+            .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.')
+            .order('appoint_time', { ascending: true }),
+          _supabase.from('handovers')
+            .select('*')
+            .neq('push_status', 'Sent')
+            .or('type.ilike.%指定時間%,type.ilike.%限時%')
+            .order('target_date', { ascending: true }),
+          _supabase.from('handovers')
+            .select('*')
+            .neq('push_status', 'Sent')
+            .order('created_at', { ascending: false }),
+          _supabase.from('handover_likes').select('*'),
+          _supabase.from('handover_comments').select('*').order('created_at', { ascending: true })
+        ]);
 
-        // 讀取預約處理名單 (來自 consultations)
-        const { data: appData } = await _supabase.from('consultations')
-          .select('*')
-          .eq('is_appoint', '是')
-          .or('status.eq.待處理,status.eq.已關懷,status.is.null,status.eq.')
-          .order('appoint_time', { ascending: true });
-
-        cache.appointList = appData || [];
-
-        // 讀取未完成且屬於指定時間的交接提醒預約 (來自 handovers)
-        const { data: handDataForApp } = await _supabase.from('handovers')
-          .select('*')
-          .neq('push_status', 'Sent')
-          .ilike('type', '%指定時間%')
-          .order('target_date', { ascending: true });
-
-        cache.lostAppointList = handDataForApp || [];
-
-        // 讀取未完成的交接工作與關聯討論串
-        const { data: handData } = await _supabase.from('handovers')
-          .select('*')
-          .neq('push_status', 'Sent')
-          .order('created_at', { ascending: false });
-
-        const { data: likesData } = await _supabase.from('handover_likes').select('*');
-        const { data: commentsData } = await _supabase.from('handover_comments').select('*').order('created_at', { ascending: true });
+        cache.shiftList = shiftRes.data || [];
+        cache.appointList = appRes.data || [];
+        cache.lostAppointList = handForAppRes.data || [];
+        const handData = handRes.data || [];
+        const likesData = likesRes.data || [];
+        const commentsData = commentsRes.data || [];
 
         cache.handoverList = (handData || []).map(item => {
           let cTimeStr = '';
@@ -3474,11 +3641,12 @@ async function refreshCurrentSearchView() {
       const pill = document.getElementById('childrenDbStatusPill');
       if (!pill || !_clientsSupabase) return;
       try {
-        const { count, error } = await _clientsSupabase
+        const { data, error } = await _clientsSupabase
           .from('customers')
-          .select('*', { count: 'exact', head: true });
-        if (!error && count !== null) {
-          pill.innerText = `🟢 連線中 (${count} 筆)`;
+          .select()
+          .range(0, 4999);
+        if (!error && Array.isArray(data)) {
+          pill.innerText = `🟢 連線中 (${data.length} 筆)`;
           pill.style.backgroundColor = "rgba(132, 165, 157, 0.25)";
           pill.style.color = "#2d5a27";
         } else {
@@ -3787,6 +3955,21 @@ async function refreshCurrentSearchView() {
       let finalContent = hPhoneValue ? `${hContentValue}-${hPhoneValue}` : hContentValue;
       if (t.includes('指定')) finalContent += ` ${timeStr}`;
 
+      let targetDateVal = '無';
+      let limitedEndForCal = null;
+      if (t.includes('指定')) {
+        targetDateVal = `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}`;
+      } else if (t.includes('限時')) {
+        const lStart = document.getElementById('hLimitedStart').value;
+        const lEnd = document.getElementById('hLimitedEnd').value;
+        if (!lStart || !lEnd) { alert("請設定完整的限時起始與截止時間！"); return; }
+        if (new Date(lEnd) <= new Date(lStart)) { alert("截止時間必須晚於起始時間！"); return; }
+        const sClean = lStart.replace('T', ' ');
+        const eClean = lEnd.replace('T', ' ');
+        targetDateVal = `${sClean} ~ ${eClean}`;
+        limitedEndForCal = lEnd.replace('T', ' ');
+      }
+
       let finalPushStatus = isNoNotify ? 'None' : 'Pending';
 
       document.getElementById('loadingOverlay').style.display = 'flex';
@@ -3796,7 +3979,7 @@ async function refreshCurrentSearchView() {
 
       const payload = {
         type: t,
-        target_date: t.includes('指定') ? `${document.getElementById('hYear').value}/${document.getElementById('hMonth').value}/${document.getElementById('hDay').value} ${timeStr}` : '無',
+        target_date: targetDateVal,
         content: finalContent,
         from_staff: fromStaff,
         to_staff: toStaff,
@@ -3814,6 +3997,10 @@ async function refreshCurrentSearchView() {
         if (t.includes('指定')) {
           const calTime = payload.target_date.replace(/\//g, '-');
           const title = `[${t}]${hContentValue}-${toStaff}`;
+          autoSyncCalendar('handovers', data[0].id, title, calTime);
+        } else if (t.includes('限時') && limitedEndForCal) {
+          const calTime = limitedEndForCal.replace(/\//g, '-');
+          const title = `[限時截止]${hContentValue}-${toStaff}`;
           autoSyncCalendar('handovers', data[0].id, title, calTime);
         }
 
@@ -4151,13 +4338,22 @@ async function refreshCurrentSearchView() {
     eventTime: it.appoint_time
   }));
 
-  // 2. 篩選指定時間交接
+  // 2. 篩選指定時間與限時交接
   let rawHandovers = (cache.handoverList || [])
-    .filter(h => h.type && String(h.type).includes('指定') && h.targetDate && h.targetDate !== '無')
+    .filter(h => h.type && (String(h.type).includes('指定') || String(h.type).includes('限時')) && h.targetDate && h.targetDate !== '無')
     .map(h => {
       const fromS = String(h.from_staff || h.from || '').trim();
       const toS = String(h.to_staff || h.to || '').trim();
       let cleanTimeStr = String(h.targetDate).trim().replace(/\//g, '-').replace('T', ' ');
+      let rangeStart = null;
+      let rangeEnd = null;
+
+      if (String(h.type).includes('限時') && cleanTimeStr.includes('~')) {
+        const parts = cleanTimeStr.split('~').map(s => s.trim());
+        rangeStart = parts[0];
+        rangeEnd = parts[1];
+        cleanTimeStr = rangeEnd; // 截止時間做為主要比對時刻
+      }
       
       return {
         ...h,
@@ -4168,6 +4364,8 @@ async function refreshCurrentSearchView() {
         name: `📥 交接：${toS}`,
         staff: toS,
         eventTime: cleanTimeStr,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
         event: h.content
       };
     });
@@ -4275,8 +4473,25 @@ async function refreshCurrentSearchView() {
       const eventsMap = {};
       const mergedList = getMergedAppAndHandoverList(currentAppStaffFilter);
 
+      const pad2 = n => String(n).padStart(2, '0');
+      const toYmdKey = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
       mergedList.forEach((it) => {
-        if (it.eventTime) {
+        if (it.rangeStart && it.rangeEnd) {
+          // 限時交接：在區間內的每一天皆標記上舒適紫色任務
+          const sDate = new Date(String(it.rangeStart).replace(/-/g, '/'));
+          const eDate = new Date(String(it.rangeEnd).replace(/-/g, '/'));
+          if (!isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) {
+            let cur = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate());
+            const stop = new Date(eDate.getFullYear(), eDate.getMonth(), eDate.getDate());
+            while (cur <= stop) {
+              const k = toYmdKey(cur);
+              if (!eventsMap[k]) eventsMap[k] = [];
+              eventsMap[k].push({ ...it, isLimitedRangeDay: true });
+              cur.setDate(cur.getDate() + 1);
+            }
+          }
+        } else if (it.eventTime) {
           const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
           const datePart = timeStr.split(' ')[0];
           const parts = datePart.split('-');
@@ -4410,9 +4625,11 @@ async function refreshCurrentSearchView() {
           const evTime = ev.eventTime ? new Date(String(ev.eventTime).replace(/-/g, '/')) : null;
           const isOverdue = evTime && evTime < now && (ev.itemType === 'consult' ? (ev.status === '待處理' || ev.status === '已關懷') : true);
 
-          // ✨ 任務條瘦身：字體變細 (font-weight: 400)、指示線縮為 2px、內邊距壓低
           let tagStyle = '';
-          if (ev.itemType === 'handover') {
+          const isLimited = ev.type && String(ev.type).includes('限時');
+          if (isLimited) {
+            tagStyle = 'background-color: rgba(157, 129, 137, 0.18); color: #6d597a; border-left: 2px solid #9d8189; font-weight: 500;';
+          } else if (ev.itemType === 'handover') {
             tagStyle = 'background-color: rgba(168, 154, 159, 0.12); color: #4a4e69; border-left: 2px solid #a89a9f; font-weight: 400;';
           } else if (isOverdue) {
             tagStyle = 'background-color: rgba(229, 152, 155, 0.15); color: #c96b70; border-left: 2px solid #e5989b; font-weight: 600;';
@@ -4524,14 +4741,36 @@ function selectAppCard(index, id, name, type = 'consult') {
         </div>`;
     }).join('');
 
+    const fromStaff = String(it.from || it.from_staff || '').trim();
+    const isCreator = (fromStaff === currentUser && currentUser !== '');
+    let isWithin3Hours = false;
+    if (it.createdAtRaw || it.createdAt) {
+      const timeToParse = it.createdAtRaw || String(it.createdAt).replace(/\//g, '-');
+      const createdDate = new Date(timeToParse);
+      if (!isNaN(createdDate.getTime())) {
+        const diffHours = (new Date() - createdDate) / (1000 * 60 * 60);
+        if (diffHours >= 0 && diffHours <= 3) isWithin3Hours = true;
+      }
+    }
+    const editBtnHtml = (isCreator && isWithin3Hours)
+      ? `<button class="btn btn-sm p-0 border-0 bg-transparent text-primary fw-bold me-2" style="font-size: 0.75rem;" onclick="closeAppDetailModal(); openEditHandoverModal(${it.id}, \`${it.content.replace(/`/g, '\\`')}\`, '${it.imageUrl || ''}')">✏️ 編輯</button>`
+      : '';
+
+    const isLimited = String(it.type || '').includes('限時');
+    const borderCardColor = isLimited ? '#9d8189' : '#a89a9f';
+
     let cardHtml = `
-      <div class="p-2 mb-2 rounded bg-white" style="border-left: 5px solid #a89a9f; position: relative;">
+      <div class="p-2 mb-2 rounded bg-white" style="border-left: 5px solid ${borderCardColor}; position: relative; background-color: ${isLimited ? 'var(--handover-limited-bg)' : '#fff'};">
         <div onclick="shareCard('appInfo', '交接_${it.to}')" style="position: absolute; top: 8px; right: 8px; cursor: pointer; opacity: 0.6; font-size: 1.1rem; z-index: 10;" title="截圖分享">📤</div>
         <div class="d-flex justify-content-between align-items-center mb-2 pe-4">
-          <button class="btn btn-sm btn-outline-success py-0 px-2 shadow-sm" style="font-size: 0.75rem;" onclick="closeHandoverCase(${it.id}); closeAppDetailModal();">✅ 結案歸檔</button>
-          <span class="badge text-white" style="background-color: #a89a9f;">⏰ ${it.type}</span>
+          <div class="d-flex align-items-center">
+            <button class="btn btn-sm btn-outline-success py-0 px-2 shadow-sm me-2" style="font-size: 0.75rem;" onclick="closeHandoverCase(${it.id}); closeAppDetailModal();">✅ 結案歸檔</button>
+            ${editBtnHtml}
+          </div>
+          <span class="badge text-white" style="background-color: ${borderCardColor};">⏰ ${it.type}</span>
         </div>
         <div class="p-2 bg-light rounded mb-2" style="white-space: pre-wrap; font-size: 0.9rem;">${it.content}</div>
+        ${it.imageUrl ? `<div class="mb-2"><img src="${it.imageUrl}" onclick="openImageViewer('${it.imageUrl}')" style="max-height: 90px; border-radius: 6px; cursor: pointer; border: 1px solid #ccc;"></div>` : ''}
         <div class="row g-0 small text-muted">
           <div class="col-6">📤 交接: ${it.from}</div>
           <div class="col-6 text-end">📥 接收: ${it.to}</div>
@@ -4554,10 +4793,18 @@ function selectAppCard(index, id, name, type = 'consult') {
           <div class="d-flex flex-column gap-2 p-2 rounded" style="background: rgba(142, 154, 175, 0.08);">
              <textarea id="new_cmt_${it.id}" class="form-control form-control-sm border-0 shadow-sm" rows="2" placeholder="以 [${currentUser}] 身份留言..."></textarea>
              <div class="d-flex justify-content-between align-items-center">
-               <label for="cmt_img_${it.id}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2">📎 附圖</label>
-               <input type="file" id="cmt_img_${it.id}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.id}')">
-               <img id="cmt_preview_${it.id}" style="height: 25px; display: none;">
-               <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverComment(${it.id})">送出留言</button>
+               <div class="d-flex align-items-center">
+                 <label for="cmt_img_${it.id}" class="btn btn-sm btn-outline-secondary bg-white py-0 mb-0 px-2 me-2">📎 附圖</label>
+                 <input type="file" id="cmt_img_${it.id}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.id}')">
+                 <img id="cmt_preview_${it.id}" style="height: 25px; display: none;">
+               </div>
+               <div class="d-flex align-items-center gap-2">
+                 <div class="form-check form-switch m-0 d-flex align-items-center" title="開啟時清空其他人的已讀讚，提醒重新閱讀">
+                   <input class="form-check-input" type="checkbox" id="cmt_reset_like_${it.id}" checked style="width: 2rem !important; height: 1rem !important; cursor: pointer;">
+                   <label class="form-check-label text-muted ms-1" style="font-size: 0.68rem; cursor: pointer;" for="cmt_reset_like_${it.id}">重閱</label>
+                 </div>
+                 <button class="btn btn-sm text-white px-3 shadow-sm" style="background: #84a59d;" onclick="submitHandoverComment(${it.id})">送出留言</button>
+               </div>
              </div>
           </div>
         </div>
@@ -4586,11 +4833,20 @@ function selectAppCard(index, id, name, type = 'consult') {
       document.querySelectorAll('.handover-main-card').forEach(card => {
         const cardType = card.getAttribute('data-type') || "";
         const isTimed = cardType.includes("指定");
-        const targetStr = card.getAttribute('data-date');
-        const isOverdue = isTimed && targetStr !== '無' && new Date(targetStr) < new Date();
+        const isLimited = cardType.includes("限時");
+        const targetStr = card.getAttribute('data-date') || '無';
+        let isOverdue = false;
+
+        if (isTimed && targetStr !== '無') {
+          isOverdue = new Date(targetStr.replace(/-/g, '/')) < new Date();
+        } else if (isLimited && targetStr.includes('~')) {
+          const endPart = targetStr.split('~')[1].trim();
+          isOverdue = new Date(endPart.replace(/-/g, '/')) < new Date();
+        }
 
         let isMatch = (type === '全部') ||
           (type === '指定' && isTimed) ||
+          (type === '限時' && isLimited) ||
           (type === '追蹤' && cardType.includes("追蹤")) ||
           (type === '物流' && cardType.includes("物流")) ||
           (type === '過期' && isOverdue);
@@ -4648,13 +4904,20 @@ function selectAppCard(index, id, name, type = 'consult') {
       }
 
       // 3. 計算快篩數量
-      let countAll = 0, countTimed = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
-      let unreadAll = 0, unreadTimed = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
+      let countAll = 0, countTimed = 0, countLimited = 0, countTrack = 0, countLogistics = 0, countOverdue = 0;
+      let unreadAll = 0, unreadTimed = 0, unreadLimited = 0, unreadTrack = 0, unreadLogistics = 0, unreadOverdue = 0;
 
       displayList.forEach(it => {
         countAll++;
         const isTimed = String(it.type || '').includes("指定");
-        const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
+        const isLimited = String(it.type || '').includes("限時");
+        let isOverdue = false;
+        if (isTimed && it.targetDate !== '無') {
+          isOverdue = new Date(it.targetDate.replace(/-/g, '/')) < new Date();
+        } else if (isLimited && String(it.targetDate || '').includes('~')) {
+          const ePart = it.targetDate.split('~')[1].trim();
+          isOverdue = new Date(ePart.replace(/-/g, '/')) < new Date();
+        }
         const isUnread = checkIsRelated(it) && (!it.likes || !it.likes.some(l => l.staff_name === currentUser));
 
         if (isUnread) unreadAll++;
@@ -4662,16 +4925,20 @@ function selectAppCard(index, id, name, type = 'consult') {
         if (isTimed) {
           countTimed++;
           if (isUnread) unreadTimed++;
-          if (isOverdue) {
-            countOverdue++;
-            if (isUnread) unreadOverdue++;
-          }
+        } else if (isLimited) {
+          countLimited++;
+          if (isUnread) unreadLimited++;
         } else if (String(it.type || '').includes("物流")) {
           countLogistics++;
           if (isUnread) unreadLogistics++;
         } else {
           countTrack++;
           if (isUnread) unreadTrack++;
+        }
+
+        if (isOverdue) {
+          countOverdue++;
+          if (isUnread) unreadOverdue++;
         }
       });
 
@@ -4723,6 +4990,13 @@ function selectAppCard(index, id, name, type = 'consult') {
                 ${getBadgeHtml(unreadTimed)}
             </div>
             <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
+                <button class="btn btn-sm btn-outline-secondary bg-white hand-sub-btn rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('限時', this)" style="min-width: 55px; padding: 4px 8px; border-color: rgba(157,129,137,0.5);">
+                  <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1 text-[#9d8189]">限時</span>
+                  <span class="fw-bold text-[#9d8189]" style="font-size: 0.95rem; line-height: 1;">${countLimited}</span>
+                </button>
+                ${getBadgeHtml(unreadLimited)}
+            </div>
+            <div class="d-inline-block ms-2" style="position: relative !important; overflow: visible !important;">
                 <button class="btn btn-sm btn-outline-secondary bg-white hand-sub-btn rounded-xl d-flex flex-column align-items-center justify-content-center" onclick="filterHandSub('追蹤', this)" style="min-width: 55px; padding: 4px 8px; border-color: rgba(142,154,175,0.4);">
                   <span style="font-size: 0.7rem; line-height: 1.2;" class="mb-1">追蹤</span>
                   <span class="fw-bold" style="font-size: 0.95rem; line-height: 1;">${countTrack}</span>
@@ -4744,9 +5018,21 @@ function selectAppCard(index, id, name, type = 'consult') {
       // 6. 渲染卡片清單
       sortedList.forEach((it, index) => {
         const isTimed = String(it.type || '').includes("指定");
+        const isLimited = String(it.type || '').includes("限時");
         const isTrack = String(it.type || '').includes("追蹤");
-        const isOverdue = isTimed && it.targetDate !== '無' && new Date(it.targetDate) < new Date();
-        let cardClass = isTimed ? "handover-card-timed" : (String(it.type || '').includes("物流") ? "handover-card-logistics" : "handover-card-track");
+        let isOverdue = false;
+        if (isTimed && it.targetDate !== '無') {
+          isOverdue = new Date(it.targetDate.replace(/-/g, '/')) < new Date();
+        } else if (isLimited && String(it.targetDate || '').includes('~')) {
+          const ePart = it.targetDate.split('~')[1].trim();
+          isOverdue = new Date(ePart.replace(/-/g, '/')) < new Date();
+        }
+
+        let cardClass = "handover-card-track";
+        if (isLimited) cardClass = "handover-card-limited";
+        else if (isTimed) cardClass = "handover-card-timed";
+        else if (String(it.type || '').includes("物流")) cardClass = "handover-card-logistics";
+
         if (isOverdue) cardClass += " handover-overdue";
 
         // ✨ 計算追蹤天數：依據首次建立時間 (createdAt) 計算與今日差距天數
@@ -4845,12 +5131,26 @@ function selectAppCard(index, id, name, type = 'consult') {
     <div class="card p-2.5 p-md-3 mb-2.5 shadow-sm ${cardClass} handover-main-card" id="hcard_${index}" data-type="${it.type}" data-date="${it.targetDate}">
       
       <!-- 📌 第 1 列：頂級狀態列 -->
-      <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-10">
-        <div class="d-flex align-items-center gap-1.5 overflow-hidden">
-          <button class="btn btn-sm btn-outline-success py-0 px-1.5 flex-shrink-0" style="font-size: 0.7rem; border-color: #84a59d; color: #84a59d; line-height: 1.4;" onclick="closeHandoverCase(${it.rowIndex})">✅</button>
-          ${unreadBadgeHtml}
-          <span class="badge text-white flex-shrink-0" style="font-size: 0.68rem; padding: 2px 5px;">${it.type}${isOverdue ? ' (逾期)' : ''}</span>
-          <span class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'} text-truncate" style="font-size: 0.7rem;">📅 ${dateDisplay}</span>
+      <div class="d-flex justify-content-between align-items-start mb-2 pb-1 border-bottom border-secondary border-opacity-10">
+        <div class="d-flex align-items-start gap-1.5 overflow-hidden">
+          <button class="btn btn-sm btn-outline-success py-0 px-1.5 flex-shrink-0 mt-0.5" style="font-size: 0.7rem; border-color: #84a59d; color: #84a59d; line-height: 1.4;" onclick="closeHandoverCase(${it.rowIndex})">✅</button>
+          <div class="d-flex flex-column align-items-start">
+            <div class="d-flex align-items-center gap-1 mb-0.5">
+              ${unreadBadgeHtml}
+              <span class="badge text-white flex-shrink-0" style="font-size: 0.68rem; padding: 2px 5px;">${it.type}${isOverdue ? ' (逾期)' : ''}</span>
+            </div>
+            ${(() => {
+              if (String(it.type || '').includes('限時') && String(dateDisplay).includes('~')) {
+                const parts = dateDisplay.split('~').map(s => s.trim());
+                return `
+                  <div class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'}" style="font-size: 0.68rem; line-height: 1.25;">
+                    <div>起：${parts[0]}</div>
+                    <div>迄：${parts[1]}</div>
+                  </div>`;
+              }
+              return `<span class="${isOverdue ? 'fw-bold text-danger' : 'text-muted'}" style="font-size: 0.7rem;">📅 ${dateDisplay}</span>`;
+            })()}
+          </div>
         </div>
         <div class="d-flex align-items-center gap-2">
           ${(() => {
@@ -4866,7 +5166,7 @@ function selectAppCard(index, id, name, type = 'consult') {
               }
             }
             return (isCreator && isWithin3Hours)
-              ? `<button class="btn btn-sm p-0 border-0 bg-transparent text-primary fw-bold" style="font-size: 0.75rem;" onclick="openEditHandoverModal(${it.rowIndex}, \`${it.content.replace(/`/g, '\\`')}\`)">編輯</button>
+              ? `<button class="btn btn-sm p-0 border-0 bg-transparent text-primary fw-bold" style="font-size: 0.75rem;" onclick="openEditHandoverModal(${it.rowIndex}, \`${it.content.replace(/`/g, '\\`')}\`, '${it.imageUrl || ''}')">編輯</button>
                  <button class="btn btn-sm p-0 border-0 bg-transparent text-danger fw-bold ms-1" style="font-size: 0.75rem;" onclick="deleteHandoverWithin3Hours(${it.rowIndex})">刪除</button>`
               : '';
           })()}
@@ -4921,7 +5221,13 @@ function selectAppCard(index, id, name, type = 'consult') {
                <input type="file" id="cmt_img_${it.rowIndex}" class="d-none" accept="image/*" onchange="compressAndPreview(this, 'cmt_preview_${it.rowIndex}')">
                <img id="cmt_preview_${it.rowIndex}" style="height: 22px; display: none; border-radius: 4px; border: 1px solid #ccc;">
              </div>
-             <button class="btn btn-sm text-white px-2.5 py-0.5 shadow-2xs" style="background: #84a59d; font-size: 0.75rem;" onclick="submitHandoverComment(${it.rowIndex})">送出</button>
+             <div class="d-flex align-items-center gap-2">
+               <div class="form-check form-switch m-0 d-flex align-items-center" title="開啟時清空其他人的已讀讚，提醒重新閱讀">
+                 <input class="form-check-input" type="checkbox" id="cmt_reset_like_${it.rowIndex}" checked style="width: 2rem !important; height: 1rem !important; cursor: pointer;">
+                 <label class="form-check-label text-muted ms-1" style="font-size: 0.68rem; cursor: pointer;" for="cmt_reset_like_${it.rowIndex}">重閱</label>
+               </div>
+               <button class="btn btn-sm text-white px-2.5 py-0.5 shadow-2xs" style="background: #84a59d; font-size: 0.75rem;" onclick="submitHandoverComment(${it.rowIndex})">送出</button>
+             </div>
            </div>
         </div>
       </div>
@@ -5528,8 +5834,13 @@ function selectAppCard(index, id, name, type = 'consult') {
 
         if (error) throw error;
 
-        // ✨ 核心邏輯：刪除「不是自己」的按讚紀錄。這會讓卡片對其他人重新變成未讀並頂置！
-        await _supabase.from('handover_likes').delete().eq('handover_id', handoverId).neq('staff_name', staff);
+        // 根據開關狀態決定是否重置其他人的已讀紀錄（預設開啟即維持原本清掉讚，未開啟則不清掉）
+        const resetLikeSwitch = document.getElementById(`cmt_reset_like_${handoverId}`);
+        const shouldResetLikes = resetLikeSwitch ? resetLikeSwitch.checked : true;
+
+        if (shouldResetLikes) {
+          await _supabase.from('handover_likes').delete().eq('handover_id', handoverId).neq('staff_name', staff);
+        }
 
         // 重新載入最新資料
         await loadData();
@@ -6652,8 +6963,13 @@ function renderDayAppModalCards(dateKey) {
     `;
   }
 
-  // 3. 分別計算當日「我的」與「全部」的事項數量
+  // 3. 分別計算當日「我的」與「全部」的事項數量（支援限時區間完整涵蓋）
   const filterByDate = (list) => list.filter(it => {
+    if (it.rangeStart && it.rangeEnd) {
+      const sDateStr = String(it.rangeStart).trim().replace(/\//g, '-').split(' ')[0];
+      const eDateStr = String(it.rangeEnd).trim().replace(/\//g, '-').split(' ')[0];
+      return dateKey >= sDateStr && dateKey <= eDateStr;
+    }
     if (!it.eventTime) return false;
     const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
     const datePart = timeStr.split(' ')[0]; 
@@ -6729,13 +7045,28 @@ function renderDayAppModalCards(dateKey) {
             <div class="text-end text-xs text-muted mt-1">👤 服務人：${it.staff || '未註記'}</div>
           </div>`;
       } else {
+        const isLimited = String(it.type || '').includes('限時');
+        const borderColor = isLimited ? '#9d8189' : '#a89a9f';
+        const badgeBg = isLimited ? '#9d8189' : '#a89a9f';
+        const typeLabel = isLimited ? '限時' : '交接';
+        let timeDisplayHtml = '';
+        if (isLimited && it.rangeStart && it.rangeEnd) {
+          timeDisplayHtml = `
+            <div class="d-flex flex-column" style="font-size: 0.75rem; line-height: 1.25; color: #5b2a30;">
+              <div>起：<b>${it.rangeStart}</b></div>
+              <div>迄：<b>${it.rangeEnd}</b></div>
+            </div>`;
+        } else {
+          timeDisplayHtml = `<span class="small text-muted">⏰ 時間：<b style="font-size: 0.95rem; color: #5b2a30;">${timeStr}</b></span>`;
+        }
+
         h += `
-          <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" style="border-left: 6px solid #a89a9f !important;" onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '交接項目', 'handover')">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="small text-muted">⏰ 時間：<b style="font-size: 1rem; color: #5b2a30;">${timeStr}</b></span>
-              <div>
+          <div class="p-3 mb-2 rounded-xl border glass-vintage-card shadow-sm cursor-pointer transition-all ${cardStyle}" style="border-left: 6px solid ${borderColor} !important; background-color: ${isLimited ? 'var(--handover-limited-bg)' : ''};" onclick="closeDayAppListModal(); selectAppCard(${originalIndex}, ${it.id}, '交接項目', 'handover')">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              ${timeDisplayHtml}
+              <div class="ms-2 flex-shrink-0 text-end">
                 ${badgeHtml}
-                <span class="badge text-white" style="background-color: #a89a9f;">交接</span>
+                <span class="badge text-white" style="background-color: ${badgeBg};">${typeLabel}</span>
               </div>
             </div>
             <div class="text-dark fw-bold mb-2 text-truncate" style="font-size: 1.05rem; max-width: 100%;">📝 內容：${it.event || '無'}</div>
@@ -7907,11 +8238,48 @@ function renderDayAppModalCards(dateKey) {
         }
       });
     }
-    // 開啟編輯交接 Modal
-    function openEditHandoverModal(id, content) {
+    // 開啟編輯交接 Modal (支援帶入現有照片)
+    function openEditHandoverModal(id, content, currentImgUrl = '') {
       document.getElementById('editHandoverId').value = id;
       document.getElementById('editHandoverContentInput').value = content;
+      document.getElementById('editHandoverImageInput').value = '';
+      document.getElementById('editHandoverImgAction').value = 'keep';
+
+      const curImgDiv = document.getElementById('editHandoverCurrentImgDiv');
+      const curImgPreview = document.getElementById('editHandoverCurrentImgPreview');
+      const newImgPreview = document.getElementById('editHandoverNewImgPreview');
+
+      if (newImgPreview) {
+        newImgPreview.src = '';
+        newImgPreview.style.display = 'none';
+      }
+
+      const fileInput = document.getElementById('editHandoverImageInput');
+      if (fileInput) fileInput.removeAttribute('data-compressed');
+
+      if (currentImgUrl && currentImgUrl !== 'null' && currentImgUrl !== '') {
+        curImgPreview.src = currentImgUrl;
+        curImgDiv.style.display = 'block';
+      } else {
+        curImgDiv.style.display = 'none';
+      }
+
       document.getElementById('editHandoverModal').style.display = 'flex';
+    }
+
+    function removeEditHandoverImg() {
+      document.getElementById('editHandoverCurrentImgDiv').style.display = 'none';
+      document.getElementById('editHandoverImgAction').value = 'delete';
+      const fileInput = document.getElementById('editHandoverImageInput');
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.removeAttribute('data-compressed');
+      }
+      const newImgPreview = document.getElementById('editHandoverNewImgPreview');
+      if (newImgPreview) {
+        newImgPreview.src = '';
+        newImgPreview.style.display = 'none';
+      }
     }
 
     // 關閉編輯交接 Modal
@@ -7919,10 +8287,11 @@ function renderDayAppModalCards(dateKey) {
       document.getElementById('editHandoverModal').style.display = 'none';
     }
 
-    // 送出編輯交接內容並重置按讚紀錄（要求重新閱讀）
+    // 送出編輯交接內容與照片，並重置按讚紀錄（要求重新閱讀）
     async function submitEditHandover() {
       const handoverId = document.getElementById('editHandoverId').value;
       const newContent = document.getElementById('editHandoverContentInput').value.trim();
+      const imgAction = document.getElementById('editHandoverImgAction').value;
       const currentUser = localStorage.getItem("current_staff_name") || "";
 
       if (!newContent) {
@@ -7930,14 +8299,23 @@ function renderDayAppModalCards(dateKey) {
         return;
       }
 
-      document.getElementById('loadingText').innerText = "更新交接內容中...";
+      document.getElementById('loadingText').innerText = "更新交接內容與照片中...";
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
-        // 1. 更新 handovers 資料表中的內容
+        const updatePayload = { content: newContent };
+
+        if (imgAction === 'delete') {
+          updatePayload.image_url = null;
+        } else if (imgAction === 'update') {
+          const fileInput = document.getElementById('editHandoverImageInput');
+          updatePayload.image_url = fileInput ? (fileInput.dataset.compressed || null) : null;
+        }
+
+        // 1. 更新 handovers 資料表中的內容與照片
         const { error: updateError } = await _supabase
           .from('handovers')
-          .update({ content: newContent })
+          .update(updatePayload)
           .eq('id', handoverId);
 
         if (updateError) throw updateError;
@@ -7951,7 +8329,7 @@ function renderDayAppModalCards(dateKey) {
 
         document.getElementById('loadingOverlay').style.display = 'none';
         closeEditHandoverModal();
-        alert("交接內容已更新，相關人員需重新閱讀確認！");
+        alert("交接內容與照片已更新，相關人員需重新閱讀確認！");
 
         // 3. 重新加載資料更新畫面
         await loadData();
@@ -8222,16 +8600,27 @@ function renderDayAppModalCards(dateKey) {
       </div>
     </div>
   </div>
-  <!-- 編輯交接內容 Modal -->
+  <!-- 編輯交接內容 Modal (支援照片編輯) -->
   <div id="editHandoverModal" class="modal-overlay" style="display:none; z-index: 10600 !important;">
     <div class="modal-body" style="max-width: 480px; width: 92%; max-height: 85vh; overflow-y: auto;">
       <h5 class="fw-bold mb-3 font-serif-tc text-[#3e2723]">✏️ 編輯工作交接</h5>
       <input type="hidden" id="editHandoverId">
+      <input type="hidden" id="editHandoverImgAction" value="keep">
 
       <label class="small fw-bold text-muted">交接內容</label>
       <div class="clear-wrapper mb-3">
         <textarea id="editHandoverContentInput" class="form-control" rows="4"></textarea>
       </div>
+
+      <label class="small fw-bold text-muted">交接照片</label>
+      <div id="editHandoverCurrentImgDiv" class="mb-2" style="display:none;">
+        <div class="d-flex align-items-center gap-2">
+          <img id="editHandoverCurrentImgPreview" style="max-height: 90px; border-radius: 8px; border: 1px solid #ccc;">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEditHandoverImg()">🗑️ 移除照片</button>
+        </div>
+      </div>
+      <input type="file" id="editHandoverImageInput" class="form-control form-control-sm mb-3" accept="image/*" onchange="compressAndPreview(this, 'editHandoverNewImgPreview'); document.getElementById('editHandoverImgAction').value='update';">
+      <img id="editHandoverNewImgPreview" style="max-height: 90px; display: none; border-radius: 8px; margin-bottom: 12px; border: 1px solid #ccc;">
 
       <div class="d-grid gap-2">
         <button class="btn btn-success fw-bold" onclick="submitEditHandover()">確認修改並重置已閱</button>
