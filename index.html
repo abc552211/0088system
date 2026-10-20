@@ -6492,6 +6492,16 @@ function selectAppCard(index, id, name, type = 'consult') {
 
     // ================= 全新個人化 SOP 聯動邏輯 =================
 
+    // 依 ID 安全開啟 SOP 編輯（避開 HTML 引號解析錯誤）
+    function openSopModalById(sopId) {
+      const sop = (cache.sopList || []).find(item => String(item.id) === String(sopId));
+      if (sop) {
+        openSopModal(sop);
+      } else {
+        alert("找不到該筆 SOP 項目");
+      }
+    }
+
     // 1. 開啟 SOP 編輯 Modal (自動判斷新增/編輯並顯示重置開關)
     function openSopModal(sopData = null) {
       currentSopImages = [];
@@ -6620,6 +6630,8 @@ function selectAppCard(index, id, name, type = 'consult') {
           ...sop,
           likes: (likesData || []).filter(l => l.sop_id === sop.id)
         }));
+
+        cache.sopList = combinedData;
 
         // ✨ 核心升級：加入前端專屬客製化排序 (1.置頂優先 -> 2.未讀優先 -> 3.更新時間新到舊)
         combinedData.sort((a, b) => {
@@ -6861,7 +6873,7 @@ function selectAppCard(index, id, name, type = 'consult') {
         <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-25 gap-2">
           <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm p-1 border-0 bg-transparent ${pinBtnClass}" title="切換置頂" onclick="toggleSopPin(${sop.id}, ${isPinned})" style="font-size: 0.85rem;">${pinIcon}</button>
-            <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick='openSopModal(${JSON.stringify(sop).replace(/'/g, "&apos;")})' style="font-size: 0.85rem;">✏️ 編輯</button>
+            <button class="btn btn-sm p-1 border-0 text-primary bg-transparent fw-bold" title="編輯" onclick="openSopModalById(${sop.id})" style="font-size: 0.85rem;">✏️ 編輯</button>
             <button class="btn btn-sm p-1 border-0 text-danger bg-transparent fw-bold" title="刪除" onclick="deleteSopWithGlobalAuth(${sop.id}, '${sop.title.replace(/'/g, "\\'")}')" style="font-size: 0.85rem;">🗑️ 刪除</button>
           </div>
 
