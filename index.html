@@ -7484,13 +7484,25 @@ function renderDayAppModalCards(dateKey) {
       if (!currentUser || currentUser === "店帳") return;
 
       try {
+        const now = new Date();
+
+        // 0. 檢查「我的預約」逾期數量（篩選項目為本人、且預約時間小於當前時間）
+        const myAppList = getMergedAppAndHandoverList('mine');
+        const overdueAppList = myAppList.filter(it => {
+          if (!it.eventTime) return false;
+          const timeStr = String(it.eventTime).trim().replace(/\//g, '-').replace('T', ' ');
+          const tDate = new Date(timeStr.replace(/-/g, '/'));
+          return !isNaN(tDate.getTime()) && tDate < now;
+        });
+        const overdueAppCount = overdueAppList.length;
+
         // 1. 檢查未讀交接數量
         const checkIsHandoverRelated = (it) => {
-      const fromS = String(it.from || it.from_staff || '').trim();
-      const toS = String(it.to || it.to_staff || '').trim();
-      const toList = toS.split(/[,，、\s]+/).map(s => s.trim());
-      return toList.includes(currentUser) || toS.includes(currentUser) || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
-    };
+          const fromS = String(it.from || it.from_staff || '').trim();
+          const toS = String(it.to || it.to_staff || '').trim();
+          const toList = toS.split(/[,，、\s]+/).map(s => s.trim());
+          return toList.includes(currentUser) || toS.includes(currentUser) || fromS === currentUser || toS.includes('全員') || toS === 'EMPTY' || toS === '';
+        };
 
         const unreadHandoverCount = (cache.handoverList || []).filter(it =>
           checkIsHandoverRelated(it) && !it.likes.some(l => l.staff_name === currentUser)
@@ -7507,12 +7519,23 @@ function renderDayAppModalCards(dateKey) {
           ).length;
         }
 
-        // 3. 若有未讀項目則開啟彈窗提醒
-        if (unreadHandoverCount > 0 || unreadSopCount > 0) {
+        // 3. 若有逾期預約或未讀項目則開啟彈窗提醒
+        if (overdueAppCount > 0 || unreadHandoverCount > 0 || unreadSopCount > 0) {
           document.getElementById('noticeHeroName').innerText = currentUser;
           const listContainer = document.getElementById('unreadNoticeList');
 
           let html = '';
+
+          // 🚨 逾期預約提醒項目（置頂顯眼提示）
+          if (overdueAppCount > 0) {
+            html += `
+          <div class="p-2.5 rounded d-flex justify-content-between align-items-center" style="background: rgba(229, 152, 155, 0.25); border: 1.5px solid #e5989b;">
+            <span class="fw-bold text-[#b02a37]" style="font-size: 0.88rem;">🚨 你有 <b class="text-danger text-base">${overdueAppCount}</b> 筆預約已逾期！</span>
+            <button class="btn btn-sm btn-danger py-0.5 px-2.5 fw-bold" style="font-size: 0.75rem; border-radius: 8px; border: none; background-color: #d9534f;" onclick="closeHeroUnreadNoticeModal(); showPage('appointment'); switchAppStaffFilter('mine');">立即處理</button>
+          </div>
+        `;
+          }
+
           if (unreadSopCount > 0) {
             html += `
           <div class="p-2.5 rounded d-flex justify-content-between align-items-center" style="background: rgba(229, 152, 155, 0.15); border: 1px solid rgba(229, 152, 155, 0.4);">
@@ -7535,7 +7558,7 @@ function renderDayAppModalCards(dateKey) {
           document.getElementById('heroUnreadNoticeModal').style.display = 'flex';
         }
       } catch (e) {
-        console.error("未讀召喚檢查出錯:", e);
+        console.error("未讀/逾期召喚檢查出錯:", e);
       }
     }
 
